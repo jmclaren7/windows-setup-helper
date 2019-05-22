@@ -1,0 +1,1 @@
+powercfg.exe /h off
