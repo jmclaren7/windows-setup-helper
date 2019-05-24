@@ -17,7 +17,7 @@
 OnAutoItExitRegister("_Exit")
 
 Global $Log = @ScriptDir & "\ITSetupLog.txt"
-Gloval $Version = 2
+Global $Version = 2.1.1
 Global $Title = "IT Setup Helper v"&$Version
 
 _Log("Start Script " & $CmdLineRaw)
@@ -204,51 +204,58 @@ EndFunc   ;==>_RunFile
 
 Func _DownloadGit($URL, $Destination)
 	_Log("_DownloadGit - " & $URL)
-	$Data = BinaryToString(InetRead($URL, 1))
-	$Object = json_decode($Data)
+	Local $Data = BinaryToString(InetRead($URL, 1))
+	Local $Object = json_decode($Data)
 
-	Local $i = 0
+	Local $i = -1
 	While 1
-		$Name = json_get($Object, '[' & $i & '].name')
-		If @error Then ExitLoop
+		$i += 1
+		Local $Name = json_get($Object, '[' & $i & '].name')
+		If @error Then
+			_Log("JSON Error")
+			Exitloop
+		endif
 
-		$Path = json_get($Object, '[' & $i & '].path')
-		$Type = json_get($Object, '[' & $i & '].type')
-		$URL = json_get($Object, '[' & $i & '].url')
-		$size = json_get($Object, '[' & $i & '].size')
-		$Download_url = json_get($Object, '[' & $i & '].download_url')
+		$oPath = json_get($Object, '[' & $i & '].path')
+		$oType = json_get($Object, '[' & $i & '].type')
+		$oURL = json_get($Object, '[' & $i & '].url')
+		$oSize = json_get($Object, '[' & $i & '].size')
+		$oDownload_url = json_get($Object, '[' & $i & '].download_url')
 
-		$FullPath = $Destination&"\"&StringReplace($Path, "/", "\")
+		$FullPath = $Destination&"\"&StringReplace($oPath, "/", "\")
 		$FolderPath = StringLeft($FullPath, StringInStr($FullPath, "\", 0, -1))
 
-
-		If $type = "dir" Then
+		If $oType = "dir" Then
 			;recurse
-			_DownloadGit($URL, $Destination)
+			_DownloadGit($oURL, $Destination)
 
 		Else
 			;download
-			_Log("Downloading "&$Path)
+			_Log("Downloading "&$oPath)
 			DirCreate($FolderPath)
-			$InetData = InetRead($Download_url, $INET_FORCERELOAD + $INET_ASCIITRANSFER)
+			$InetData = InetRead($oDownload_url, $INET_FORCERELOAD + $INET_ASCIITRANSFER)
 			$DownloadSize = @extended
-			If $DownloadSize = $size Then
+			If @error Then
+				_Log("Inet error: "&@error)
+
+			ElseIf $DownloadSize = $oSize Then
+				_Log("Good Size")
 				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE )
 				$FileWrite = FileWrite($hOutFile, $InetData)
 				FileClose($hOutFile)
-				Return $FileWrite
+				$FileWrite
 
 			Else
 				_Log("Bad Size")
 				_Log("Download: " & $DownloadSize)
-				_Log("Expected: " & $size)
-				msgbox(0,$Title, "Download Error")
-				Return -1
+				_Log("Expected: " & $oSize)
+				msgbox(0,$Title, "Download Error for "&$Name)
+
 			EndIf
 
 		endif
 
-		$i += 1
+
 	WEnd
 
 EndFunc
