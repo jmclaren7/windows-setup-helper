@@ -38,7 +38,7 @@ Switch $Command
 		Sleep(5000)
 
 		_RunFolder(@ScriptDir & "\AutoLogin\")
-		ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & @ScriptFullPath & """")
+		_RunFile(@ScriptFullPath)
 
 	Case ""
 		#Region ### START Koda GUI section ### Form=g:\windows 10 images\1809\windows 10 x64 12-21-18 1809\sources\$oem$\$$\it\general.kxf
@@ -136,6 +136,8 @@ Switch $Command
 
 				Case $UpdateButton
 					_DownloadGit("https://api.github.com/repos/jmclaren7/itdeployhelper/contents", @ScriptDir)
+					If MsgBox($MB_YESNO, $Title, "Update complete, restart script?") = $IDYES Then _RunFile(@ScriptFullPath)
+					Exit
 
 				Case $SignOutButton
 					Run(@ComSpec & " /c " & 'logoff', "", @SW_SHOW)
@@ -195,7 +197,7 @@ Func _RunFile($File)
 EndFunc   ;==>_RunFile
 
 Func _DownloadGit($URL, $Destination)
-	_Log($URL)
+	_Log("_DownloadGit - " & $URL)
 	$Data = BinaryToString(InetRead($URL, 1))
 	$Object = json_decode($Data)
 
@@ -203,7 +205,6 @@ Func _DownloadGit($URL, $Destination)
 	While 1
 		$Name = json_get($Object, '[' & $i & '].name')
 		If @error Then ExitLoop
-		_Log($Name)
 
 		$Path = json_get($Object, '[' & $i & '].path')
 		$Type = json_get($Object, '[' & $i & '].type')
@@ -212,18 +213,18 @@ Func _DownloadGit($URL, $Destination)
 
 		$FullPath = $Destination&"\"&StringReplace($Path, "/", "\")
 		$FolderPath = StringLeft($FullPath, StringInStr($FullPath, "\", 0, -1))
-		_Log("$FullPath="&$FullPath)
-		_Log("$FolderPath="&$FolderPath)
+
 
 		If $type = "dir" Then
-			_Log("Dir - "&$URL)
 			;recurse
 			_DownloadGit($URL, $Destination)
 
 		Else
 			;download
+			_Log("Downloading "&$Path)
 			DirCreate($FolderPath)
 			InetGet($Download_url, $FullPath, 1)
+
 		endif
 
 		$i += 1
