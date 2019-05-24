@@ -19,9 +19,9 @@ OnAutoItExitRegister("_Exit")
 Global $Log = @ScriptDir & "\ITSetupLog.txt"
 Global $Title = "IT Setup Helper"
 
-_Log("Start script " & $CmdLineRaw)
-_Log("Username: " & @UserName)
-_Log("@ScriptFullPath: " & @ScriptFullPath)
+_Log("Start Script " & $CmdLineRaw)
+_Log("@UserName=" & @UserName)
+_Log("@ScriptFullPath=" & @ScriptFullPath)
 
 If $CmdLine[0] >= 1 Then
 	$Command = $CmdLine[1]
@@ -92,9 +92,9 @@ Switch $Command
 		$FileArray = _FileListToArray(@ScriptDir & "\OptLogin\", "*", $FLTA_FILES, True)
 		If Not @error Then
 			Local $OptLoginListItems[$FileArray[0] + 1]
-			_Log("Files: " & $FileArray[0])
+			_Log("OptLogin Files: " & $FileArray[0])
 			For $i = 1 To $FileArray[0]
-				_Log($FileArray[$i])
+				_Log("Added: "&$FileArray[$i])
 				$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
 				$OptLoginListItems[$i] = GUICtrlCreateTreeViewItem($FileName, $TreeView1)
 
@@ -214,7 +214,7 @@ Func _DownloadGit($URL, $Destination)
 		$Path = json_get($Object, '[' & $i & '].path')
 		$Type = json_get($Object, '[' & $i & '].type')
 		$URL = json_get($Object, '[' & $i & '].url')
-		$sha = json_get($Object, '[' & $i & '].sha')
+		$size = json_get($Object, '[' & $i & '].size')
 		$Download_url = json_get($Object, '[' & $i & '].download_url')
 
 		$FullPath = $Destination&"\"&StringReplace($Path, "/", "\")
@@ -230,17 +230,17 @@ Func _DownloadGit($URL, $Destination)
 			_Log("Downloading "&$Path)
 			DirCreate($FolderPath)
 			$InetData = InetRead($Download_url, $INET_FORCERELOAD + $INET_ASCIITRANSFER)
-			$InetHash = _Crypt_HashData ( $InetData, $CALG_SHA1)
-			If $InetHash = $sha Then
+			$DownloadSize = @extended
+			If $DownloadSize = $size Then
 				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE )
 				$FileWrite = FileWrite($hOutFile, $InetData)
 				FileClose($hOutFile)
 				Return $FileWrite
 
 			Else
-				_Log("Bad Hash")
-				_Log("Download: " & $InetHash)
-				_Log("Expected: " & $sha)
+				_Log("Bad Size")
+				_Log("Download: " & $DownloadSize)
+				_Log("Expected: " & $size)
 				msgbox(0,$Title, "Download Error")
 				Return -1
 			EndIf
