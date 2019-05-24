@@ -1,6 +1,8 @@
 #include <WinAPI.au3>
 #include <File.au3>
+#include <FileConstants.au3>
 #include <Process.au3>
+#include <Crypt.au3>
 #include <ButtonConstants.au3>
 #include <ComboConstants.au3>
 #include <GUIConstantsEx.au3>
@@ -209,6 +211,7 @@ Func _DownloadGit($URL, $Destination)
 		$Path = json_get($Object, '[' & $i & '].path')
 		$Type = json_get($Object, '[' & $i & '].type')
 		$URL = json_get($Object, '[' & $i & '].url')
+		$sha = json_get($Object, '[' & $i & '].sha')
 		$Download_url = json_get($Object, '[' & $i & '].download_url')
 
 		$FullPath = $Destination&"\"&StringReplace($Path, "/", "\")
@@ -223,7 +226,19 @@ Func _DownloadGit($URL, $Destination)
 			;download
 			_Log("Downloading "&$Path)
 			DirCreate($FolderPath)
-			InetGet($Download_url, $FullPath, 1)
+			$InetData = InetRead($Download_url, $INET_FORCERELOAD + $INET_ASCIITRANSFER)
+			$InetHash = _Crypt_HashData ( $InetData, $CALG_SHA1)
+			If $InetHash = $sha Then
+				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE )
+				$FileWrite = FileWrite($hOutFile, $InetData)
+				FileClose($hOutFile)
+				Return $FileWrite
+
+			Else
+				_Log("Bad Hash")
+				msgbox(0,$Title, "Download Error")
+				Return -1
+			EndIf
 
 		endif
 
