@@ -212,7 +212,7 @@ Func _DownloadGit($URL, $Destination)
 		$i += 1
 		Local $Name = json_get($Object, '[' & $i & '].name')
 		If @error Then
-			_Log("JSON Error")
+			;_Log("JSON Error")
 			Exitloop
 		endif
 
@@ -239,7 +239,7 @@ Func _DownloadGit($URL, $Destination)
 				_Log("Inet error: "&@error)
 
 			ElseIf $DownloadSize = $oSize Then
-				_Log("Good Size")
+				;_Log("Good Size")
 				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE )
 				$FileWrite = FileWrite($hOutFile, $InetData)
 				FileClose($hOutFile)
