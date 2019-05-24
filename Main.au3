@@ -1,6 +1,7 @@
 #include <WinAPI.au3>
 #include <File.au3>
 #include <FileConstants.au3>
+#include <Inet.au3>
 #include <InetConstants.au3>
 #include <Process.au3>
 #include <Crypt.au3>
@@ -233,7 +234,8 @@ Func _DownloadGit($URL, $Destination)
 			;download
 			_Log("Downloading "&$oPath)
 			DirCreate($FolderPath)
-			$InetData = InetRead($oDownload_url, $INET_FORCERELOAD + $INET_ASCIITRANSFER)
+			;$InetData = InetRead($oDownload_url, $INET_FORCERELOAD + $INET_ASCIITRANSFER)
+			$InetData = _INetGetSource ($oDownload_url, False)
 			$DownloadSize = @extended
 			If @error Then
 				_Log("Inet error: "&@error)
