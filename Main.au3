@@ -1,6 +1,7 @@
 #include <WinAPI.au3>
 #include <File.au3>
 #include <FileConstants.au3>
+#include <InetConstants.au3>
 #include <Process.au3>
 #include <Crypt.au3>
 #include <ButtonConstants.au3>
@@ -236,6 +237,8 @@ Func _DownloadGit($URL, $Destination)
 
 			Else
 				_Log("Bad Hash")
+				_Log("Download: " & $InetHash)
+				_Log("Expected: " & $sha)
 				msgbox(0,$Title, "Download Error")
 				Return -1
 			EndIf
