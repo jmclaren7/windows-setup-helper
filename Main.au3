@@ -139,8 +139,10 @@ Switch $Command
 
 				Case $UpdateButton
 					_DownloadGit("https://api.github.com/repos/jmclaren7/itdeployhelper/contents", @ScriptDir)
-					If MsgBox($MB_YESNO, $Title, "Update complete, restart script?") = $IDYES Then _RunFile(@ScriptFullPath)
-					Exit
+					If MsgBox($MB_YESNO, $Title, "Update complete, restart script?") = $IDYES Then
+						_RunFile(@ScriptFullPath)
+						Exit
+					EndIf
 
 				Case $SignOutButton
 					Run(@ComSpec & " /c " & 'logoff', "", @SW_SHOW)
