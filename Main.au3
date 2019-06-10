@@ -14,6 +14,7 @@
 #include <TreeViewConstants.au3>
 #include <WindowsConstants.au3>
 #include "includeExt\Json.au3"
+#include "includeExt\WinHttp.au3"
 
 OnAutoItExitRegister("_Exit")
 
@@ -234,9 +235,9 @@ Func _DownloadGit($URL, $Destination)
 			;download
 			_Log("Downloading "&$oPath)
 			DirCreate($FolderPath)
-			;$InetData = InetRead($oDownload_url, $INET_FORCERELOAD + $INET_ASCIITRANSFER)
-			$InetData = _INetGetSource ($oDownload_url, False)
-			$DownloadSize = @extended
+			$InetData = _WinHTTPRead($oDownload_url)
+
+			$DownloadSize = BinaryLen ($InetData)
 			If @error Then
 				_Log("Inet error: "&@error)
 
@@ -248,10 +249,8 @@ Func _DownloadGit($URL, $Destination)
 				$FileWrite
 
 			Else
-				_Log("Bad Size")
-				_Log("Download: " & $DownloadSize)
-				_Log("Expected: " & $oSize)
-				msgbox(0,$Title, "Download Error for "&$Name)
+				_Log("Bad Size, Downloaded " & $DownloadSize & " But Expected " & $oSize)
+				If MsgBox(1,$Title, "Download Error for "&$Name) = 2 Then Return 0
 
 			EndIf
 
@@ -262,11 +261,16 @@ Func _DownloadGit($URL, $Destination)
 
 EndFunc
 
-Func _WinHTTPRead($sURL, $Agent)
+Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1")
+	_Log("_WinHTTPRead " & $sURL)
 	; Open needed handles
 	Local $hOpen = _WinHttpOpen($Agent)
-	Local $Connect = StringTrimLeft(StringLeft($sURL,StringInStr($sURL,"/",0,3)-1),7)
+
+	Local $iStart = StringInStr($sURL,"/",0,2)+1
+	Local $Connect = StringMid($sURL, $iStart, StringInStr($sURL,"/",0,3) - $iStart)
+
 	Local $hConnect = _WinHttpConnect($hOpen, $Connect)
+
 
 	; Specify the reguest:
 	Local $RequestURL = StringTrimLeft($sURL,StringInStr($sURL,"/",0,3))
