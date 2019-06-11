@@ -342,14 +342,20 @@ Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15
 
 	; Send request
 	_WinHttpSendRequest($hRequest)
-		If @error Then
+	If @error Then
+		_WinHttpCloseHandle($hRequest)
+		_WinHttpCloseHandle($hConnect)
+		_WinHttpCloseHandle($hOpen)
 		_Log("Connection error (Send)")
 		Return SetError(1, 0, 0)
 	Endif
 
 	; Wait for the response
 	_WinHttpReceiveResponse($hRequest)
-		If @error Then
+	If @error Then
+		_WinHttpCloseHandle($hRequest)
+		_WinHttpCloseHandle($hConnect)
+		_WinHttpCloseHandle($hOpen)
 		_Log("Connection error (Receive)")
 		Return SetError(2, 0, 0)
 	Endif
