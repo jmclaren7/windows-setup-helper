@@ -211,6 +211,8 @@ EndFunc   ;==>_RunFile
 
 
 Func _DownloadGitSetup($sURL, $Destination)
+	FileSetAttrib ($Destination, "-R", $FT_RECURSIVE)
+
 	Global $DownloadErrors = 0
 	Global $DownloadUpdated = ""
 	Global $DownloadUpdatedCount = 0
