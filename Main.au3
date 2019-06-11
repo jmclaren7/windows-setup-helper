@@ -19,7 +19,7 @@
 OnAutoItExitRegister("_Exit")
 
 Global $Log = @ScriptDir & "\ITSetupLog.txt"
-Global $Version = "2.2.1"
+Global $Version = "2.2.4"
 Global $Title = "IT Setup Helper v"&$Version
 
 _Log("Start Script " & $CmdLineRaw)
@@ -141,8 +141,8 @@ Switch $Command
 					Next
 
 				Case $UpdateButton
-					_DownloadGit("https://api.github.com/repos/jmclaren7/itdeployhelper/contents", @ScriptDir)
-					If MsgBox($MB_YESNO, $Title, "Update complete, restart script?") = $IDYES Then
+					_DownloadGitSetup("https://api.github.com/repos/jmclaren7/itdeployhelper/contents", @ScriptDir)
+					If MsgBox($MB_YESNO, $Title, "Updated "&$DownloadUpdatedCount&" files ("&$DownloadErrors&" errors). The following files were updated:"&@CRLF&$DownloadUpdated&@CRLF&"Restart script?") = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
 					EndIf
@@ -204,9 +204,25 @@ Func _RunFile($File)
 	EndSwitch
 EndFunc   ;==>_RunFile
 
+
+Func _DownloadGitSetup($sURL, $Destination)
+	Global $DownloadErrors = 0
+	Global $DownloadUpdated = ""
+	Global $DownloadUpdatedCount = 0
+
+	Return _DownloadGit($sURL, $Destination)
+
+Endfunc
 Func _DownloadGit($sURL, $Destination)
 	_Log("_DownloadGit - " & $sURL)
-	Local $sData = BinaryToString(_WinHTTPRead($sURL))
+	Local $bData = _WinHTTPRead($sURL)
+	If @error Then
+		_Log("  API http error: "&@error)
+		$DownloadErrors = $DownloadErrors + 1
+		Return SetError(1, @error, 0)
+	EndIf
+
+	Local $sData = BinaryToString($bData)
 	Local $Object = json_decode($sData)
 
 	Local $i = -1
@@ -224,8 +240,7 @@ Func _DownloadGit($sURL, $Destination)
 		$oSize = json_get($Object, '[' & $i & '].size')
 		$oDownload_url = json_get($Object, '[' & $i & '].download_url')
 
-		$FullPath = $Destination&"\"&StringReplace($oPath, "/", "\")
-		$FolderPath = StringLeft($FullPath, StringInStr($FullPath, "\", 0, -1))
+
 
 		If $oType = "dir" Then
 			;recurse
@@ -234,34 +249,63 @@ Func _DownloadGit($sURL, $Destination)
 		Else
 			;download
 			_Log("Downloading "&$oPath)
+
+			$FullPath = $Destination&"\"&StringReplace($oPath, "/", "\")
+			$FolderPath = StringLeft($FullPath, StringInStr($FullPath, "\", 0, -1))
+			$FileName = StringTrimLeft($FullPath, StringInStr($FullPath,"\",0,-1))
+
 			DirCreate($FolderPath)
 			$InetData = _WinHTTPRead($oDownload_url)
+			If @error Then
+				_Log("  File download http error: "&@error)
+				$DownloadErrors = $DownloadErrors + 1
+				ContinueLoop
+			Endif
 
 			$DownloadSize = BinaryLen ($InetData)
 			If @error Then
-				_Log("Inet error: "&@error)
+				_Log("  BinaryLen error: "&@error)
+				$DownloadErrors = $DownloadErrors + 1
+				ContinueLoop
 
 			ElseIf $DownloadSize = $oSize Then
-				;_Log("Good Size")
+				_Log("  Download API size match ("&$DownloadSize&")")
+
+				If FileExists($FullPath) Then
+					$FileHash = _Crypt_HashFile ($FullPath, $CALG_MD5)
+					$DataHash = _Crypt_HashData ($InetData, $CALG_MD5)
+					If $FileHash = $DataHash Then
+						_Log("  File unchanged, skipping ("&$FileHash&")")
+						ContinueLoop
+					Else
+						_Log("  File changed, writing... ("&$FileHash&"/"&$DataHash&")")
+					EndIf
+
+				EndIf
+
 				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE)
 				If NOT @error Then
 					$FileWrite = FileWrite($hOutFile, $InetData)
 					If Not @error Then
-						_Log("File write success")
+						_Log("  File write success")
+						$DownloadUpdated = $DownloadUpdated & $FileName & @CRLF
+						$DownloadUpdatedCount = $DownloadUpdatedCount + 1
 
 					Else
-						_Log("File write error: "&@error)
+						_Log("  File write error: "&@error)
+						$DownloadErrors = $DownloadErrors + 1
+
 					EndIf
 					FileClose($hOutFile)
 
 				Else
-					_Log("File open error: "&@error)
+					_Log("  File open error: "&@error)
 				Endif
 
 
 			Else
-				_Log("Bad Size, Downloaded " & $DownloadSize & " But Expected " & $oSize)
-				If MsgBox(1,$Title, "Download Error for "&$Name) = 2 Then Return 0
+				_Log("  Bad Size, Downloaded " & $DownloadSize & " But Expected " & $oSize)
+				$DownloadErrors = $DownloadErrors + 1
 
 			EndIf
 
@@ -282,17 +326,13 @@ Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15
 
 	Local $hConnect = _WinHttpConnect($hOpen, $Connect)
 
-
 	; Specify the reguest:
 	Local $RequestURL = StringTrimLeft($sURL,StringInStr($sURL,"/",0,3))
 	Local $hRequest = _WinHttpOpenRequest($hConnect, Default, $RequestURL)
 
-	;_WinHttpAddRequestHeaders ($hRequest, "Cache-Control: max-age=0")
-	;_WinHttpAddRequestHeaders ($hRequest, "Upgrade-Insecure-Requests: 1")
+	_WinHttpAddRequestHeaders ($hRequest, "Cache-Control: no-cache")
 	_WinHttpAddRequestHeaders ($hRequest, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
 	_WinHttpAddRequestHeaders ($hRequest, "content-type: application/json")
-	;_WinHttpAddRequestHeaders ($hRequest, "Accept-Encoding: gzip, deflate")
-	;_WinHttpAddRequestHeaders ($hRequest, "Accept-Language: en-US,en;q=0.9,en-GB;q=0.8")
 
 	Local $Token = IniRead("git.token","t","t","")
 	If $Token <> "" Then
@@ -302,9 +342,17 @@ Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15
 
 	; Send request
 	_WinHttpSendRequest($hRequest)
+		If @error Then
+		_Log("Connection error (Send)")
+		Return SetError(1, 0, 0)
+	Endif
 
 	; Wait for the response
 	_WinHttpReceiveResponse($hRequest)
+		If @error Then
+		_Log("Connection error (Receive)")
+		Return SetError(2, 0, 0)
+	Endif
 
 	Local $sHeader = _WinHttpQueryHeaders($hRequest) ; ...get full header
 
