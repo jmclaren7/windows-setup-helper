@@ -19,7 +19,7 @@
 OnAutoItExitRegister("_Exit")
 
 Global $Log = @ScriptDir & "\ITSetupLog.txt"
-Global $Version = "2.1.2"
+Global $Version = "2.2.0"
 Global $Title = "IT Setup Helper v"&$Version
 
 _Log("Start Script " & $CmdLineRaw)
@@ -204,10 +204,10 @@ Func _RunFile($File)
 	EndSwitch
 EndFunc   ;==>_RunFile
 
-Func _DownloadGit($URL, $Destination)
-	_Log("_DownloadGit - " & $URL)
-	Local $Data = BinaryToString(InetRead($URL, 1))
-	Local $Object = json_decode($Data)
+Func _DownloadGit($sURL, $Destination)
+	_Log("_DownloadGit - " & $sURL)
+	Local $sData = BinaryToString(_WinHTTPRead($sURL))
+	Local $Object = json_decode($sData)
 
 	Local $i = -1
 	While 1
