@@ -21,6 +21,9 @@ OnAutoItExitRegister("_Exit")
 Global $Log = @ScriptDir & "\ITSetupLog.txt"
 Global $Version = "2.2.4"
 Global $Title = "IT Setup Helper v"&$Version
+Global $DownloadUpdatedCount = 0
+Global $DownloadErrors = 0
+Global $DownloadUpdated = ""
 
 _Log("Start Script " & $CmdLineRaw)
 _Log("@UserName=" & @UserName)
