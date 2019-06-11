@@ -243,10 +243,9 @@ Func _DownloadGit($sURL, $Destination)
 
 			ElseIf $DownloadSize = $oSize Then
 				;_Log("Good Size")
-				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE )
+				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE)
 				$FileWrite = FileWrite($hOutFile, $InetData)
 				FileClose($hOutFile)
-				$FileWrite
 
 			Else
 				_Log("Bad Size, Downloaded " & $DownloadSize & " But Expected " & $oSize)
