@@ -254,7 +254,7 @@ Func _DownloadGit($sURL, $Destination)
 			$FolderPath = StringLeft($FullPath, StringInStr($FullPath, "\", 0, -1))
 			$FileName = StringTrimLeft($FullPath, StringInStr($FullPath,"\",0,-1))
 
-			DirCreate($FolderPath)
+
 			$InetData = _WinHTTPRead($oDownload_url)
 			If @error Then
 				_Log("  File download http error: "&@error)
@@ -283,7 +283,7 @@ Func _DownloadGit($sURL, $Destination)
 
 				EndIf
 
-				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE)
+				$hOutFile = FileOpen($FullPath, $FO_OVERWRITE + $FO_CREATEPATH)
 				If NOT @error Then
 					$FileWrite = FileWrite($hOutFile, $InetData)
 					If Not @error Then
