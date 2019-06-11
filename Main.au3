@@ -46,6 +46,8 @@ Switch $Command
 		ProcessWait("Explorer.exe", 60)
 		Sleep(5000)
 
+		WinMinimizeAll ( )
+
 		_RunFolder(@ScriptDir & "\AutoLogin\")
 		_RunFile(@ScriptFullPath)
 
