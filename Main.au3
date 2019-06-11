@@ -279,6 +279,7 @@ Func _DownloadGit($sURL, $Destination)
 						ContinueLoop
 					Else
 						_Log("  File changed, writing... ("&$FileHash&"/"&$DataHash&")")
+						If FileDelete($FullPath) = 0 Then _Log("  Couldn't delete file")
 					EndIf
 
 				EndIf
