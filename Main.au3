@@ -20,7 +20,7 @@ OnAutoItExitRegister("_Exit")
 
 Global $Log = @ScriptDir & "\ITSetupLog.txt"
 Global $MainSize = FileGetSize(@ScriptFullPath)
-Global $Version = "2.2.8-"&$MainSize
+Global $Version = "2.2.9-"&$MainSize
 
 Global $Title = "IT Setup Helper v"&$Version
 Global $DownloadUpdatedCount = 0
