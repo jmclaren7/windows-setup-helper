@@ -19,11 +19,14 @@
 OnAutoItExitRegister("_Exit")
 
 Global $Log = @ScriptDir & "\ITSetupLog.txt"
-Global $Version = "2.2.7"
+Global $MainSize = FileGetSize(@ScriptFullPath)
+Global $Version = "2.2.8-"&$MainSize
+
 Global $Title = "IT Setup Helper v"&$Version
 Global $DownloadUpdatedCount = 0
 Global $DownloadErrors = 0
 Global $DownloadUpdated = ""
+Global $GITURL = "https://api.github.com/repos/jmclaren7/itdeployhelper/contents"
 
 _Log("Start Script " & $CmdLineRaw)
 _Log("@UserName=" & @UserName)
@@ -40,11 +43,19 @@ Switch $Command
 		_RunFolder(@ScriptDir & "\AutoSystem\")
 
 	Case "login"
-		FileCreateShortcut(@AutoItExe, @DesktopDir & "\IT Setup Helper.lnk", @ScriptDir, "/AutoIt3ExecuteScript """ & @ScriptFullPath & """")
-		FileCreateShortcut(@ScriptDir, @DesktopDir & "\IT Setup Folder")
-
 		ProcessWait("Explorer.exe", 60)
 		Sleep(5000)
+
+		If Not StringInStr($CmdLineRaw,"skipupdate") Then
+			_DownloadGitSetup($GITURL, @ScriptDir)
+			If StringInStr($DownloadUpdated, @ScriptName) Then
+				_RunFile(@ScriptFullPath, "login skipupdate")
+				Exit
+			Endif
+		Endif
+
+		FileCreateShortcut(@AutoItExe, @DesktopDir & "\IT Setup Helper.lnk", @ScriptDir, "/AutoIt3ExecuteScript """ & @ScriptFullPath & """")
+		FileCreateShortcut(@ScriptDir, @DesktopDir & "\IT Setup Folder")
 
 		WinMinimizeAll ( )
 
@@ -52,7 +63,7 @@ Switch $Command
 		_RunFile(@ScriptFullPath)
 
 	Case ""
-		#Region ### START Koda GUI section ### Form=g:\windows 10 images\1809\windows 10 x64 12-21-18 1809\sources\$oem$\$$\it\general.kxf
+		#Region ### START Koda GUI section ###
 		$Form1 = GUICreate("Form1", 824, 574, 353, 483)
 		$Tab1 = GUICtrlCreateTab(8, 4, 809, 561)
 		$TabSheet1 = GUICtrlCreateTabItem("Main")
@@ -146,7 +157,7 @@ Switch $Command
 					Next
 
 				Case $UpdateButton
-					_DownloadGitSetup("https://api.github.com/repos/jmclaren7/itdeployhelper/contents", @ScriptDir)
+					_DownloadGitSetup($GITURL, @ScriptDir)
 					If MsgBox($MB_YESNO, $Title, "Updated "&$DownloadUpdatedCount&" files ("&$DownloadErrors&" errors). The following files were updated:"&@CRLF&$DownloadUpdated&@CRLF&"Restart script?") = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
@@ -184,17 +195,17 @@ Func _RunFolder($Path)
 	EndIf
 EndFunc   ;==>_RunFolder
 
-Func _RunFile($File)
+Func _RunFile($File, $Params = "")
 	_Log("_RunFile " & $File)
 	$Extension = StringTrimLeft($File, StringInStr($File, ".", 0, -1))
 	Switch $Extension
 		Case "au3"
-			Return ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & $File & """")
+			Return ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & $File & """ " & $Params)
 			Sleep(5000)
 
 		Case "ps1"
 			;$File = StringReplace($File, "$", "`$")
-			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Unrestricted -File """ & $File & """"
+			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Unrestricted -File """ & $File & """ " & $Params
 			_Log("$RunLine=" & $RunLine)
 			Return Run($RunLine)
 
