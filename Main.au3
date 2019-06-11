@@ -328,7 +328,7 @@ Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15
 
 	; Specify the reguest:
 	Local $RequestURL = StringTrimLeft($sURL,StringInStr($sURL,"/",0,3))
-	Local $hRequest = _WinHttpOpenRequest($hConnect, Default, $RequestURL)
+	Local $hRequest = _WinHttpOpenRequest($hConnect, "GET", $RequestURL, Default, Default, Default, $WINHTTP_FLAG_SECURE + $WINHTTP_FLAG_ESCAPE_DISABLE + $WINHTTP_FLAG_BYPASS_PROXY_CACHE)
 
 	_WinHttpAddRequestHeaders ($hRequest, "Cache-Control: no-cache")
 	_WinHttpAddRequestHeaders ($hRequest, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
