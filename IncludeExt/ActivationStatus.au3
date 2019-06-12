@@ -11,10 +11,10 @@ Func IsActivated()
           Case 1
             If $oItem.GracePeriodRemaining Then
               If StringInStr($oItem.Description, "TIMEBASED_") Then
-                Return SetError(0, 0, "Timebased activation will expire in " & $oItem.GracePeriodRemaining & " minutes")
+                Return SetError(0, 0, "Timebased activation will expire in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
 
               Else
-                Return SetError(0, 0, "Volume activation will expire in " & $oItem.GracePeriodRemaining & " minutes")
+                Return SetError(0, 0, "Volume activation will expire in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
 
 			  EndIf
             Else
@@ -23,19 +23,19 @@ Func IsActivated()
 			EndIf
 
           Case 2
-            Return SetError(0, 2, "Initial grace period ends in " & $oItem.GracePeriodRemaining & " minutes")
+            Return SetError(0, 2, "Initial grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
 
           Case 3
-            Return SetError(0, 3, "Additional grace period ends in " & $oItem.GracePeriodRemaining & " minutes")
+            Return SetError(0, 3, "Additional grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
 
           Case 4
-            Return SetError(0, 4, "Non-genuine grace period ends in " & $oItem.GracePeriodRemaining & " minutes")
+            Return SetError(0, 4, "Non-genuine grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
 
           Case 5
             Return SetError(0, 5, "Windows is in Notification mode")
 
           Case 6
-            Return SetError(0, 6, "Extended grace period ends in " & $oItem.GracePeriodRemaining & " minutes")
+            Return SetError(0, 6, "Extended grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
 
         EndSwitch
       Next
