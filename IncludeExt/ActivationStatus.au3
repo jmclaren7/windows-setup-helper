@@ -37,8 +37,13 @@ Func IsActivated()
           Case 6
             Return SetError(0, 6, "Extended grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
 
+          Case Else
+            Return SetError(4, 0, "Unknown Status Code")
+
         EndSwitch
       Next
+
+      Return SetError(3, 0, "Unknown Error")
 
     Else
       Return SetError(2, 0, "WMI Query Error")
