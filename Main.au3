@@ -124,7 +124,8 @@ Switch $Command
 		GUICtrlCreateListViewItem("CPU Logical Cores: " & EnvGet("NUMBER_OF_PROCESSORS"), $InfoList)
 		$MemStats = MemGetStats ( )
 		GUICtrlCreateListViewItem("Installed Memory: " & Round($MemStats[$MEM_TOTALPHYSRAM]/1024/1024,1)&"GB", $InfoList)
-		GUICtrlCreateListViewItem("Windows Activated: " & IsActivated(), $InfoList)
+		
+		GUICtrlCreateListViewItem("License: " & IsActivated(), $InfoList)
 
 		;Generate Script List
 		$FileArray = _FileListToArray(@ScriptDir & "\OptLogin\", "*", $FLTA_FILES, True)
@@ -160,8 +161,8 @@ Switch $Command
 
 					If IsAdmin() Then
 						_Log("Disable admin command")
-						Run(@ComSpec & " /c " & 'net user administrator /active:no', "", @SW_SHOW)
-						Run(@ComSpec & " /c " & 'logoff', "", @SW_SHOW)
+						Run(@ComSpec & " /c " & 'net user administrator /active:no', @SystemDir, @SW_SHOW)
+						Run(@ComSpec & " /c " & 'shutdown /l', @SystemDir, @SW_SHOW)
 					Else
 						_NotAdminMsg($Form1)
 					EndIf
