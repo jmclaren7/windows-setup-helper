@@ -244,18 +244,18 @@ Func _RunFile($File, $Params = "")
 		Case "au3"
 			$RunLine = @AutoItExe & " /AutoIt3ExecuteScript """ & $File & """ " & $Params
 			;Return ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & $File & """ " & $Params)
-			Return Run($RunLine, Default, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+			Return Run($RunLine, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case "ps1"
 			;$File = StringReplace($File, "$", "`$")
 			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Unrestricted -File """ & $File & """ " & $Params
 			_Log("$RunLine=" & $RunLine)
-			Return Run($RunLine, Default, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+			Return Run($RunLine, "", @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case "reg"
 			$RunLine = @ComSpec & " /c " & "reg import """ & $File & """"
 			_Log("$RunLine=" & $RunLine)
-			Return Run($RunLine, Default, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+			Return Run($RunLine, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case Else
 			Return ShellExecute($File, $Params)
