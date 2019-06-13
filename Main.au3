@@ -124,7 +124,7 @@ Switch $Command
 		GUICtrlCreateListViewItem("CPU Logical Cores: " & EnvGet("NUMBER_OF_PROCESSORS"), $InfoList)
 		$MemStats = MemGetStats ( )
 		GUICtrlCreateListViewItem("Installed Memory: " & Round($MemStats[$MEM_TOTALPHYSRAM]/1024/1024,1)&"GB", $InfoList)
-		
+
 		GUICtrlCreateListViewItem("License: " & IsActivated(), $InfoList)
 
 		;Generate Script List
@@ -242,22 +242,23 @@ Func _RunFile($File, $Params = "")
 	$Extension = StringTrimLeft($File, StringInStr($File, ".", 0, -1))
 	Switch $Extension
 		Case "au3"
-			Return ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & $File & """ " & $Params)
-			Sleep(5000)
+			$RunLine = @AutoItExe & " /AutoIt3ExecuteScript """ & $File & """ " & $Params
+			;Return ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & $File & """ " & $Params)
+			Return Run($RunLine, Default, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case "ps1"
 			;$File = StringReplace($File, "$", "`$")
 			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Unrestricted -File """ & $File & """ " & $Params
 			_Log("$RunLine=" & $RunLine)
-			Return Run($RunLine)
+			Return Run($RunLine, Default, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case "reg"
 			$RunLine = @ComSpec & " /c " & "reg import """ & $File & """"
 			_Log("$RunLine=" & $RunLine)
-			Return Run($RunLine)
+			Return Run($RunLine, Default, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case Else
-			Return ShellExecute($File)
+			Return ShellExecute($File, $Params)
 
 	EndSwitch
 EndFunc   ;==>_RunFile
