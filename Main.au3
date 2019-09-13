@@ -254,6 +254,14 @@ Func _RunFile($File, $Params = "")
 
 		Case "reg"
 			$RunLine = @ComSpec & " /c " & "reg import """ & $File & """"
+
+			Local $Data = FileRead($File)
+			If StringInStr($Data, ";32") Then
+				$RunLine = $RunLine & " /reg:32"
+			ElseIf StringInStr($Data, ";64") Then
+				$RunLine = $RunLine & " /reg:64"
+			Endif
+
 			_Log("$RunLine=" & $RunLine)
 			Return Run($RunLine, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 

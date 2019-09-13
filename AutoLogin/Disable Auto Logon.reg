@@ -1,5 +1,5 @@
 ﻿Windows Registry Editor Version 5.00
-
+;32
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon]
 "DefaultUserName"=""
 "AutoAdminLogon"="0"
