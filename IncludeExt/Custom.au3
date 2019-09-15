@@ -1,3 +1,22 @@
+Func _NetAdapterInfo()
+	_Log("Collecting Adapter Information")
+	Local $Data[6]
+	Local $objWMIService = ObjGet('winmgmts:\\' & @ComputerName & '\root\CIMV2')
+	Local $colItems = $objWMIService.ExecQuery("SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled=true")
+	For $objAdapter In $colItems
+		If StringStripWS($objAdapter.DefaultIPGateway(0), 8) <> "" Then
+				$Data[1] = $objAdapter.DNSDomain
+				$Data[2] = $objAdapter.MACAddress
+				$Data[3] = $objAdapter.IPAddress(0)
+				$Data[4] = $objAdapter.DefaultIPGateway(0)
+				$Data[5] = $objAdapter.IPSubnet(0)
+				Return $Data
+		EndIf
+	Next
+
+	Return SetError(1, 0, $Data)
+EndFunc
+
 #cs ===============================================================================
  Function:      _RenameComputer( $iCompName , $iUserName = "" , $iPassword = "" )
 
@@ -40,7 +59,7 @@ Func _RenameComputer($iCompName, $iUserName = "", $iPassword = "")
     EndIf
 
     For $objComputer In $objWMIService.InstancesOf("Win32_ComputerSystem")
-        $Return = $objComputer.rename($iCompName,$iPassword,$iUserName)
+        $oReturn = $objComputer.rename($iCompName,$iPassword,$iUserName)
         If $oReturn <> 0 Then
             SetError(1)
             Return $oReturn
