@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="windows-1251"?>
-<object type="TAForm" name="Form1">
+<object type="TAForm" name="GUIMain">
 	<properties>
-		<property name="Left" vt="Int16">1158</property>
-		<property name="Top" vt="Int16">419</property>
+		<property name="Left" vt="Int16">864</property>
+		<property name="Top" vt="Int16">404</property>
 		<property name="Width" vt="Int16">839</property>
 		<property name="Height" vt="Int16">612</property>
-		<property name="Caption" vt="String">Form1</property>
+		<property name="Caption" vt="String">$Title</property>
 		<property name="Color" vt="Ident">clBtnFace</property>
 		<property name="Font.Charset" vt="Ident">DEFAULT_CHARSET</property>
 		<property name="Font.Color" vt="Ident">clWindowText</property>
@@ -13,6 +13,7 @@
 		<property name="Font.Name" vt="String">MS Sans Serif</property>
 		<property name="Font.Style" vt="Set"/>
 		<property name="OldCreateOrder" vt="False">False</property>
+		<property name="Position" vt="Ident">poDesktopCenter</property>
 		<property name="Visible" vt="True">True</property>
 		<property name="Style" vt="Int32">-1798701056</property>
 		<property name="ExStyle" vt="Int16">256</property>
@@ -69,7 +70,7 @@
 								<property name="Height" vt="Int16">521</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
-								<property name="Caption" vt="String">Action Scripts</property>
+								<property name="Caption" vt="String">Scripts</property>
 								<property name="TabOrder" vt="Int8">0</property>
 								<property name="Resizing" vt="Set"/>
 							</properties>
@@ -138,7 +139,7 @@
 										<property name="Left" vt="Int8">9</property>
 										<property name="Top" vt="Int8">18</property>
 										<property name="Width" vt="Int16">346</property>
-										<property name="Height" vt="Int16">214</property>
+										<property name="Height" vt="Int16">230</property>
 										<property name="CtrlStyle" vt="Int32">1342373903</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
 										<property name="Resizing" vt="Set"/>
@@ -153,31 +154,16 @@
 						<object type="TAGroup" name="Group3">
 							<properties>
 								<property name="Left" vt="Int8">11</property>
-								<property name="Top" vt="Int16">397</property>
+								<property name="Top" vt="Int16">437</property>
 								<property name="Width" vt="Int16">361</property>
-								<property name="Height" vt="Int16">129</property>
+								<property name="Height" vt="Int8">89</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
-								<property name="Caption" vt="String">User</property>
+								<property name="Caption" vt="String">Create Local User</property>
 								<property name="TabOrder" vt="Int8">2</property>
 								<property name="Resizing" vt="Set"/>
 							</properties>
 							<components>
-								<object type="TAButton" name="DisableAdminButton">
-									<properties>
-										<property name="Left" vt="Int8">14</property>
-										<property name="Top" vt="Int8">94</property>
-										<property name="Width" vt="Int16">331</property>
-										<property name="Height" vt="Int8">25</property>
-										<property name="Caption" vt="String">Disable Administrator and Sign Out</property>
-										<property name="TabOrder" vt="Int8">0</property>
-										<property name="Color" vt="Ident">clBtnFace</property>
-										<property name="CtrlStyle" vt="Int32">1342373888</property>
-										<property name="CtrlExStyle" vt="Int8">0</property>
-										<property name="Resizing" vt="Set">DockWidth, DockHeight</property>
-									</properties>
-									<components/>
-								</object>
 								<object type="TAButton" name="CreateLocalUserButton">
 									<properties>
 										<property name="Left" vt="Int16">213</property>
@@ -185,7 +171,7 @@
 										<property name="Width" vt="Int16">131</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Create Local User</property>
-										<property name="TabOrder" vt="Int8">1</property>
+										<property name="TabOrder" vt="Int8">0</property>
 										<property name="Color" vt="Ident">clBtnFace</property>
 										<property name="CtrlStyle" vt="Int32">1342373888</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
@@ -199,7 +185,7 @@
 										<property name="Top" vt="Int8">22</property>
 										<property name="Width" vt="Int16">185</property>
 										<property name="Height" vt="Int8">21</property>
-										<property name="TabOrder" vt="Int8">2</property>
+										<property name="TabOrder" vt="Int8">1</property>
 										<property name="CtrlStyle" vt="Int32">1342374016</property>
 										<property name="CtrlExStyle" vt="Int16">512</property>
 										<property name="Resizing" vt="Set">DockHeight</property>
@@ -212,7 +198,7 @@
 										<property name="Top" vt="Int8">54</property>
 										<property name="Width" vt="Int16">185</property>
 										<property name="Height" vt="Int8">21</property>
-										<property name="TabOrder" vt="Int8">3</property>
+										<property name="TabOrder" vt="Int8">2</property>
 										<property name="CtrlStyle" vt="Int32">1342374016</property>
 										<property name="CtrlExStyle" vt="Int16">512</property>
 										<property name="Resizing" vt="Set">DockHeight</property>
@@ -228,7 +214,7 @@
 										<property name="Caption" vt="String">Local Administrator</property>
 										<property name="Checked" vt="True">True</property>
 										<property name="State" vt="Ident">cbChecked</property>
-										<property name="TabOrder" vt="Int8">4</property>
+										<property name="TabOrder" vt="Int8">3</property>
 										<property name="CtrlStyle" vt="Int32">1342242819</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
 										<property name="Resizing" vt="Set">DockHeight</property>
@@ -242,7 +228,7 @@
 								<property name="Left" vt="Int8">11</property>
 								<property name="Top" vt="Int16">262</property>
 								<property name="Width" vt="Int16">361</property>
-								<property name="Height" vt="Int16">129</property>
+								<property name="Height" vt="Int16">169</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
 								<property name="Caption" vt="String">Actions</property>
@@ -254,7 +240,7 @@
 									<properties>
 										<property name="Left" vt="Int8">13</property>
 										<property name="Top" vt="Int8">23</property>
-										<property name="Width" vt="Int16">131</property>
+										<property name="Width" vt="Int16">160</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Update From Git</property>
 										<property name="TabOrder" vt="Int8">0</property>
@@ -265,14 +251,44 @@
 									</properties>
 									<components/>
 								</object>
-								<object type="TAButton" name="Button1">
+								<object type="TAButton" name="JoinButton">
 									<properties>
-										<property name="Left" vt="Int16">153</property>
+										<property name="Left" vt="Int16">185</property>
 										<property name="Top" vt="Int8">23</property>
-										<property name="Width" vt="Int16">195</property>
+										<property name="Width" vt="Int16">160</property>
 										<property name="Height" vt="Int8">25</property>
-										<property name="Caption" vt="String">Join Domain/ComputerName</property>
+										<property name="Caption" vt="String">Domain &amp;&amp; Computer Name</property>
 										<property name="TabOrder" vt="Int8">1</property>
+										<property name="Color" vt="Ident">clBtnFace</property>
+										<property name="CtrlStyle" vt="Int32">1342373888</property>
+										<property name="CtrlExStyle" vt="Int8">0</property>
+										<property name="Resizing" vt="Set">DockWidth, DockHeight</property>
+									</properties>
+									<components/>
+								</object>
+								<object type="TAButton" name="DisableAdminButton">
+									<properties>
+										<property name="Left" vt="Int8">13</property>
+										<property name="Top" vt="Int8">60</property>
+										<property name="Width" vt="Int16">160</property>
+										<property name="Height" vt="Int8">25</property>
+										<property name="Caption" vt="String">Disable Administrator</property>
+										<property name="TabOrder" vt="Int8">2</property>
+										<property name="Color" vt="Ident">clBtnFace</property>
+										<property name="CtrlStyle" vt="Int32">1342373888</property>
+										<property name="CtrlExStyle" vt="Int8">0</property>
+										<property name="Resizing" vt="Set">DockWidth, DockHeight</property>
+									</properties>
+									<components/>
+								</object>
+								<object type="TAButton" name="SignOutButton">
+									<properties>
+										<property name="Left" vt="Int16">185</property>
+										<property name="Top" vt="Int8">60</property>
+										<property name="Width" vt="Int16">160</property>
+										<property name="Height" vt="Int8">25</property>
+										<property name="Caption" vt="String">Sign Out</property>
+										<property name="TabOrder" vt="Int8">3</property>
 										<property name="Color" vt="Ident">clBtnFace</property>
 										<property name="CtrlStyle" vt="Int32">1342373888</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>

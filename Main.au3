@@ -16,6 +16,7 @@
 #include "includeExt\Json.au3"
 #include "includeExt\WinHttp.au3"
 #include "includeExt\ActivationStatus.au3"
+#include "includeExt\Custom.au3"
 
 OnAutoItExitRegister("_Exit")
 
@@ -28,8 +29,9 @@ Global $DownloadUpdatedCount = 0
 Global $DownloadErrors = 0
 Global $DownloadUpdated = ""
 Global $GITURL = "https://api.github.com/repos/jmclaren7/itdeployhelper/contents"
-Global $Form1
+Global $GUIMain
 Global $oCommError = ObjEvent("AutoIt.Error","_CommError")
+$UserCreated = False
 
 _Log("Start Script " & $CmdLineRaw)
 _Log("@UserName=" & @UserName)
@@ -66,39 +68,38 @@ Switch $Command
 		_RunFile(@ScriptFullPath)
 
 	Case ""
-		#EndRegion ### END Koda GUI section ###
-		$Form1 = GUICreate("Form1", 824, 574, 1158, 419)
+		#Region ### START Koda GUI section ###
+		$GUIMain = GUICreate("$Title", 824, 574, -1, -1)
 		$Tab1 = GUICtrlCreateTab(7, 4, 809, 561)
 		$TabSheet1 = GUICtrlCreateTabItem("Main")
-		$Group1 = GUICtrlCreateGroup("Action Scripts", 399, 33, 401, 521)
+		$Group1 = GUICtrlCreateGroup("Scripts", 399, 33, 401, 521)
 		$Presets = GUICtrlCreateCombo("Presets", 415, 57, 369, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
 		GUICtrlSetState(-1, $GUI_DISABLE)
 		$TreeView1 = GUICtrlCreateTreeView(415, 97, 369, 417, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
 		$RunButton = GUICtrlCreateButton("Run", 711, 521, 75, 25)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		$Group2 = GUICtrlCreateGroup("Information", 22, 32, 361, 257)
-		$InfoList = GUICtrlCreateListView("", 31, 50, 346, 214, BitOR($GUI_SS_DEFAULT_LISTVIEW,$LVS_SMALLICON), 0)
+		$InfoList = GUICtrlCreateListView("", 31, 50, 346, 230, BitOR($GUI_SS_DEFAULT_LISTVIEW,$LVS_SMALLICON), 0)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		$Group3 = GUICtrlCreateGroup("User", 22, 426, 361, 129)
-		$DisableAdminButton = GUICtrlCreateButton("Disable Administrator and Sign Out", 36, 520, 331, 25)
-		$CreateLocalUserButton = GUICtrlCreateButton("Create Local User", 235, 478, 131, 25)
-		$UsernameInput = GUICtrlCreateInput("", 38, 448, 185, 21)
-		$PasswordInput = GUICtrlCreateInput("", 38, 480, 185, 21)
-		$AdminCheckBox = GUICtrlCreateCheckbox("Local Administrator", 238, 450, 113, 17)
+		$Group3 = GUICtrlCreateGroup("Create Local User", 22, 466, 361, 89)
+		$CreateLocalUserButton = GUICtrlCreateButton("Create Local User", 235, 518, 131, 25)
+		$UsernameInput = GUICtrlCreateInput("", 38, 488, 185, 21)
+		$PasswordInput = GUICtrlCreateInput("", 38, 520, 185, 21)
+		$AdminCheckBox = GUICtrlCreateCheckbox("Local Administrator", 238, 490, 113, 17)
 		GUICtrlSetState(-1, $GUI_CHECKED)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		$Group4 = GUICtrlCreateGroup("Actions", 22, 291, 361, 129)
-		$UpdateGitButton = GUICtrlCreateButton("Update From Git", 35, 314, 131, 25)
-		$JoinButton = GUICtrlCreateButton("Domain and Computer Name", 175, 314, 195, 25)
+		$Group4 = GUICtrlCreateGroup("Actions", 22, 291, 361, 169)
+		$UpdateGitButton = GUICtrlCreateButton("Update From Git", 35, 314, 160, 25)
+		$JoinButton = GUICtrlCreateButton("Domain && Computer Name", 207, 314, 160, 25)
+		$DisableAdminButton = GUICtrlCreateButton("Disable Administrator", 35, 351, 160, 25)
+		$SignOutButton = GUICtrlCreateButton("Sign Out", 207, 351, 160, 25)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateTabItem("")
 		GUISetState(@SW_SHOW)
 		#EndRegion ### END Koda GUI section ###
 
 		;GUI Post Creation Setup
-		WinSetTitle($Form1, "", $Title)
-		$WindowPos = WinGetPos($Form1)
-		WinMove($Form1, "", @DesktopWidth / 2 - $WindowPos[2] / 2, @DesktopHeight / 2 - $WindowPos[3] / 2)
+		WinSetTitle($GUIMain, "", $Title)
 
 		;Info List Generation
 		If IsAdmin() Then
@@ -124,8 +125,12 @@ Switch $Command
 		GUICtrlCreateListViewItem("CPU Logical Cores: " & EnvGet("NUMBER_OF_PROCESSORS"), $InfoList)
 		$MemStats = MemGetStats ( )
 		GUICtrlCreateListViewItem("Installed Memory: " & Round($MemStats[$MEM_TOTALPHYSRAM]/1024/1024,1)&"GB", $InfoList)
-
 		GUICtrlCreateListViewItem("License: " & IsActivated(), $InfoList)
+
+		$NetInfo = _NetAdapterInfo()
+		GUICtrlCreateListViewItem("IP/Gateway: " & $NetInfo[3] & "/" & $NetInfo[4], $InfoList)
+		GUICtrlCreateListViewItem("MAC: " & $NetInfo[2], $InfoList)
+
 
 		;Generate Script List
 		$FileArray = _FileListToArray(@ScriptDir & "\OptLogin\", "*", $FLTA_FILES, True)
@@ -143,9 +148,9 @@ Switch $Command
 		EndIf
 
 		;$TabSheet2 = GUICtrlCreateTabItem("Test")
-		;$Groupb = GUICtrlCreateGroup("Action Scripts", 400, 33, 401, 521)
-		GUISetState(@SW_HIDE)
-		GUISetState(@SW_SHOW)
+		;$GroupSheet2 = GUICtrlCreateGroup("Test Group", 400, 33, 401, 521)
+		;GUISetState(@SW_HIDE)
+		;GUISetState(@SW_SHOW)
 
 		;GUI Loop
 		While 1
@@ -157,15 +162,22 @@ Switch $Command
 				Case $DisableAdminButton
 					_Log("DisableAdminButton")
 
-					If @ComputerName = @LogonDomain And MsgBox($MB_YESNO, $Title, "Computer does not seem to be joined to a domain, are you sure you want disable the administrator account?", 0, $Form1) <> $IDYES Then ContinueLoop
+					If @ComputerName = @LogonDomain AND Not $UserCreated Then
+						If MsgBox($MB_YESNO, $Title, "Are you sure?\n\nThis computer might not be joined to a domain and you haven't created a local user.", 0, $GUIMain) <> $IDYES Then
+							ContinueLoop
+						EndIf
+					EndIf
 
 					If IsAdmin() Then
 						_Log("Disable admin command")
 						Run(@ComSpec & " /c " & 'net user administrator /active:no', @SystemDir, @SW_SHOW)
-						Run(@ComSpec & " /c " & 'shutdown /l', @SystemDir, @SW_SHOW)
 					Else
-						_NotAdminMsg($Form1)
+						_NotAdminMsg($GUIMain)
 					EndIf
+
+				Case $SignOutButton
+					_Log("SignOutButton")
+					Shutdown (0)
 
 				Case $RunButton
 					_Log("RunButton")
@@ -179,7 +191,7 @@ Switch $Command
 
 				Case $UpdateGitButton
 					_DownloadGitSetup($GITURL, @ScriptDir)
-					If MsgBox($MB_YESNO, $Title, "Updated "&$DownloadUpdatedCount&" files ("&$DownloadErrors&" errors). The following files were updated:"&@CRLF&$DownloadUpdated&@CRLF&"Restart script?", 0, $Form1) = $IDYES Then
+					If MsgBox($MB_YESNO, $Title, "Updated "&$DownloadUpdatedCount&" files ("&$DownloadErrors&" errors). The following files were updated:"&@CRLF&$DownloadUpdated&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
 					EndIf
@@ -204,7 +216,11 @@ Switch $Command
 							$objGroup.Add("WinNT://"&$sUser)
 						EndIf
 
-						If Not IsObj( ObjGet("WinNT://./" & $sUser & ", user") ) Then MsgBox($MB_ICONWARNING, $Title, "Error creating user", 0, $Form1)
+						If Not IsObj( ObjGet("WinNT://./" & $sUser & ", user") ) Then
+							MsgBox($MB_ICONWARNING, $Title, "Error creating user", 0, $GUIMain)
+						Else
+							$UserCreated = True
+						EndIf
 
 					EndIf
 
