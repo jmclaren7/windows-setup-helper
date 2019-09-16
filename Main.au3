@@ -8,6 +8,9 @@
 #include <ButtonConstants.au3>
 #include <ComboConstants.au3>
 #include <GUIConstantsEx.au3>
+#include <GuiListView.au3>
+#include <GuiTreeView.au3>
+#include <GuiStatusBar.au3>
 #include <ListViewConstants.au3>
 #include <StaticConstants.au3>
 #include <TabConstants.au3>
@@ -28,9 +31,11 @@ Global $Title = "IT Setup Helper v"&$Version
 Global $DownloadUpdatedCount = 0
 Global $DownloadErrors = 0
 Global $DownloadUpdated = ""
-Global $GITURL = "https://api.github.com/repos/jmclaren7/itdeployhelper/contents"
+Global $GITURL = "https://github.com/jmclaren7/itdeployhelper"
+Global $GITAPIURL = "https://api.github.com/repos/jmclaren7/itdeployhelper/contents"
 Global $GUIMain
 Global $oCommError = ObjEvent("AutoIt.Error","_CommError")
+Global $StatusBar1
 $UserCreated = False
 
 _Log("Start Script " & $CmdLineRaw)
@@ -52,7 +57,7 @@ Switch $Command
 		Sleep(5000)
 
 		If Not StringInStr($CmdLineRaw,"skipupdate") Then
-			_DownloadGitSetup($GITURL, @ScriptDir)
+			_DownloadGitSetup($GITAPIURL, @ScriptDir)
 			If StringInStr($DownloadUpdated, @ScriptName) Then
 				_RunFile(@ScriptFullPath, "login skipupdate")
 				Exit
@@ -69,32 +74,40 @@ Switch $Command
 
 	Case ""
 		#Region ### START Koda GUI section ###
-		$GUIMain = GUICreate("$Title", 824, 574, -1, -1)
-		$Tab1 = GUICtrlCreateTab(7, 4, 809, 561)
+		$GUIMain = GUICreate("$Title", 823, 574, -1, -1)
+		$MenuItem2 = GUICtrlCreateMenu("File")
+		$MenuExitButton = GUICtrlCreateMenuItem("Exit", $MenuItem2)
+		$MenuItem1 = GUICtrlCreateMenu("Advanced")
+		$MenuUpdateButton = GUICtrlCreateMenuItem("Update from GitHub", $MenuItem1)
+		$MenuVisitGitButton = GUICtrlCreateMenuItem("Go To GitHub Page", $MenuItem1)
+		$MenuShowLoginScriptsButton = GUICtrlCreateMenuItem("Show Login Scripts", $MenuItem1)
+		$Tab1 = GUICtrlCreateTab(7, 4, 809, 521)
 		$TabSheet1 = GUICtrlCreateTabItem("Main")
-		$Group1 = GUICtrlCreateGroup("Scripts", 399, 33, 401, 521)
+		$Group1 = GUICtrlCreateGroup("Scripts", 399, 33, 401, 481)
 		$Presets = GUICtrlCreateCombo("Presets", 415, 57, 369, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
 		GUICtrlSetState(-1, $GUI_DISABLE)
-		$TreeView1 = GUICtrlCreateTreeView(415, 97, 369, 417, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
-		$RunButton = GUICtrlCreateButton("Run", 711, 521, 75, 25)
+		$ScriptsTree = GUICtrlCreateTreeView(415, 97, 369, 369, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$RunButton = GUICtrlCreateButton("Run", 711, 481, 75, 25)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		$Group2 = GUICtrlCreateGroup("Information", 22, 32, 361, 257)
 		$InfoList = GUICtrlCreateListView("", 31, 50, 346, 230, BitOR($GUI_SS_DEFAULT_LISTVIEW,$LVS_SMALLICON), 0)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		$Group3 = GUICtrlCreateGroup("Create Local User", 22, 466, 361, 89)
-		$CreateLocalUserButton = GUICtrlCreateButton("Create Local User", 235, 518, 131, 25)
-		$UsernameInput = GUICtrlCreateInput("", 38, 488, 185, 21)
-		$PasswordInput = GUICtrlCreateInput("", 38, 520, 185, 21)
-		$AdminCheckBox = GUICtrlCreateCheckbox("Local Administrator", 238, 490, 113, 17)
+		$Group3 = GUICtrlCreateGroup("Create Local User", 22, 426, 361, 89)
+		$CreateLocalUserButton = GUICtrlCreateButton("Create Local User", 235, 478, 131, 25)
+		$UsernameInput = GUICtrlCreateInput("", 38, 448, 185, 21)
+		$PasswordInput = GUICtrlCreateInput("", 38, 480, 185, 21)
+		$AdminCheckBox = GUICtrlCreateCheckbox("Local Administrator", 238, 450, 113, 17)
 		GUICtrlSetState(-1, $GUI_CHECKED)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		$Group4 = GUICtrlCreateGroup("Actions", 22, 291, 361, 169)
-		$UpdateGitButton = GUICtrlCreateButton("Update From Git", 35, 314, 160, 25)
-		$JoinButton = GUICtrlCreateButton("Domain && Computer Name", 207, 314, 160, 25)
-		$DisableAdminButton = GUICtrlCreateButton("Disable Administrator", 35, 351, 160, 25)
-		$SignOutButton = GUICtrlCreateButton("Sign Out", 207, 351, 160, 25)
+		$Group4 = GUICtrlCreateGroup("Actions", 22, 294, 361, 129)
+		$JoinButton = GUICtrlCreateButton("Domain && Computer Name", 35, 319, 160, 25)
+		$DisableAdminButton = GUICtrlCreateButton("Disable Administrator", 35, 354, 160, 25)
+		$SignOutButton = GUICtrlCreateButton("Sign Out", 35, 389, 160, 25)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateTabItem("")
+		$StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
+		_GUICtrlStatusBar_SetSimple($StatusBar1)
+		_GUICtrlStatusBar_SetText($StatusBar1, "")
 		GUISetState(@SW_SHOW)
 		#EndRegion ### END Koda GUI section ###
 
@@ -123,34 +136,24 @@ Switch $Command
 		GUICtrlCreateListViewItem("Model: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "SystemProductName"), $InfoList)
 		GUICtrlCreateListViewItem("BIOS: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "BIOSVersion"), $InfoList)
 		GUICtrlCreateListViewItem("CPU Logical Cores: " & EnvGet("NUMBER_OF_PROCESSORS"), $InfoList)
-		$MemStats = MemGetStats ( )
+		$MemStats = MemGetStats()
 		GUICtrlCreateListViewItem("Installed Memory: " & Round($MemStats[$MEM_TOTALPHYSRAM]/1024/1024,1)&"GB", $InfoList)
 		GUICtrlCreateListViewItem("License: " & IsActivated(), $InfoList)
-
 		$NetInfo = _NetAdapterInfo()
 		GUICtrlCreateListViewItem("IP/Gateway: " & $NetInfo[3] & "/" & $NetInfo[4], $InfoList)
 		GUICtrlCreateListViewItem("MAC: " & $NetInfo[2], $InfoList)
 
 
 		;Generate Script List
-		$FileArray = _FileListToArray(@ScriptDir & "\OptLogin\", "*", $FLTA_FILES, True)
-		If Not @error Then
-			Local $OptLoginListItems[$FileArray[0] + 1]
-			_Log("OptLogin Files: " & $FileArray[0])
-			For $i = 1 To $FileArray[0]
-				_Log("Added: "&$FileArray[$i])
-				$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
-				$OptLoginListItems[$i] = GUICtrlCreateTreeViewItem($FileName, $TreeView1)
-
-			Next
-		Else
-			_Log("No files")
-		EndIf
+		_PopulateScripts($ScriptsTree, "OptLogin")
+		_PopulateScripts($ScriptsTree, "OptCustom")
 
 		;$TabSheet2 = GUICtrlCreateTabItem("Test")
 		;$GroupSheet2 = GUICtrlCreateGroup("Test Group", 400, 33, 401, 521)
 		;GUISetState(@SW_HIDE)
 		;GUISetState(@SW_SHOW)
+
+		_Log("Ready", True)
 
 		;GUI Loop
 		While 1
@@ -163,7 +166,7 @@ Switch $Command
 					_Log("DisableAdminButton")
 
 					If @ComputerName = @LogonDomain AND Not $UserCreated Then
-						If MsgBox($MB_YESNO, $Title, "Are you sure?\n\nThis computer might not be joined to a domain and you haven't created a local user.", 0, $GUIMain) <> $IDYES Then
+						If MsgBox($MB_YESNO, $Title, "Are you sure?"&@CRLF&@CRLF&"This computer might not be joined to a domain and you haven't created a local user.", 0, $GUIMain) <> $IDYES Then
 							ContinueLoop
 						EndIf
 					EndIf
@@ -181,20 +184,44 @@ Switch $Command
 
 				Case $RunButton
 					_Log("RunButton")
-					For $x = 1 To UBound($OptLoginListItems) - 1
-						If BitAND(GUICtrlRead($OptLoginListItems[$x]), $GUI_CHECKED) Then
-							_Log("Checked: " & $FileArray[$x])
-							_RunFile($FileArray[$x])
+					$TreeViewItemTotal = _GUICtrlTreeView_GetCount ($ScriptsTree)
 
+					For $TreeItemCount = 1 To $TreeViewItemTotal
+						If Not IsDeclared("hScriptsTreeItem") Then
+							$hScriptsTreeItem = _GUICtrlTreeView_GetFirstItem ($ScriptsTree)
+						Else
+							$hScriptsTreeItem = _GUICtrlTreeView_GetNext ( $ScriptsTree, $hScriptsTreeItem)
 						EndIf
+
+						$hScriptsTreeItemParent = _GUICtrlTreeView_GetParentHandle ($ScriptsTree, $hScriptsTreeItem)
+
+						If Not Int($hScriptsTreeItemParent) Then
+							ContinueLoop
+
+						Elseif _GUICtrlTreeView_GetChecked ($ScriptsTree, $hScriptsTreeItem) Then
+							$Folder = _GUICtrlTreeView_GetText ($ScriptsTree, $hScriptsTreeItemParent)
+							$File = _GUICtrlTreeView_GetText ($ScriptsTree, $hScriptsTreeItem)
+							$RunFullPath = @ScriptDir & "\"&$Folder&"\"&$File
+							_RunFile($RunFullPath)
+
+						Endif
 					Next
 
-				Case $UpdateGitButton
-					_DownloadGitSetup($GITURL, @ScriptDir)
+				Case $MenuUpdateButton
+					_Log("MenuUpdateButton")
+					_DownloadGitSetup($GITAPIURL, @ScriptDir)
 					If MsgBox($MB_YESNO, $Title, "Updated "&$DownloadUpdatedCount&" files ("&$DownloadErrors&" errors). The following files were updated:"&@CRLF&$DownloadUpdated&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
 					EndIf
+
+				Case $MenuShowLoginScriptsButton
+					_PopulateScripts($ScriptsTree, "AutoLogin")
+
+				Case $MenuVisitGitButton
+					_Log("Opening Browser...", True)
+					$o_URL = ObjCreate("Shell.Application")
+					$o_URL.Open($GITURL)
 
 				Case $JoinButton
 					Run("SystemPropertiesComputerName.exe")
@@ -220,6 +247,7 @@ Switch $Command
 							MsgBox($MB_ICONWARNING, $Title, "Error creating user", 0, $GUIMain)
 						Else
 							$UserCreated = True
+							_Log("User Created Successfully", True)
 						EndIf
 
 					EndIf
@@ -232,6 +260,32 @@ Switch $Command
 
 EndSwitch
 
+Func _PopulateScripts($TreeID, $Folder)
+	Local $FileArray = _FileListToArray(@ScriptDir & "\"&$Folder&"\", "*", $FLTA_FILES, True)
+
+	If Not @error Then
+		;Local $OptLoginListItems[$FileArray[0] + 1]
+		_Log("OptLogin Files: " & $FileArray[0])
+		Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
+		;GUICtrlSetState($FolderTreeItem,$GUI_DISABLE)
+		GUICtrlSetState($FolderTreeItem, $GUI_CHECKED)
+
+		For $i = 1 To $FileArray[0]
+			_Log("Added: "&$FileArray[$i])
+			$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
+			;$OptLoginListItems[$i] = GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
+			GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
+		Next
+
+		GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
+		GUICtrlSetState($FolderTreeItem, $GUI_UNCHECKED)
+
+		Return $FileArray
+	Else
+		_Log("No files")
+		Return 0
+	EndIf
+EndFunc
 
 Func _NotAdminMsg($hwnd = "")
 	_Log("_NotAdminMsg")
@@ -276,6 +330,8 @@ Func _RunFile($File, $Params = "")
 				$RunLine = $RunLine & " /reg:32"
 			ElseIf StringInStr($Data, ";64") Then
 				$RunLine = $RunLine & " /reg:64"
+			ElseIf @CPUArch = "X64" Then
+				$RunLine = $RunLine & " /reg:32"
 			Endif
 
 			_Log("$RunLine=" & $RunLine)
@@ -464,9 +520,11 @@ Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15
 
 EndFunc
 
-Func _Log($Message)
+Func _Log($Message, $Statusbar = "")
 	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC & "> " ; Generate Timestamp
 	ConsoleWrite($sTime & $Message & @CRLF)
+	If $Statusbar Then _GUICtrlStatusBar_SetText($StatusBar1, $Message)
+
 	FileWrite(@ScriptFullPath&"_log.txt", $sTime & $Message & @CRLF)
 	Return $Message
 EndFunc   ;==>_Log

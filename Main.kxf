@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <object type="TAForm" name="GUIMain">
 	<properties>
-		<property name="Left" vt="Int16">864</property>
+		<property name="Left" vt="Int16">875</property>
 		<property name="Top" vt="Int16">404</property>
-		<property name="Width" vt="Int16">839</property>
+		<property name="Width" vt="Int16">838</property>
 		<property name="Height" vt="Int16">612</property>
 		<property name="Caption" vt="String">$Title</property>
 		<property name="Color" vt="Ident">clBtnFace</property>
@@ -12,6 +12,7 @@
 		<property name="Font.Height" vt="Int8">-11</property>
 		<property name="Font.Name" vt="String">MS Sans Serif</property>
 		<property name="Font.Style" vt="Set"/>
+		<property name="Menu" vt="Ident">MaiMenu1</property>
 		<property name="OldCreateOrder" vt="False">False</property>
 		<property name="Position" vt="Ident">poDesktopCenter</property>
 		<property name="Visible" vt="True">True</property>
@@ -31,12 +32,23 @@
 		<property name="TextHeight" vt="Int8">13</property>
 	</properties>
 	<components>
+		<object type="TAMenu" name="MaiMenu1">
+			<properties>
+				<property name="Left" vt="Int16">128</property>
+				<property name="Top" vt="Int8">-16</property>
+				<property name="Width" vt="Int8">28</property>
+				<property name="Height" vt="Int8">28</property>
+				<property name="Associate" vt="Ident">Owner</property>
+				<property name="WrappedName" vt="String">MainMenu1</property>
+			</properties>
+			<components/>
+		</object>
 		<object type="TATab" name="Tab1">
 			<properties>
 				<property name="Left" vt="Int8">7</property>
 				<property name="Top" vt="Int8">4</property>
 				<property name="Width" vt="Int16">809</property>
-				<property name="Height" vt="Int16">561</property>
+				<property name="Height" vt="Int16">521</property>
 				<property name="ActivePage" vt="Ident">TabSheet1</property>
 				<property name="Font.Charset" vt="Ident">DEFAULT_CHARSET</property>
 				<property name="Font.Color" vt="Ident">clWindowText</property>
@@ -67,7 +79,7 @@
 								<property name="Left" vt="Int16">388</property>
 								<property name="Top" vt="Int8">4</property>
 								<property name="Width" vt="Int16">401</property>
-								<property name="Height" vt="Int16">521</property>
+								<property name="Height" vt="Int16">481</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
 								<property name="Caption" vt="String">Scripts</property>
@@ -91,12 +103,12 @@
 									</properties>
 									<components/>
 								</object>
-								<object type="TATreeView" name="TreeView1">
+								<object type="TATreeView" name="ScriptsTree">
 									<properties>
 										<property name="Left" vt="Int8">16</property>
 										<property name="Top" vt="Int8">64</property>
 										<property name="Width" vt="Int16">369</property>
-										<property name="Height" vt="Int16">417</property>
+										<property name="Height" vt="Int16">369</property>
 										<property name="CtrlStyle" vt="Int32">1342374199</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
 										<property name="Resizing" vt="Set"/>
@@ -107,7 +119,7 @@
 								<object type="TAButton" name="RunButton">
 									<properties>
 										<property name="Left" vt="Int16">312</property>
-										<property name="Top" vt="Int16">488</property>
+										<property name="Top" vt="Int16">448</property>
 										<property name="Width" vt="Int8">75</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Run</property>
@@ -154,7 +166,7 @@
 						<object type="TAGroup" name="Group3">
 							<properties>
 								<property name="Left" vt="Int8">11</property>
-								<property name="Top" vt="Int16">437</property>
+								<property name="Top" vt="Int16">397</property>
 								<property name="Width" vt="Int16">361</property>
 								<property name="Height" vt="Int8">89</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
@@ -226,9 +238,9 @@
 						<object type="TAGroup" name="Group4">
 							<properties>
 								<property name="Left" vt="Int8">11</property>
-								<property name="Top" vt="Int16">262</property>
+								<property name="Top" vt="Int16">265</property>
 								<property name="Width" vt="Int16">361</property>
-								<property name="Height" vt="Int16">169</property>
+								<property name="Height" vt="Int16">129</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
 								<property name="Caption" vt="String">Actions</property>
@@ -236,29 +248,14 @@
 								<property name="Resizing" vt="Set"/>
 							</properties>
 							<components>
-								<object type="TAButton" name="UpdateGitButton">
-									<properties>
-										<property name="Left" vt="Int8">13</property>
-										<property name="Top" vt="Int8">23</property>
-										<property name="Width" vt="Int16">160</property>
-										<property name="Height" vt="Int8">25</property>
-										<property name="Caption" vt="String">Update From Git</property>
-										<property name="TabOrder" vt="Int8">0</property>
-										<property name="Color" vt="Ident">clBtnFace</property>
-										<property name="CtrlStyle" vt="Int32">1342373888</property>
-										<property name="CtrlExStyle" vt="Int8">0</property>
-										<property name="Resizing" vt="Set">DockWidth, DockHeight</property>
-									</properties>
-									<components/>
-								</object>
 								<object type="TAButton" name="JoinButton">
 									<properties>
-										<property name="Left" vt="Int16">185</property>
-										<property name="Top" vt="Int8">23</property>
+										<property name="Left" vt="Int8">13</property>
+										<property name="Top" vt="Int8">25</property>
 										<property name="Width" vt="Int16">160</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Domain &amp;&amp; Computer Name</property>
-										<property name="TabOrder" vt="Int8">1</property>
+										<property name="TabOrder" vt="Int8">0</property>
 										<property name="Color" vt="Ident">clBtnFace</property>
 										<property name="CtrlStyle" vt="Int32">1342373888</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
@@ -273,7 +270,7 @@
 										<property name="Width" vt="Int16">160</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Disable Administrator</property>
-										<property name="TabOrder" vt="Int8">2</property>
+										<property name="TabOrder" vt="Int8">1</property>
 										<property name="Color" vt="Ident">clBtnFace</property>
 										<property name="CtrlStyle" vt="Int32">1342373888</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
@@ -283,12 +280,12 @@
 								</object>
 								<object type="TAButton" name="SignOutButton">
 									<properties>
-										<property name="Left" vt="Int16">185</property>
-										<property name="Top" vt="Int8">60</property>
+										<property name="Left" vt="Int8">13</property>
+										<property name="Top" vt="Int8">95</property>
 										<property name="Width" vt="Int16">160</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Sign Out</property>
-										<property name="TabOrder" vt="Int8">3</property>
+										<property name="TabOrder" vt="Int8">2</property>
 										<property name="Color" vt="Ident">clBtnFace</property>
 										<property name="CtrlStyle" vt="Int32">1342373888</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
@@ -297,6 +294,68 @@
 									<components/>
 								</object>
 							</components>
+						</object>
+					</components>
+				</object>
+			</components>
+		</object>
+		<object type="TAStatusBar" name="StatusBar1">
+			<properties>
+				<property name="Left" vt="Int8">0</property>
+				<property name="Top" vt="Int16">534</property>
+				<property name="Width" vt="Int16">822</property>
+				<property name="Height" vt="Int8">19</property>
+				<property name="Panels" vt="Collection">
+					<collection>
+						<item>
+							<property name="Width" vt="Int8">50</property>
+						</item>
+					</collection>
+				</property>
+				<property name="SimplePanel" vt="True">True</property>
+				<property name="CtrlStyle" vt="Int32">1342177280</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TMainMenu" name="MainMenu1">
+			<properties/>
+			<components>
+				<object type="TAMenuItem" name="MenuItem2">
+					<properties>
+						<property name="Caption" vt="String">&amp;File</property>
+					</properties>
+					<components>
+						<object type="TAMenuItem" name="MenuExitButton">
+							<properties>
+								<property name="Caption" vt="String">Exit</property>
+							</properties>
+							<components/>
+						</object>
+					</components>
+				</object>
+				<object type="TAMenuItem" name="MenuItem1">
+					<properties>
+						<property name="Caption" vt="String">&amp;Advanced</property>
+					</properties>
+					<components>
+						<object type="TAMenuItem" name="MenuUpdateButton">
+							<properties>
+								<property name="Caption" vt="String">Update from GitHub</property>
+							</properties>
+							<components/>
+						</object>
+						<object type="TAMenuItem" name="MenuVisitGiyButton">
+							<properties>
+								<property name="Caption" vt="String">Go To GitHub Page</property>
+							</properties>
+							<components/>
+						</object>
+						<object type="TAMenuItem" name="MenuShowLoginScriptsButton">
+							<properties>
+								<property name="Caption" vt="String">Show Login Scripts</property>
+							</properties>
+							<components/>
 						</object>
 					</components>
 				</object>
