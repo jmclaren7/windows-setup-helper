@@ -24,7 +24,12 @@
 
 OnAutoItExitRegister("_Exit")
 
-Global $Log = @ScriptDir & "\ITSetupLog.txt"
+If StringInStr(@ScriptFullPath, "$OEM$\$$\IT") Then
+	Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log")
+Else
+	Global $LogFullPath = StringReplace(@ScriptFullPath, ".au3", ".log")
+Endif
+
 Global $MainSize = FileGetSize(@ScriptFullPath)
 Global $Version = "2.3.0-"&$MainSize
 
@@ -76,12 +81,14 @@ Switch $Command
 	Case ""
 		#Region ### START Koda GUI section ###
 		$GUIMain = GUICreate("$Title", 823, 574, -1, -1)
-		$MenuItem2 = GUICtrlCreateMenu("File")
+		$MenuItem2 = GUICtrlCreateMenu("&File")
 		$MenuExitButton = GUICtrlCreateMenuItem("Exit", $MenuItem2)
-		$MenuItem1 = GUICtrlCreateMenu("Advanced")
+		$MenuItem1 = GUICtrlCreateMenu("&Advanced")
 		$MenuUpdateButton = GUICtrlCreateMenuItem("Update from GitHub", $MenuItem1)
-		$MenuVisitGitButton = GUICtrlCreateMenuItem("Go To GitHub Page", $MenuItem1)
+		$MenuVisitGitButton = GUICtrlCreateMenuItem("Visit GitHub Page", $MenuItem1)
 		$MenuShowLoginScriptsButton = GUICtrlCreateMenuItem("Show Login Scripts", $MenuItem1)
+		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log", $MenuItem1)
+		$MenuOpenFolder = GUICtrlCreateMenuItem("Open Program Folder", $MenuItem1)
 		$Tab1 = GUICtrlCreateTab(7, 4, 809, 521)
 		$TabSheet1 = GUICtrlCreateTabItem("Main")
 		$Group1 = GUICtrlCreateGroup("Scripts", 399, 33, 401, 481)
@@ -131,9 +138,6 @@ Switch $Command
 			GUICtrlSetColor(-1, "0xffa500")
 		EndIf
 
-
-
-
 		GUICtrlCreateListViewItem("Computer Name: " & @ComputerName, $InfoList)
 		GUICtrlCreateListViewItem("Login Domain: " & @LogonDomain, $InfoList)
 		$Manufacturer = RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS","SystemManufacturer")
@@ -150,7 +154,6 @@ Switch $Command
 		GUICtrlCreateListViewItem("IP/Gateway: " & $NetInfo[3] & "/" & $NetInfo[4], $InfoList)
 		GUICtrlCreateListViewItem("MAC: " & $NetInfo[2], $InfoList)
 
-
 		;Generate Script List
 		_PopulateScripts($ScriptsTree, "OptLogin")
 		_PopulateScripts($ScriptsTree, "OptCustom")
@@ -166,6 +169,7 @@ Switch $Command
 		While 1
 			$nMsg = GUIGetMsg()
 			Switch $nMsg
+
 				Case $GUI_EVENT_CLOSE
 					Exit
 
@@ -223,7 +227,16 @@ Switch $Command
 					EndIf
 
 				Case $MenuShowLoginScriptsButton
+					_Log("MenuUpdateButton")
 					_PopulateScripts($ScriptsTree, "AutoLogin")
+
+				Case $MenuOpenFolder
+					_Log("MenuOpenFolder")
+					ShellExecute(@ScriptDir)
+
+				Case $MenuOpenLog
+					_Log("MenuOpenLog")
+					ShellExecute($LogFullPath)
 
 				Case $MenuVisitGitButton
 					_Log("Opening Browser...", True)
@@ -534,7 +547,7 @@ Func _Log($Message, $Statusbar = "")
 	ConsoleWrite($sTime & $Message & @CRLF)
 	If $Statusbar Then _GUICtrlStatusBar_SetText($StatusBar1, $Message)
 
-	FileWrite(@ScriptFullPath&"_log.txt", $sTime & $Message & @CRLF)
+	FileWrite($LogFullPath, $sTime & $Message & @CRLF)
 	Return $Message
 EndFunc   ;==>_Log
 

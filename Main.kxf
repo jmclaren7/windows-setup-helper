@@ -345,15 +345,27 @@
 							</properties>
 							<components/>
 						</object>
-						<object type="TAMenuItem" name="MenuVisitGiyButton">
+						<object type="TAMenuItem" name="MenuVisitGitButton">
 							<properties>
-								<property name="Caption" vt="String">Go To GitHub Page</property>
+								<property name="Caption" vt="String">Visit GitHub Page</property>
 							</properties>
 							<components/>
 						</object>
 						<object type="TAMenuItem" name="MenuShowLoginScriptsButton">
 							<properties>
 								<property name="Caption" vt="String">Show Login Scripts</property>
+							</properties>
+							<components/>
+						</object>
+						<object type="TAMenuItem" name="MenuOpenLog">
+							<properties>
+								<property name="Caption" vt="String">Open Log</property>
+							</properties>
+							<components/>
+						</object>
+						<object type="TAMenuItem" name="MenuOpenFolder">
+							<properties>
+								<property name="Caption" vt="String">Open Program Folder</property>
 							</properties>
 							<components/>
 						</object>
