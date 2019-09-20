@@ -233,7 +233,7 @@ Switch $Command
 					$sPassword = GUICtrlRead($PasswordInput)
 					$Admin = GUICtrlRead($AdminCheckBox)
 
-					If $sUser <> "" and $sPassword <> "" Then
+					If $sUser <> "" Then
 						$objSystem = ObjGet("WinNT://localhost")
 						$objUser = $objSystem.Create("user", $sUser)
 						$objUser.SetPassword ($sPassword)
@@ -245,10 +245,13 @@ Switch $Command
 
 						If Not IsObj( ObjGet("WinNT://./" & $sUser & ", user") ) Then
 							MsgBox($MB_ICONWARNING, $Title, "Error creating user", 0, $GUIMain)
+							_Log("Error Creating User", True)
 						Else
 							$UserCreated = True
 							_Log("User Created Successfully", True)
 						EndIf
+					Else
+						_Log("Missing Username", True)
 
 					EndIf
 
