@@ -331,7 +331,7 @@ Func _RunFile($File, $Params = "")
 			ElseIf StringInStr($Data, ";64") Then
 				$RunLine = $RunLine & " /reg:64"
 			ElseIf @CPUArch = "X64" Then
-				$RunLine = $RunLine & " /reg:32"
+				$RunLine = $RunLine & " /reg:64"
 			Endif
 
 			_Log("$RunLine=" & $RunLine)
