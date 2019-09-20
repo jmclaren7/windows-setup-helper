@@ -48,6 +48,13 @@ _Log("Start Script " & $CmdLineRaw)
 _Log("@UserName=" & @UserName)
 _Log("@ScriptFullPath=" & @ScriptFullPath)
 
+Global $TokenAddHeader = IniRead(".token","t","t","")
+If $TokenAddHeader = "" Then $TokenAddHeader = IniRead("git.token","t","t","")
+If $TokenAddHeader <> "" Then
+	_Log("Token Added")
+	$TokenAddHeader = "Authorization: token " & $TokenAddHeader
+EndIf
+
 If $CmdLine[0] >= 1 Then
 	$Command = $CmdLine[1]
 Else
@@ -379,7 +386,7 @@ Func _DownloadGitSetup($sURL, $Destination)
 Endfunc
 Func _DownloadGit($sURL, $Destination)
 	_Log("_DownloadGit - " & $sURL)
-	Local $bData = _WinHTTPRead($sURL)
+	Local $bData = _WinHTTPRead($sURL, Default, $TokenAddHeader)
 	If @error Then
 		_Log("  API http error: "&@error)
 		$DownloadErrors = $DownloadErrors + 1
@@ -418,12 +425,13 @@ Func _DownloadGit($sURL, $Destination)
 			;download
 			_Log("Downloading "&$oPath)
 
-			$InetData = _WinHTTPRead($oDownload_url)
+			$InetData = _WinHTTPRead($oDownload_url, Default, $TokenAddHeader)
 			If @error Then
 				_Log("  File download http error: "&@error)
 				$DownloadErrors = $DownloadErrors + 1
 				ContinueLoop
 			Endif
+			;$InetData = StringRegExpReplace($InetData, '(*BSR_ANYCRLF)\R', @CRLF)
 
 			$DownloadSize = BinaryLen ($InetData)
 			If @error Then
@@ -480,7 +488,7 @@ Func _DownloadGit($sURL, $Destination)
 
 EndFunc
 
-Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1")
+Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1", $AddHeader = "")
 	_Log("_WinHTTPRead " & $sURL)
 	; Open needed handles
 	Local $hOpen = _WinHttpOpen($Agent)
@@ -498,11 +506,9 @@ Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15
 	_WinHttpAddRequestHeaders ($hRequest, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
 	_WinHttpAddRequestHeaders ($hRequest, "content-type: application/json")
 
-	Local $Token = IniRead("git.token","t","t","")
-	If $Token <> "" Then
-		_Log("Using Token")
-		_WinHttpAddRequestHeaders ($hRequest, "Authorization: token "&$Token)
-	EndIf
+	If $AddHeader <> "" Then
+		_WinHttpAddRequestHeaders ($hRequest, $TokenAddHeader)
+	Endif
 
 	; Send request
 	_WinHttpSendRequest($hRequest)
