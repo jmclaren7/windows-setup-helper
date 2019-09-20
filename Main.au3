@@ -1,21 +1,22 @@
-#include <WinAPI.au3>
-#include <File.au3>
-#include <FileConstants.au3>
-#include <Inet.au3>
-#include <InetConstants.au3>
-#include <Process.au3>
-#include <Crypt.au3>
 #include <ButtonConstants.au3>
 #include <ComboConstants.au3>
-#include <GUIConstantsEx.au3>
+#include <Crypt.au3>
+#include <EditConstants.au3>
+#include <File.au3>
+#include <FileConstants.au3>
+#include <GuiConstantsEx.au3>
 #include <GuiListView.au3>
 #include <GuiTreeView.au3>
 #include <GuiStatusBar.au3>
+#include <Inet.au3>
+#include <InetConstants.au3>
 #include <ListViewConstants.au3>
+#include <Process.au3>
 #include <StaticConstants.au3>
 #include <TabConstants.au3>
 #include <TreeViewConstants.au3>
 #include <WindowsConstants.au3>
+#include <WinAPI.au3>
 #include "includeExt\Json.au3"
 #include "includeExt\WinHttp.au3"
 #include "includeExt\ActivationStatus.au3"
@@ -113,6 +114,8 @@ Switch $Command
 
 		;GUI Post Creation Setup
 		WinSetTitle($GUIMain, "", $Title)
+		GUICtrlSendMsg($UsernameInput, $EM_SETCUEBANNER, False, "Username")
+		GUICtrlSendMsg($PasswordInput, $EM_SETCUEBANNER, False, "Password (optional)")
 
 		;Info List Generation
 		If IsAdmin() Then
@@ -128,6 +131,9 @@ Switch $Command
 			GUICtrlSetColor(-1, "0xffa500")
 		EndIf
 
+
+
+
 		GUICtrlCreateListViewItem("Computer Name: " & @ComputerName, $InfoList)
 		GUICtrlCreateListViewItem("Login Domain: " & @LogonDomain, $InfoList)
 		$Manufacturer = RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS","SystemManufacturer")
@@ -135,7 +141,8 @@ Switch $Command
 		GUICtrlCreateListViewItem("Manufacturer: " & $Manufacturer, $InfoList)
 		GUICtrlCreateListViewItem("Model: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "SystemProductName"), $InfoList)
 		GUICtrlCreateListViewItem("BIOS: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "BIOSVersion"), $InfoList)
-		GUICtrlCreateListViewItem("CPU Logical Cores: " & EnvGet("NUMBER_OF_PROCESSORS"), $InfoList)
+		$WinAPISystemInfo = _WinAPI_GetSystemInfo ( )
+		GUICtrlCreateListViewItem("CPU Cores/Logical Cores: " & $WinAPISystemInfo[5] & "/" & EnvGet("NUMBER_OF_PROCESSORS"), $InfoList)
 		$MemStats = MemGetStats()
 		GUICtrlCreateListViewItem("Installed Memory: " & Round($MemStats[$MEM_TOTALPHYSRAM]/1024/1024,1)&"GB", $InfoList)
 		GUICtrlCreateListViewItem("License: " & IsActivated(), $InfoList)
