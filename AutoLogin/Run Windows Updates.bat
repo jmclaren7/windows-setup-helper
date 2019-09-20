@@ -1,1 +1,1 @@
-usoclient ScanInstallWait
+explorer.exe ms-settings:windowsupdate-action
