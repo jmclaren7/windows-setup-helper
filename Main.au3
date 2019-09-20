@@ -36,7 +36,7 @@ Global $GITAPIURL = "https://api.github.com/repos/jmclaren7/itdeployhelper/conte
 Global $GUIMain
 Global $oCommError = ObjEvent("AutoIt.Error","_CommError")
 Global $StatusBar1
-$UserCreated = False
+$UserCreatedWithAdmin = False
 
 _Log("Start Script " & $CmdLineRaw)
 _Log("@UserName=" & @UserName)
@@ -165,8 +165,8 @@ Switch $Command
 				Case $DisableAdminButton
 					_Log("DisableAdminButton")
 
-					If @ComputerName = @LogonDomain AND Not $UserCreated Then
-						If MsgBox($MB_YESNO, $Title, "Are you sure?"&@CRLF&@CRLF&"This computer might not be joined to a domain and you haven't created a local user.", 0, $GUIMain) <> $IDYES Then
+					If @ComputerName = @LogonDomain AND Not $UserCreatedWithAdmin Then
+						If MsgBox($MB_YESNO, $Title, "Are you sure?"&@CRLF&@CRLF&"This computer might not be joined to a domain and it looks like you haven't created a local user with admin rights.", 0, $GUIMain) <> $IDYES Then
 							ContinueLoop
 						EndIf
 					EndIf
@@ -247,7 +247,7 @@ Switch $Command
 							MsgBox($MB_ICONWARNING, $Title, "Error creating user", 0, $GUIMain)
 							_Log("Error Creating User", True)
 						Else
-							$UserCreated = True
+							If $Admin = $GUI_CHECKED Then $UserCreatedWithAdmin = True
 							_Log("User Created Successfully", True)
 						EndIf
 					Else
