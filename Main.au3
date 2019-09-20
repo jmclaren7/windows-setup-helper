@@ -381,7 +381,11 @@ Func _DownloadGit($sURL, $Destination)
 		$oSize = json_get($Object, '[' & $i & '].size')
 		$oDownload_url = json_get($Object, '[' & $i & '].download_url')
 
+		$FullPath = $Destination&"\"&StringReplace($oPath, "/", "\")
+		$FolderPath = StringLeft($FullPath, StringInStr($FullPath, "\", 0, -1))
+		$FileName = StringTrimLeft($FullPath, StringInStr($FullPath,"\",0,-1))
 
+		$FileSize = FileGetSize($FullPath)
 
 		If $oType = "dir" Then
 			;recurse
@@ -390,11 +394,6 @@ Func _DownloadGit($sURL, $Destination)
 		Else
 			;download
 			_Log("Downloading "&$oPath)
-
-			$FullPath = $Destination&"\"&StringReplace($oPath, "/", "\")
-			$FolderPath = StringLeft($FullPath, StringInStr($FullPath, "\", 0, -1))
-			$FileName = StringTrimLeft($FullPath, StringInStr($FullPath,"\",0,-1))
-
 
 			$InetData = _WinHTTPRead($oDownload_url)
 			If @error Then
@@ -446,7 +445,7 @@ Func _DownloadGit($sURL, $Destination)
 
 
 			Else
-				_Log("  Bad Size, Downloaded " & $DownloadSize & " But Expected " & $oSize)
+				_Log("  Size Mismatch, Downloaded=" & $DownloadSize & " API=" & $oSize & " Local=" & $FileSize)
 				$DownloadErrors = $DownloadErrors + 1
 
 			EndIf
