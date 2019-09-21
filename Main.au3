@@ -32,7 +32,7 @@ Else
 Endif
 
 Global $MainSize = FileGetSize(@ScriptFullPath)
-Global $Version = "2.4.0-"&$MainSize
+Global $Version = "3.0.0-"&$MainSize
 
 Global $TITLE = "IT Setup Helper v"&$Version
 Global $DownloadUpdatedCount = 0
