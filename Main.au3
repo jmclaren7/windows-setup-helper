@@ -231,7 +231,7 @@ Switch $Command
 					_Log("MenuUpdateButton")
 					$aUpdates = _GitUpdate()
 					$UpdateString = _ArrayToString($aUpdates, ", ", Default, Default, @CRLF)
-					If MsgBox($MB_YESNO, $Title, "The following changed were applied"&@CRLF&@CRLF&"File/Old Size/New Size"&@CRLF&$UpdateString&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
+					If MsgBox($MB_YESNO, $Title, "The following changed were applied"&@CRLF&@CRLF&"File, Old Size, New Size"&@CRLF&$UpdateString&@CRLF&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
 					EndIf
