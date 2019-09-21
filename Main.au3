@@ -21,6 +21,7 @@
 #include "includeExt\WinHttp.au3"
 #include "includeExt\ActivationStatus.au3"
 #include "includeExt\Custom.au3"
+#include "includeExt\_Zip.au3"
 
 OnAutoItExitRegister("_Exit")
 
@@ -31,14 +32,15 @@ Else
 Endif
 
 Global $MainSize = FileGetSize(@ScriptFullPath)
-Global $Version = "2.3.0-"&$MainSize
+Global $Version = "2.4.0-"&$MainSize
 
-Global $Title = "IT Setup Helper v"&$Version
+Global $TITLE = "IT Setup Helper v"&$Version
 Global $DownloadUpdatedCount = 0
 Global $DownloadErrors = 0
 Global $DownloadUpdated = ""
 Global $GITURL = "https://github.com/jmclaren7/itdeployhelper"
 Global $GITAPIURL = "https://api.github.com/repos/jmclaren7/itdeployhelper/contents"
+Global $GITZIP = "https://github.com/jmclaren7/itdeployhelper/archive/master.zip"
 Global $GUIMain
 Global $oCommError = ObjEvent("AutoIt.Error","_CommError")
 Global $StatusBar1
@@ -70,7 +72,7 @@ Switch $Command
 		Sleep(5000)
 
 		If Not StringInStr($CmdLineRaw,"skipupdate") Then
-			_DownloadGitSetup($GITAPIURL, @ScriptDir)
+			_GitUpdate()
 			If StringInStr($DownloadUpdated, @ScriptName) Then
 				_RunFile(@ScriptFullPath, "login skipupdate")
 				Exit
@@ -127,7 +129,7 @@ Switch $Command
 		#EndRegion ### END Koda GUI section ###
 
 		;GUI Post Creation Setup
-		WinSetTitle($GUIMain, "", $Title)
+		WinSetTitle($GUIMain, "", $TITLE)
 		GUICtrlSendMsg($UsernameInput, $EM_SETCUEBANNER, False, "Username")
 		GUICtrlSendMsg($PasswordInput, $EM_SETCUEBANNER, False, "Password (optional)")
 
@@ -184,7 +186,7 @@ Switch $Command
 					_Log("DisableAdminButton")
 
 					If @ComputerName = @LogonDomain AND Not $UserCreatedWithAdmin Then
-						If MsgBox($MB_YESNO, $Title, "Are you sure?"&@CRLF&@CRLF&"This computer might not be joined to a domain and it looks like you haven't created a local user with admin rights.", 0, $GUIMain) <> $IDYES Then
+						If MsgBox($MB_YESNO, $TITLE, "Are you sure?"&@CRLF&@CRLF&"This computer might not be joined to a domain and it looks like you haven't created a local user with admin rights.", 0, $GUIMain) <> $IDYES Then
 							ContinueLoop
 						EndIf
 					EndIf
@@ -227,7 +229,7 @@ Switch $Command
 
 				Case $MenuUpdateButton
 					_Log("MenuUpdateButton")
-					_DownloadGitSetup($GITAPIURL, @ScriptDir)
+					_GitUpdate()
 					If MsgBox($MB_YESNO, $Title, "Updated "&$DownloadUpdatedCount&" files ("&$DownloadErrors&" errors). The following files were updated:"&@CRLF&$DownloadUpdated&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
@@ -315,11 +317,13 @@ Func _PopulateScripts($TreeID, $Folder)
 		_Log("No files")
 		Return 0
 	EndIf
+
 EndFunc
 
 Func _NotAdminMsg($hwnd = "")
 	_Log("_NotAdminMsg")
 	MsgBox($MB_OK, $Title, "Not running with admin rights.", 0, $hwnd)
+
 EndFunc   ;==>_NotAdminMsg
 
 Func _RunFolder($Path)
@@ -335,6 +339,7 @@ Func _RunFolder($Path)
 	Else
 		_Log("No files")
 	EndIf
+
 EndFunc   ;==>_RunFolder
 
 Func _RunFile($File, $Params = "")
@@ -371,8 +376,89 @@ Func _RunFile($File, $Params = "")
 			Return ShellExecute($File, $Params)
 
 	EndSwitch
+
 EndFunc   ;==>_RunFile
 
+Func _GitUpdate()
+	_Log("_GitUpdate")
+	Local $Current = _RecSizeAndHash(@ScriptDir)
+	Local $TempZIP = @TempDir & "\itsetuptemp.zip"
+	Local $TempPath = @TempDir & "\itsetuptemp"
+	local $TempPathExtracted = $TempPath & "\itdeployhelper-master"
+	local $Changes[0][3]
+	FileDelete($TempZIP)
+	FileDelete($TempPath)
+
+	Local $DownloadSize = InetGet ($GITZIP, $TempZIP, $INET_FORCERELOAD)
+	If @error Then
+		_Log("Download Error " & @error)
+		Return 0
+	EndIf
+
+	;Extract zip
+	_Zip_UnzipAll($TempZIP, $TempPath, 16 + 1024)
+	If @error Then
+		_Log("Unzip Error " & @error)
+		Return 0
+	EndIf
+
+	Local $New = _RecSizeAndHash($TempPathExtracted)
+
+	If FileExists($TempPathExtracted & "\AutoLogin") Then FileDelete(@ScriptDir & "\AutoLogin")
+	If FileExists($TempPathExtracted & "\OptLogin") Then FileDelete(@ScriptDir & "\OptLogin")
+
+	Local $CopyStatus = DirCopy ($TempPathExtracted, @ScriptDir, $FC_OVERWRITE)
+	_Log("Copied Files (" & $CopyStatus & ")")
+
+	_ArrayDisplay($Current)
+
+	;Look for files that were changed or removed
+	For $i=0 to UBound($Current)-1
+		$Found = _ArraySearch ($New, $Current[$i][0])
+		If $Found >= 0 Then
+			If $Current[$i][2] <> $New[$Found][2] Then
+				_Log("Changed: " & $Current[$i][0])
+				_ArrayAdd($Changes, $Current[$i][0] & "|" & $Current[$i][1] & "|" & $New[$Found][1])
+			EndIf
+		Else
+			_Log("Missing: " & $Current[$i][0])
+			_ArrayAdd($Changes, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "0")
+		Endif
+	next
+
+	;Look for files that were added
+	For $i=0 to UBound($New)-1
+		$Found = _ArraySearch ($Current, $New[$i][0])
+		If $Found = -1 Then
+			_Log("Added: " & $New[$i][0])
+			_ArrayAdd($Changes, $Current[$i][0] & "|" & "Added" & "|" & $New[$i][1])
+		Endif
+	next
+
+	_ArrayDisplay($Changes)
+
+EndFunc
+
+Func _RecSizeAndHash($Path) ; Return Array with RelativePath|Size|MD5
+	_Log("_RecSizeAndHash - " & $Path)
+	Local $aOutput[0][3]
+
+	If StringRight($Path, 1) = "\" Then $Path = StringTrimRight($Path, 1)
+	Local $aFiles = _FileListToArrayRec($Path , "*", $FLTAR_FILES+$FLTAR_NOHIDDEN+$FLTAR_NOSYSTEM+$FLTAR_NOLINK, $FLTAR_RECUR, $FLTAR_NOSORT, $FLTAR_RELPATH)
+
+	If Not @error Then
+		For $i=1 to $aFiles[0]
+			$ThisFileRelPath = $aFiles[$i]
+			$ThisFileFullPath = $Path & "\" & $ThisFileRelPath
+			$ThisSize = FileGetSize($ThisFileFullPath)
+			$ThisHash = _Crypt_HashFile ($ThisFileFullPath, $CALG_MD5)
+			_ArrayAdd ($aOutput, $ThisFileRelPath & "|" & $ThisSize & "|" & $ThisHash, 0, "|")
+		Next
+	EndIf
+
+	Return $aOutput
+
+EndFunc
 
 Func _DownloadGitSetup($sURL, $Destination)
 	FileSetAttrib ($Destination, "-R", $FT_RECURSIVE)
@@ -384,6 +470,7 @@ Func _DownloadGitSetup($sURL, $Destination)
 	Return _DownloadGit($sURL, $Destination)
 
 Endfunc
+
 Func _DownloadGit($sURL, $Destination)
 	_Log("_DownloadGit - " & $sURL)
 	Local $bData = _WinHTTPRead($sURL, Default, $TokenAddHeader)
