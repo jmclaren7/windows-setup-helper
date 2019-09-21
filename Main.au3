@@ -389,14 +389,16 @@ EndFunc   ;==>_RunFile
 Func _GitUpdate($Prompt = False)
 	_Log("_GitUpdate")
 	Local $Current = _RecSizeAndHash(@ScriptDir)
-	Local $TempZIP = _TempFile(Default, "itdeploy-", ".zip")
 	Local $TempPath = _TempFile(Default, "itdeploy-", ".tmp")
+	Local $TempZIP = $TempPath & "\itdeploy.zip"
 	local $TempPathExtracted = $TempPath & "\itdeployhelper-master"
 	local $aChanges[0][3]
 
+	DirCreate($TempPath)
+
 	Local $DownloadSize = InetGet ($GITZIP, $TempZIP, $INET_FORCERELOAD)
 	If @error Then
-		_Log("Download Error " & @error)
+		_Log("Download Error " & @error, True)
 		Return 0
 	EndIf
 	_Log("ZIP Download Size: " & $DownloadSize)
@@ -404,7 +406,7 @@ Func _GitUpdate($Prompt = False)
 	;Extract zip
 	_Zip_UnzipAll($TempZIP, $TempPath, 16 + 1024)
 	If @error Then
-		_Log("Unzip Error " & @error)
+		_Log("Unzip Error " & @error, True)
 		Return 0
 	EndIf
 
@@ -443,14 +445,14 @@ Func _GitUpdate($Prompt = False)
 
 	If $ChangesCount = 0 Then
 		FileDelete($TempZIP)
-		FileDelete($TempPath)
+		DirRemove($TempPath, $DIR_REMOVE)
 		Return $aChanges
 	Endif
 
 	If $Prompt Then
 		If MsgBox($MB_YESNO, $TITLE, "Apply the following changes?"&@CRLF&@CRLF&"File Name, Old Size, New Size"&@CRLF&$ChangesString) <> $IDYES Then
 			FileDelete($TempZIP)
-			FileDelete($TempPath)
+			DirRemove($TempPath, $DIR_REMOVE)
 			SetError(1)
 			Return $aChanges
 		EndIf
@@ -463,7 +465,7 @@ Func _GitUpdate($Prompt = False)
 	_Log("Copied Files (" & $CopyStatus & ")")
 
 	FileDelete($TempZIP)
-	FileDelete($TempPath)
+	DirRemove($TempPath, $DIR_REMOVE)
 	Return $aChanges
 
 EndFunc
