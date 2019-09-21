@@ -441,12 +441,14 @@ Func _GitUpdate($Prompt = False)
 	Local $ChangesString = _ArrayToString($aChanges, ", ", Default, Default, @CRLF)
 	_Log("Changes: " & $ChangesCount)
 
+	If $ChangesCount = 0 Then Return $aChanges
+
 	If $Prompt Then
 		If MsgBox($MB_YESNO, $TITLE, "Apply the following changes?"&@CRLF&@CRLF&"File Name, Old Size, New Size"&@CRLF&$ChangesString) <> $IDYES Then
 			SetError(1)
 			Return $aChanges
 		EndIf
-	EndIf
+	Endif
 
 	If FileExists($TempPathExtracted & "\AutoLogin") Then FileDelete(@ScriptDir & "\AutoLogin")
 	If FileExists($TempPathExtracted & "\OptLogin") Then FileDelete(@ScriptDir & "\OptLogin")
