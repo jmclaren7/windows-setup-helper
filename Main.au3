@@ -421,7 +421,9 @@ Func _GitUpdate()
 			EndIf
 		Else
 			_Log("Missing: " & $Current[$i][0])
-			_ArrayAdd($Changes, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "0")
+			If StringInStr($Current[$i][0], "\AutoLogin") OR StringInStr($Current[$i][0], "\OptLogin") Then
+				_ArrayAdd($Changes, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "0")
+			Endif
 		Endif
 	next
 
