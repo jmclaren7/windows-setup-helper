@@ -393,8 +393,6 @@ Func _GitUpdate($Prompt = False)
 	Local $TempPath = _TempFile(Default, "itdeploy", "")
 	local $TempPathExtracted = $TempPath & "\itdeployhelper-master"
 	local $aChanges[0][3]
-	FileDelete($TempZIP)
-	FileDelete($TempPath)
 
 	Local $DownloadSize = InetGet ($GITZIP, $TempZIP, $INET_FORCERELOAD)
 	If @error Then
