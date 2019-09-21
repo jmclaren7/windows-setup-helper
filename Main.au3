@@ -229,15 +229,17 @@ Switch $Command
 
 				Case $MenuUpdateButton
 					_Log("MenuUpdateButton")
-					$aUpdates = _GitUpdate()
-					$UpdateString = _ArrayToString($aUpdates, ", ", Default, Default, @CRLF)
-					If $UpdateString <> "" Then
-						If MsgBox($MB_YESNO, $TITLE, "The following changed were applied"&@CRLF&@CRLF&"File, Old Size, New Size"&@CRLF&$UpdateString&@CRLF&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
-							_RunFile(@ScriptFullPath)
-							Exit
-						EndIf
-					Else
+					$aUpdates = _GitUpdate(True)
+					If @error Then ContinueLoop
+					$UpdatesCount = UBound($aUpdates)
+
+					If $UpdatesCount = 0 Then
 						Msgbox(0, $TITLE, "No updates")
+
+					ElseIf MsgBox($MB_YESNO, $TITLE, "Restart script?", 0, $GUIMain) = $IDYES Then
+						_RunFile(@ScriptFullPath)
+						Exit
+
 					Endif
 
 				Case $MenuShowLoginScriptsButton
@@ -384,13 +386,13 @@ Func _RunFile($File, $Params = "")
 
 EndFunc   ;==>_RunFile
 
-Func _GitUpdate()
+Func _GitUpdate($Prompt = False)
 	_Log("_GitUpdate")
 	Local $Current = _RecSizeAndHash(@ScriptDir)
 	Local $TempZIP = @TempDir & "\itsetuptemp.zip"
 	Local $TempPath = @TempDir & "\itsetuptemp"
 	local $TempPathExtracted = $TempPath & "\itdeployhelper-master"
-	local $Changes[0][3]
+	local $aChanges[0][3]
 	FileDelete($TempZIP)
 	FileDelete($TempPath)
 
@@ -409,11 +411,6 @@ Func _GitUpdate()
 
 	Local $New = _RecSizeAndHash($TempPathExtracted)
 
-	If FileExists($TempPathExtracted & "\AutoLogin") Then FileDelete(@ScriptDir & "\AutoLogin")
-	If FileExists($TempPathExtracted & "\OptLogin") Then FileDelete(@ScriptDir & "\OptLogin")
-
-	Local $CopyStatus = DirCopy ($TempPathExtracted, @ScriptDir, $FC_OVERWRITE)
-	_Log("Copied Files (" & $CopyStatus & ")")
 
 	;Look for files that were changed or removed
 	For $i=0 to UBound($Current)-1
@@ -421,12 +418,12 @@ Func _GitUpdate()
 		If $Found >= 0 Then
 			If $Current[$i][2] <> $New[$Found][2] Then
 				_Log("Changed: " & $Current[$i][0])
-				_ArrayAdd($Changes, $Current[$i][0] & "|" & $Current[$i][1] & "|" & $New[$Found][1])
+				_ArrayAdd($aChanges, $Current[$i][0] & "|" & $Current[$i][1] & "|" & $New[$Found][1])
 			EndIf
 		Else
 			_Log("Missing: " & $Current[$i][0])
 			If StringInStr($Current[$i][0], "\AutoLogin") OR StringInStr($Current[$i][0], "\OptLogin") Then
-				_ArrayAdd($Changes, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "(Removed)")
+				_ArrayAdd($aChanges, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "(Removed)")
 			Endif
 		Endif
 	next
@@ -436,13 +433,28 @@ Func _GitUpdate()
 		$Found = _ArraySearch ($Current, $New[$i][0])
 		If $Found = -1 Then
 			_Log("Added: " & $New[$i][0])
-			_ArrayAdd($Changes, $Current[$i][0] & "|" & "(Added)" & "|" & $New[$i][1])
+			_ArrayAdd($aChanges, $Current[$i][0] & "|" & "(Added)" & "|" & $New[$i][1])
 		Endif
 	next
 
-	_Log("Changes: " & UBound($Changes))
+	Local $ChangesCount = UBound($aChanges)
+	Local $ChangesString = _ArrayToString($aChanges, ", ", Default, Default, @CRLF)
+	_Log("Changes: " & $ChangesCount)
 
-	Return $Changes
+	If $Prompt Then
+		If MsgBox($MB_YESNO, $TITLE, "Apply the following changes?"&@CRLF&@CRLF&"File Name, Old Size, New Size"&@CRLF&$ChangesString) <> $IDYES Then
+			SetError(1)
+			Return $aChanges
+		EndIf
+	EndIf
+
+	If FileExists($TempPathExtracted & "\AutoLogin") Then FileDelete(@ScriptDir & "\AutoLogin")
+	If FileExists($TempPathExtracted & "\OptLogin") Then FileDelete(@ScriptDir & "\OptLogin")
+
+	Local $CopyStatus = DirCopy ($TempPathExtracted, @ScriptDir, $FC_OVERWRITE)
+	_Log("Copied Files (" & $CopyStatus & ")")
+
+	Return $aChanges
 
 EndFunc
 
