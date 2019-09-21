@@ -229,8 +229,9 @@ Switch $Command
 
 				Case $MenuUpdateButton
 					_Log("MenuUpdateButton")
-					_GitUpdate()
-					If MsgBox($MB_YESNO, $Title, "Updated "&$DownloadUpdatedCount&" files ("&$DownloadErrors&" errors). The following files were updated:"&@CRLF&$DownloadUpdated&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
+					$aUpdates = _GitUpdate()
+					$UpdateString = _ArrayToString($aUpdates, ", ", Default, Default, @CRLF)
+					If MsgBox($MB_YESNO, $Title, "The following changed were applied:"&@CRLF&$UpdateString&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
 					EndIf
@@ -410,8 +411,6 @@ Func _GitUpdate()
 	Local $CopyStatus = DirCopy ($TempPathExtracted, @ScriptDir, $FC_OVERWRITE)
 	_Log("Copied Files (" & $CopyStatus & ")")
 
-	_ArrayDisplay($Current)
-
 	;Look for files that were changed or removed
 	For $i=0 to UBound($Current)-1
 		$Found = _ArraySearch ($New, $Current[$i][0])
@@ -435,7 +434,7 @@ Func _GitUpdate()
 		Endif
 	next
 
-	_ArrayDisplay($Changes)
+	Return $Changes
 
 EndFunc
 
