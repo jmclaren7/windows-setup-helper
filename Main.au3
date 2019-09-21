@@ -389,8 +389,8 @@ EndFunc   ;==>_RunFile
 Func _GitUpdate($Prompt = False)
 	_Log("_GitUpdate")
 	Local $Current = _RecSizeAndHash(@ScriptDir)
-	Local $TempZIP = _TempFile(Default, "itdeploy", ".zip")
-	Local $TempPath = _TempFile(Default, "itdeploy", "")
+	Local $TempZIP = _TempFile(Default, "itdeploy-", ".zip")
+	Local $TempPath = _TempFile(Default, "itdeploy-", ".tmp")
 	local $TempPathExtracted = $TempPath & "\itdeployhelper-master"
 	local $aChanges[0][3]
 
@@ -449,9 +449,9 @@ Func _GitUpdate($Prompt = False)
 
 	If $Prompt Then
 		If MsgBox($MB_YESNO, $TITLE, "Apply the following changes?"&@CRLF&@CRLF&"File Name, Old Size, New Size"&@CRLF&$ChangesString) <> $IDYES Then
-			SetError(1)
 			FileDelete($TempZIP)
 			FileDelete($TempPath)
+			SetError(1)
 			Return $aChanges
 		EndIf
 	Endif
