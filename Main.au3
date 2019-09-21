@@ -441,11 +441,17 @@ Func _GitUpdate($Prompt = False)
 	Local $ChangesString = _ArrayToString($aChanges, ", ", Default, Default, @CRLF)
 	_Log("Changes: " & $ChangesCount)
 
-	If $ChangesCount = 0 Then Return $aChanges
+	If $ChangesCount = 0 Then
+		FileDelete($TempZIP)
+		FileDelete($TempPath)
+		Return $aChanges
+	Endif
 
 	If $Prompt Then
 		If MsgBox($MB_YESNO, $TITLE, "Apply the following changes?"&@CRLF&@CRLF&"File Name, Old Size, New Size"&@CRLF&$ChangesString) <> $IDYES Then
 			SetError(1)
+			FileDelete($TempZIP)
+			FileDelete($TempPath)
 			Return $aChanges
 		EndIf
 	Endif
@@ -456,6 +462,8 @@ Func _GitUpdate($Prompt = False)
 	Local $CopyStatus = DirCopy ($TempPathExtracted, @ScriptDir, $FC_OVERWRITE)
 	_Log("Copied Files (" & $CopyStatus & ")")
 
+	FileDelete($TempZIP)
+	FileDelete($TempPath)
 	Return $aChanges
 
 EndFunc
