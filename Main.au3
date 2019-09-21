@@ -231,7 +231,7 @@ Switch $Command
 					_Log("MenuUpdateButton")
 					$aUpdates = _GitUpdate()
 					$UpdateString = _ArrayToString($aUpdates, ", ", Default, Default, @CRLF)
-					If MsgBox($MB_YESNO, $Title, "The following changed were applied:"&@CRLF&$UpdateString&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
+					If MsgBox($MB_YESNO, $Title, "The following changed were applied"&@CRLF&@CRLF&"File/Old Size/New Size"&@CRLF&$UpdateString&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
 					EndIf
@@ -422,7 +422,7 @@ Func _GitUpdate()
 		Else
 			_Log("Missing: " & $Current[$i][0])
 			If StringInStr($Current[$i][0], "\AutoLogin") OR StringInStr($Current[$i][0], "\OptLogin") Then
-				_ArrayAdd($Changes, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "0")
+				_ArrayAdd($Changes, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "(Removed)")
 			Endif
 		Endif
 	next
@@ -432,7 +432,7 @@ Func _GitUpdate()
 		$Found = _ArraySearch ($Current, $New[$i][0])
 		If $Found = -1 Then
 			_Log("Added: " & $New[$i][0])
-			_ArrayAdd($Changes, $Current[$i][0] & "|" & "Added" & "|" & $New[$i][1])
+			_ArrayAdd($Changes, $Current[$i][0] & "|" & "(Added)" & "|" & $New[$i][1])
 		Endif
 	next
 
