@@ -389,8 +389,8 @@ EndFunc   ;==>_RunFile
 Func _GitUpdate($Prompt = False)
 	_Log("_GitUpdate")
 	Local $Current = _RecSizeAndHash(@ScriptDir)
-	Local $TempZIP = @TempDir & "\itsetuptemp.zip"
-	Local $TempPath = @TempDir & "\itsetuptemp"
+	Local $TempZIP = _TempFile(Default, "itdeploy", ".zip")
+	Local $TempPath = _TempFile(Default, "itdeploy", "")
 	local $TempPathExtracted = $TempPath & "\itdeployhelper-master"
 	local $aChanges[0][3]
 	FileDelete($TempZIP)
@@ -401,6 +401,7 @@ Func _GitUpdate($Prompt = False)
 		_Log("Download Error " & @error)
 		Return 0
 	EndIf
+	_Log("ZIP Download Size: " & $DownloadSize)
 
 	;Extract zip
 	_Zip_UnzipAll($TempZIP, $TempPath, 16 + 1024)
@@ -421,8 +422,9 @@ Func _GitUpdate($Prompt = False)
 				_ArrayAdd($aChanges, $Current[$i][0] & "|" & $Current[$i][1] & "|" & $New[$Found][1])
 			EndIf
 		Else
-			_Log("Missing: " & $Current[$i][0])
+
 			If StringInStr($Current[$i][0], "\AutoLogin") OR StringInStr($Current[$i][0], "\OptLogin") Then
+				_Log("Removed: " & $Current[$i][0])
 				_ArrayAdd($aChanges, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "(Removed)")
 			Endif
 		Endif
