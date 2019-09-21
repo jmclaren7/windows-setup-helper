@@ -231,10 +231,14 @@ Switch $Command
 					_Log("MenuUpdateButton")
 					$aUpdates = _GitUpdate()
 					$UpdateString = _ArrayToString($aUpdates, ", ", Default, Default, @CRLF)
-					If MsgBox($MB_YESNO, $Title, "The following changed were applied"&@CRLF&@CRLF&"File, Old Size, New Size"&@CRLF&$UpdateString&@CRLF&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
-						_RunFile(@ScriptFullPath)
-						Exit
-					EndIf
+					If $UpdateString <> "" Then
+						If MsgBox($MB_YESNO, $TITLE, "The following changed were applied"&@CRLF&@CRLF&"File, Old Size, New Size"&@CRLF&$UpdateString&@CRLF&@CRLF&"Restart script?", 0, $GUIMain) = $IDYES Then
+							_RunFile(@ScriptFullPath)
+							Exit
+						EndIf
+					Else
+						Msgbox(0, $TITLE, "No updates")
+					Endif
 
 				Case $MenuShowLoginScriptsButton
 					_Log("MenuUpdateButton")
@@ -435,6 +439,8 @@ Func _GitUpdate()
 			_ArrayAdd($Changes, $Current[$i][0] & "|" & "(Added)" & "|" & $New[$i][1])
 		Endif
 	next
+
+	_Log("Changes: " & UBound($Changes))
 
 	Return $Changes
 
