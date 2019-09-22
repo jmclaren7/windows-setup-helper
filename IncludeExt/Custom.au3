@@ -68,3 +68,63 @@ Func _RenameComputer($iCompName, $iUserName = "", $iPassword = "")
         EndIf
     Next
 EndFunc
+
+Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15.0) Gecko/20100101 Firefox/15.0.1", $AddHeader = "")
+	_Log("_WinHTTPRead " & $sURL)
+	; Open needed handles
+	Local $hOpen = _WinHttpOpen($Agent)
+
+	Local $iStart = StringInStr($sURL,"/",0,2)+1
+	Local $Connect = StringMid($sURL, $iStart, StringInStr($sURL,"/",0,3) - $iStart)
+
+	Local $hConnect = _WinHttpConnect($hOpen, $Connect)
+
+	; Specify the reguest:
+	Local $RequestURL = StringTrimLeft($sURL,StringInStr($sURL,"/",0,3))
+	Local $hRequest = _WinHttpOpenRequest($hConnect, "GET", $RequestURL, Default, Default, Default, $WINHTTP_FLAG_SECURE + $WINHTTP_FLAG_ESCAPE_DISABLE + $WINHTTP_FLAG_BYPASS_PROXY_CACHE)
+
+	_WinHttpAddRequestHeaders ($hRequest, "Cache-Control: no-cache")
+	_WinHttpAddRequestHeaders ($hRequest, "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3")
+	_WinHttpAddRequestHeaders ($hRequest, "content-type: application/json")
+
+	If $AddHeader <> "" Then
+		_WinHttpAddRequestHeaders ($hRequest, $TokenAddHeader)
+	Endif
+
+	; Send request
+	_WinHttpSendRequest($hRequest)
+	If @error Then
+		_WinHttpCloseHandle($hRequest)
+		_WinHttpCloseHandle($hConnect)
+		_WinHttpCloseHandle($hOpen)
+		_Log("Connection error (Send)")
+		Return SetError(1, 0, 0)
+	Endif
+
+	; Wait for the response
+	_WinHttpReceiveResponse($hRequest)
+	If @error Then
+		_WinHttpCloseHandle($hRequest)
+		_WinHttpCloseHandle($hConnect)
+		_WinHttpCloseHandle($hOpen)
+		_Log("Connection error (Receive)")
+		Return SetError(2, 0, 0)
+	Endif
+
+	Local $sHeader = _WinHttpQueryHeaders($hRequest) ; ...get full header
+
+	Local $bData, $bChunk
+	While 1
+		$bChunk = _WinHttpReadData($hRequest, 2)
+		If @error Then ExitLoop
+		$bData = _WinHttpBinaryConcat($bData, $bChunk)
+	WEnd
+
+	; Clean
+	_WinHttpCloseHandle($hRequest)
+	_WinHttpCloseHandle($hConnect)
+	_WinHttpCloseHandle($hOpen)
+
+	Return $bData
+
+EndFunc
