@@ -88,7 +88,7 @@ Func _WinHTTPRead($sURL, $Agent = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:15
 	_WinHttpAddRequestHeaders ($hRequest, "content-type: application/json")
 
 	If $AddHeader <> "" Then
-		_WinHttpAddRequestHeaders ($hRequest, $TokenAddHeader)
+		_WinHttpAddRequestHeaders ($hRequest, $AddHeader)
 	Endif
 
 	; Send request
