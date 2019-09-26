@@ -29,12 +29,12 @@ If StringInStr(@ScriptFullPath, "$OEM$\$$\IT") Then
 	Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log")
 Else
 	Global $LogFullPath = StringReplace(@ScriptFullPath, ".au3", ".log")
-Endif
+EndIf
 
 Global $MainSize = FileGetSize(@ScriptFullPath)
-Global $Version = "3.0.0-"&$MainSize
+Global $Version = "3.0.1." & $MainSize
 
-Global $TITLE = "IT Setup Helper v"&$Version
+Global $Title = "IT Setup Helper v" & $Version
 Global $DownloadUpdatedCount = 0
 Global $DownloadErrors = 0
 Global $DownloadUpdated = ""
@@ -42,16 +42,16 @@ Global $GITURL = "https://github.com/jmclaren7/itdeployhelper"
 Global $GITAPIURL = "https://api.github.com/repos/jmclaren7/itdeployhelper/contents"
 Global $GITZIP = "https://github.com/jmclaren7/itdeployhelper/archive/master.zip"
 Global $GUIMain
-Global $oCommError = ObjEvent("AutoIt.Error","_CommError")
+Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
 Global $StatusBar1
-$UserCreatedWithAdmin = False
+Global $UserCreatedWithAdmin = False
 
 _Log("Start Script " & $CmdLineRaw)
 _Log("@UserName=" & @UserName)
 _Log("@ScriptFullPath=" & @ScriptFullPath)
 
-Global $TokenAddHeader = IniRead(".token","t","t","")
-If $TokenAddHeader = "" Then $TokenAddHeader = IniRead("git.token","t","t","")
+Global $TokenAddHeader = IniRead(".token", "t", "t", "")
+If $TokenAddHeader = "" Then $TokenAddHeader = IniRead("git.token", "t", "t", "")
 If $TokenAddHeader <> "" Then
 	_Log("Token Added")
 	$TokenAddHeader = "Authorization: token " & $TokenAddHeader
@@ -71,18 +71,18 @@ Switch $Command
 		ProcessWait("Explorer.exe", 60)
 		Sleep(5000)
 
-		If Not StringInStr($CmdLineRaw,"skipupdate") Then
+		If Not StringInStr($CmdLineRaw, "skipupdate") Then
 			_GitUpdate()
 			If StringInStr($DownloadUpdated, @ScriptName) Then
 				_RunFile(@ScriptFullPath, "login skipupdate")
 				Exit
-			Endif
-		Endif
+			EndIf
+		EndIf
 
 		FileCreateShortcut(@AutoItExe, @DesktopDir & "\IT Setup Helper.lnk", @ScriptDir, "/AutoIt3ExecuteScript """ & @ScriptFullPath & """")
 		FileCreateShortcut(@ScriptDir, @DesktopDir & "\IT Setup Folder")
 
-		WinMinimizeAll ( )
+		WinMinimizeAll()
 
 		_RunFolder(@ScriptDir & "\AutoLogin\")
 		_RunFile(@ScriptFullPath)
@@ -101,13 +101,13 @@ Switch $Command
 		$Tab1 = GUICtrlCreateTab(7, 4, 809, 521)
 		$TabSheet1 = GUICtrlCreateTabItem("Main")
 		$Group1 = GUICtrlCreateGroup("Scripts", 399, 33, 401, 481)
-		$Presets = GUICtrlCreateCombo("Presets", 415, 57, 369, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
+		$Presets = GUICtrlCreateCombo("Presets", 415, 57, 369, 25, BitOR($CBS_DROPDOWN, $CBS_AUTOHSCROLL))
 		GUICtrlSetState(-1, $GUI_DISABLE)
-		$ScriptsTree = GUICtrlCreateTreeView(415, 97, 369, 369, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$ScriptsTree = GUICtrlCreateTreeView(415, 97, 369, 369, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
 		$RunButton = GUICtrlCreateButton("Run", 711, 481, 75, 25)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		$Group2 = GUICtrlCreateGroup("Information", 22, 32, 361, 257)
-		$InfoList = GUICtrlCreateListView("", 31, 50, 346, 230, BitOR($GUI_SS_DEFAULT_LISTVIEW,$LVS_SMALLICON), 0)
+		$InfoList = GUICtrlCreateListView("", 31, 50, 346, 230, BitOR($GUI_SS_DEFAULT_LISTVIEW, $LVS_SMALLICON), 0)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		$Group3 = GUICtrlCreateGroup("Create Local User", 22, 426, 361, 89)
 		$CreateLocalUserButton = GUICtrlCreateButton("Create Local User", 235, 478, 131, 25)
@@ -149,15 +149,15 @@ Switch $Command
 
 		GUICtrlCreateListViewItem("Computer Name: " & @ComputerName, $InfoList)
 		GUICtrlCreateListViewItem("Login Domain: " & @LogonDomain, $InfoList)
-		$Manufacturer = RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS","SystemManufacturer")
+		$Manufacturer = RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "SystemManufacturer")
 		If $Manufacturer = "System manufacturer" Then $Manufacturer = "Unknown"
 		GUICtrlCreateListViewItem("Manufacturer: " & $Manufacturer, $InfoList)
 		GUICtrlCreateListViewItem("Model: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "SystemProductName"), $InfoList)
 		GUICtrlCreateListViewItem("BIOS: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "BIOSVersion"), $InfoList)
-		$WinAPISystemInfo = _WinAPI_GetSystemInfo ( )
+		$WinAPISystemInfo = _WinAPI_GetSystemInfo()
 		GUICtrlCreateListViewItem("CPU Cores/Logical Cores: " & $WinAPISystemInfo[5] & "/" & EnvGet("NUMBER_OF_PROCESSORS"), $InfoList)
 		$MemStats = MemGetStats()
-		GUICtrlCreateListViewItem("Installed Memory: " & Round($MemStats[$MEM_TOTALPHYSRAM]/1024/1024,1)&"GB", $InfoList)
+		GUICtrlCreateListViewItem("Installed Memory: " & Round($MemStats[$MEM_TOTALPHYSRAM] / 1024 / 1024, 1) & "GB", $InfoList)
 		GUICtrlCreateListViewItem("License: " & IsActivated(), $InfoList)
 		$NetInfo = _NetAdapterInfo()
 		GUICtrlCreateListViewItem("IP/Gateway: " & $NetInfo[3] & "/" & $NetInfo[4], $InfoList)
@@ -185,8 +185,8 @@ Switch $Command
 				Case $DisableAdminButton
 					_Log("DisableAdminButton")
 
-					If @ComputerName = @LogonDomain AND Not $UserCreatedWithAdmin Then
-						If MsgBox($MB_YESNO, $TITLE, "Are you sure?"&@CRLF&@CRLF&"This computer might not be joined to a domain and it looks like you haven't created a local user with admin rights.", 0, $GUIMain) <> $IDYES Then
+					If @ComputerName = @LogonDomain And Not $UserCreatedWithAdmin Then
+						If MsgBox($MB_YESNO, $TITLE, "Are you sure?" & @CRLF & @CRLF & "This computer might not be joined to a domain and it looks like you haven't created a local user with admin rights.", 0, $GUIMain) <> $IDYES Then
 							ContinueLoop
 						EndIf
 					EndIf
@@ -200,31 +200,31 @@ Switch $Command
 
 				Case $SignOutButton
 					_Log("SignOutButton")
-					Shutdown (0)
+					Shutdown(0)
 
 				Case $RunButton
 					_Log("RunButton")
-					$TreeViewItemTotal = _GUICtrlTreeView_GetCount ($ScriptsTree)
+					$TreeViewItemTotal = _GUICtrlTreeView_GetCount($ScriptsTree)
 
 					For $TreeItemCount = 1 To $TreeViewItemTotal
 						If Not IsDeclared("hScriptsTreeItem") Then
-							$hScriptsTreeItem = _GUICtrlTreeView_GetFirstItem ($ScriptsTree)
+							$hScriptsTreeItem = _GUICtrlTreeView_GetFirstItem($ScriptsTree)
 						Else
-							$hScriptsTreeItem = _GUICtrlTreeView_GetNext ( $ScriptsTree, $hScriptsTreeItem)
+							$hScriptsTreeItem = _GUICtrlTreeView_GetNext($ScriptsTree, $hScriptsTreeItem)
 						EndIf
 
-						$hScriptsTreeItemParent = _GUICtrlTreeView_GetParentHandle ($ScriptsTree, $hScriptsTreeItem)
+						$hScriptsTreeItemParent = _GUICtrlTreeView_GetParentHandle($ScriptsTree, $hScriptsTreeItem)
 
 						If Not Int($hScriptsTreeItemParent) Then
 							ContinueLoop
 
-						Elseif _GUICtrlTreeView_GetChecked ($ScriptsTree, $hScriptsTreeItem) Then
-							$Folder = _GUICtrlTreeView_GetText ($ScriptsTree, $hScriptsTreeItemParent)
-							$File = _GUICtrlTreeView_GetText ($ScriptsTree, $hScriptsTreeItem)
-							$RunFullPath = @ScriptDir & "\"&$Folder&"\"&$File
+						ElseIf _GUICtrlTreeView_GetChecked($ScriptsTree, $hScriptsTreeItem) Then
+							$Folder = _GUICtrlTreeView_GetText($ScriptsTree, $hScriptsTreeItemParent)
+							$File = _GUICtrlTreeView_GetText($ScriptsTree, $hScriptsTreeItem)
+							$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
 							_RunFile($RunFullPath)
 
-						Endif
+						EndIf
 					Next
 
 				Case $MenuUpdateButton
@@ -234,13 +234,13 @@ Switch $Command
 					$UpdatesCount = UBound($aUpdates)
 
 					If $UpdatesCount = 0 Then
-						Msgbox(0, $TITLE, "No updates")
+						MsgBox(0, $TITLE, "No updates")
 
 					ElseIf MsgBox($MB_YESNO, $TITLE, "Restart script?", 0, $GUIMain) = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
 
-					Endif
+					EndIf
 
 				Case $MenuShowLoginScriptsButton
 					_Log("MenuUpdateButton")
@@ -262,7 +262,7 @@ Switch $Command
 				Case $JoinButton
 					Run("SystemPropertiesComputerName.exe")
 					$hWindow = WinWait("System Properties")
-					ControlClick ( $hWindow, "", "[CLASS:Button; INSTANCE:2]")
+					ControlClick($hWindow, "", "[CLASS:Button; INSTANCE:2]")
 
 				Case $CreateLocalUserButton
 					$sUser = GUICtrlRead($UsernameInput)
@@ -272,15 +272,15 @@ Switch $Command
 					If $sUser <> "" Then
 						$objSystem = ObjGet("WinNT://localhost")
 						$objUser = $objSystem.Create("user", $sUser)
-						$objUser.SetPassword ($sPassword)
+						$objUser.SetPassword($sPassword)
 						$objUser.SetInfo
 						If Not @error And $Admin = $GUI_CHECKED Then
 							$objGroup = ObjGet("WinNT://localhost/Administrators")
-							$objGroup.Add("WinNT://"&$sUser)
+							$objGroup.Add("WinNT://" & $sUser)
 						EndIf
 
-						If Not IsObj( ObjGet("WinNT://./" & $sUser & ", user") ) Then
-							MsgBox($MB_ICONWARNING, $Title, "Error creating user", 0, $GUIMain)
+						If Not IsObj(ObjGet("WinNT://./" & $sUser & ", user")) Then
+							MsgBox($MB_ICONWARNING, $TITLE, "Error creating user", 0, $GUIMain)
 							_Log("Error Creating User", True)
 						Else
 							If $Admin = $GUI_CHECKED Then $UserCreatedWithAdmin = True
@@ -300,7 +300,7 @@ Switch $Command
 EndSwitch
 
 Func _PopulateScripts($TreeID, $Folder)
-	Local $FileArray = _FileListToArray(@ScriptDir & "\"&$Folder&"\", "*", $FLTA_FILES, True)
+	Local $FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILES, True)
 
 	If Not @error Then
 		;Local $OptLoginListItems[$FileArray[0] + 1]
@@ -310,7 +310,7 @@ Func _PopulateScripts($TreeID, $Folder)
 		GUICtrlSetState($FolderTreeItem, $GUI_CHECKED)
 
 		For $i = 1 To $FileArray[0]
-			_Log("Added: "&$FileArray[$i])
+			_Log("Added: " & $FileArray[$i])
 			$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
 			;$OptLoginListItems[$i] = GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
 			GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
@@ -325,11 +325,11 @@ Func _PopulateScripts($TreeID, $Folder)
 		Return 0
 	EndIf
 
-EndFunc
+EndFunc   ;==>_PopulateScripts
 
 Func _NotAdminMsg($hwnd = "")
 	_Log("_NotAdminMsg")
-	MsgBox($MB_OK, $Title, "Not running with admin rights.", 0, $hwnd)
+	MsgBox($MB_OK, $TITLE, "Not running with admin rights.", 0, $hwnd)
 
 EndFunc   ;==>_NotAdminMsg
 
@@ -374,7 +374,7 @@ Func _RunFile($File, $Params = "")
 				$RunLine = $RunLine & " /reg:64"
 			ElseIf @CPUArch = "X64" Then
 				$RunLine = $RunLine & " /reg:64"
-			Endif
+			EndIf
 
 			_Log("$RunLine=" & $RunLine)
 			Return Run($RunLine, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
@@ -391,12 +391,12 @@ Func _GitUpdate($Prompt = False)
 	Local $Current = _RecSizeAndHash(@ScriptDir)
 	Local $TempPath = _TempFile(Default, "itdeploy-", ".tmp")
 	Local $TempZIP = $TempPath & "\itdeploy.zip"
-	local $TempPathExtracted = $TempPath & "\itdeployhelper-master"
-	local $aChanges[0][3]
+	Local $TempPathExtracted = $TempPath & "\itdeployhelper-master"
+	Local $aChanges[0][3]
 
 	DirCreate($TempPath)
 
-	Local $DownloadSize = InetGet ($GITZIP, $TempZIP, $INET_FORCERELOAD)
+	Local $DownloadSize = InetGet($GITZIP, $TempZIP, $INET_FORCERELOAD)
 	If @error Then
 		_Log("Download Error " & @error, True)
 		Return 0
@@ -414,8 +414,8 @@ Func _GitUpdate($Prompt = False)
 
 
 	;Look for files that were changed or removed
-	For $i=0 to UBound($Current)-1
-		$Found = _ArraySearch ($New, $Current[$i][0])
+	For $i = 0 To UBound($Current) - 1
+		$Found = _ArraySearch($New, $Current[$i][0])
 		If $Found >= 0 Then
 			If $Current[$i][2] <> $New[$Found][2] Then
 				_Log("Changed: " & $Current[$i][0])
@@ -423,21 +423,21 @@ Func _GitUpdate($Prompt = False)
 			EndIf
 		Else
 
-			If StringInStr($Current[$i][0], "\AutoLogin") OR StringInStr($Current[$i][0], "\OptLogin") Then
+			If StringInStr($Current[$i][0], "\AutoLogin") Or StringInStr($Current[$i][0], "\OptLogin") Then
 				_Log("Removed: " & $Current[$i][0])
 				_ArrayAdd($aChanges, $Current[$i][0] & "|" & $Current[$i][1] & "|" & "(Removed)")
-			Endif
-		Endif
-	next
+			EndIf
+		EndIf
+	Next
 
 	;Look for files that were added
-	For $i=0 to UBound($New)-1
-		$Found = _ArraySearch ($Current, $New[$i][0])
+	For $i = 0 To UBound($New) - 1
+		$Found = _ArraySearch($Current, $New[$i][0])
 		If $Found = -1 Then
 			_Log("Added: " & $New[$i][0])
 			_ArrayAdd($aChanges, $Current[$i][0] & "|" & "(Added)" & "|" & $New[$i][1])
-		Endif
-	next
+		EndIf
+	Next
 
 	Local $ChangesCount = UBound($aChanges)
 	Local $ChangesString = _ArrayToString($aChanges, ", ", Default, Default, @CRLF)
@@ -447,49 +447,49 @@ Func _GitUpdate($Prompt = False)
 		FileDelete($TempZIP)
 		DirRemove($TempPath, $DIR_REMOVE)
 		Return $aChanges
-	Endif
+	EndIf
 
 	If $Prompt Then
-		If MsgBox($MB_YESNO, $TITLE, "Apply the following changes?"&@CRLF&@CRLF&"File Name, Old Size, New Size"&@CRLF&$ChangesString) <> $IDYES Then
+		If MsgBox($MB_YESNO, $TITLE, "Apply the following changes?" & @CRLF & @CRLF & "File Name, Old Size, New Size" & @CRLF & $ChangesString) <> $IDYES Then
 			FileDelete($TempZIP)
 			DirRemove($TempPath, $DIR_REMOVE)
 			SetError(1)
 			Return $aChanges
 		EndIf
-	Endif
+	EndIf
 
 	If FileExists($TempPathExtracted & "\AutoLogin") Then FileDelete(@ScriptDir & "\AutoLogin")
 	If FileExists($TempPathExtracted & "\OptLogin") Then FileDelete(@ScriptDir & "\OptLogin")
 
-	Local $CopyStatus = DirCopy ($TempPathExtracted, @ScriptDir, $FC_OVERWRITE)
+	Local $CopyStatus = DirCopy($TempPathExtracted, @ScriptDir, $FC_OVERWRITE)
 	_Log("Copied Files (" & $CopyStatus & ")")
 
 	FileDelete($TempZIP)
 	DirRemove($TempPath, $DIR_REMOVE)
 	Return $aChanges
 
-EndFunc
+EndFunc   ;==>_GitUpdate
 
 Func _RecSizeAndHash($Path) ; Return Array with RelativePath|Size|MD5
 	_Log("_RecSizeAndHash - " & $Path)
 	Local $aOutput[0][3]
 
 	If StringRight($Path, 1) = "\" Then $Path = StringTrimRight($Path, 1)
-	Local $aFiles = _FileListToArrayRec($Path , "*", $FLTAR_FILES+$FLTAR_NOHIDDEN+$FLTAR_NOSYSTEM+$FLTAR_NOLINK, $FLTAR_RECUR, $FLTAR_NOSORT, $FLTAR_RELPATH)
+	Local $aFiles = _FileListToArrayRec($Path, "*", $FLTAR_FILES + $FLTAR_NOHIDDEN + $FLTAR_NOSYSTEM + $FLTAR_NOLINK, $FLTAR_RECUR, $FLTAR_NOSORT, $FLTAR_RELPATH)
 
 	If Not @error Then
-		For $i=1 to $aFiles[0]
+		For $i = 1 To $aFiles[0]
 			$ThisFileRelPath = $aFiles[$i]
 			$ThisFileFullPath = $Path & "\" & $ThisFileRelPath
 			$ThisSize = FileGetSize($ThisFileFullPath)
-			$ThisHash = _Crypt_HashFile ($ThisFileFullPath, $CALG_MD5)
-			_ArrayAdd ($aOutput, $ThisFileRelPath & "|" & $ThisSize & "|" & $ThisHash, 0, "|")
+			$ThisHash = _Crypt_HashFile($ThisFileFullPath, $CALG_MD5)
+			_ArrayAdd($aOutput, $ThisFileRelPath & "|" & $ThisSize & "|" & $ThisHash, 0, "|")
 		Next
 	EndIf
 
 	Return $aOutput
 
-EndFunc
+EndFunc   ;==>_RecSizeAndHash
 
 Func _Log($Message, $Statusbar = "")
 	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC & "> " ; Generate Timestamp
@@ -511,7 +511,7 @@ Func _CommError()
 
 	_Log($strMsg)
 
-EndFunc
+EndFunc   ;==>_CommError
 
 Func _Exit()
 	_Log("End script " & $CmdLineRaw)
