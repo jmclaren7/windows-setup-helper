@@ -85,6 +85,7 @@ Switch $Command
 		WinMinimizeAll()
 
 		_RunFolder(@ScriptDir & "\AutoLogin\")
+		_RunFolder(@ScriptDir & "\AutoCustom\")
 		_RunFile(@ScriptFullPath)
 
 	Case ""
@@ -246,6 +247,8 @@ Switch $Command
 				Case $MenuShowLoginScriptsButton
 					_Log("MenuUpdateButton")
 					_PopulateScripts($ScriptsTree, "AutoLogin")
+					_PopulateScripts($ScriptsTree, "AutoCustom")
+					_PopulateScripts($ScriptsTree, "AutoSystem")
 
 				Case $MenuOpenFolder
 					_Log("MenuOpenFolder")
