@@ -153,7 +153,8 @@ Switch $Command
 		If $Manufacturer = "System manufacturer" Then $Manufacturer = "Unknown"
 		GUICtrlCreateListViewItem("Manufacturer: " & $Manufacturer, $InfoList)
 		GUICtrlCreateListViewItem("Model: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "SystemProductName"), $InfoList)
-		GUICtrlCreateListViewItem("BIOS: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "BIOSVersion"), $InfoList)
+		GUICtrlCreateListViewItem("BIOS Version: " & RegRead("HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\BIOS", "BIOSVersion"), $InfoList)
+		GUICtrlCreateListViewItem("BIOS Mode: " & _WinAPI_GetFirmwareEnvironmentVariable(), $InfoList)
 		$WinAPISystemInfo = _WinAPI_GetSystemInfo()
 		GUICtrlCreateListViewItem("CPU Cores/Logical Cores: " & $WinAPISystemInfo[5] & "/" & EnvGet("NUMBER_OF_PROCESSORS"), $InfoList)
 		$MemStats = MemGetStats()

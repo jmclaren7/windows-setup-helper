@@ -1,3 +1,25 @@
+Func _WinAPI_GetFirmwareEnvironmentVariable()
+    Local $sName = ""
+    Local $sGUID = "{00000000-0000-0000-0000-000000000000}"
+
+    Local $aRet = DllCall("Kernel32.dll", "dword", _
+        "GetFirmwareEnvironmentVariableW", "wstr", $sName, _
+        "wstr", $sGUID, "wstr", "", "dword", 4096)
+
+    ; ERROR_INVALID_FUNCTION 1 (0x1)
+    ; ERROR_NOACCESS 998 (0x3E6)
+    Local $LastError = _WinAPI_GetLastError()
+
+    If $LastError == 1 Then
+        Return "Legacy"
+    ElseIf $LastError == 998 Then
+        Return "UEFI"
+    Else
+        Return "Unknown"
+    EndIf
+
+EndFunc
+
 Func _NetAdapterInfo()
 	_Log("Collecting Adapter Information")
 	Local $Data[6]
