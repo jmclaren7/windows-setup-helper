@@ -314,6 +314,7 @@ Func _PopulateScripts($TreeID, $Folder)
 		GUICtrlSetState($FolderTreeItem, $GUI_CHECKED)
 
 		For $i = 1 To $FileArray[0]
+			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
 			_Log("Added: " & $FileArray[$i])
 			$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
 			;$OptLoginListItems[$i] = GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
@@ -343,6 +344,7 @@ Func _RunFolder($Path)
 	If Not @error Then
 		_Log("Files: " & $FileArray[0])
 		For $i = 1 To $FileArray[0]
+			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
 			_Log($FileArray[$i])
 			_RunFile($FileArray[$i])
 		Next
