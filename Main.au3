@@ -359,18 +359,21 @@ Func _RunFile($File, $Params = "")
 	_Log("_RunFile " & $File)
 	$Extension = StringTrimLeft($File, StringInStr($File, ".", 0, -1))
 	Switch $Extension
-		Case "au3" OR "a3x"
+		Case "au3", "a3x"
+			_Log("  au3")
 			$RunLine = @AutoItExe & " /AutoIt3ExecuteScript """ & $File & """ " & $Params
 			;Return ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & $File & """ " & $Params)
 			Return Run($RunLine, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case "ps1"
+			_Log("  ps1")
 			;$File = StringReplace($File, "$", "`$")
 			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Unrestricted -File """ & $File & """ " & $Params
 			_Log("$RunLine=" & $RunLine)
 			Return Run($RunLine, "", @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case "reg"
+			_Log("  reg")
 			$RunLine = @ComSpec & " /c " & "reg import """ & $File & """"
 
 			Local $Data = FileRead($File)
@@ -386,6 +389,7 @@ Func _RunFile($File, $Params = "")
 			Return Run($RunLine, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case Else
+			_Log("  other")
 			Return ShellExecute($File, $Params)
 
 	EndSwitch
