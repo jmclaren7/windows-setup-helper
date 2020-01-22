@@ -1,2 +1,3 @@
 * text eol=crlf
 *.au3 text eol=crlf
+*.a3x text eol=crlf
