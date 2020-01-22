@@ -1,4 +1,4 @@
-Get-AppxProvisionedPackage -Online | Out-GridView -PassThru | Remove-AppxProvisionedPackage -Online
+#Get-AppxProvisionedPackage -Online | Out-GridView -PassThru | Remove-AppxProvisionedPackage -Online
 
 # Description:
 # This script removes unwanted Apps that come with Windows. If you  do not want
