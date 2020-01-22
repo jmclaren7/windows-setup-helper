@@ -441,7 +441,7 @@ Func _GitUpdate($Prompt = False)
 		$Found = _ArraySearch($Current, $New[$i][0])
 		If $Found = -1 Then
 			_Log("Added: " & $New[$i][0])
-			_ArrayAdd($aChanges, $Current[$i][0] & "|" & "(Added)" & "|" & $New[$i][1])
+			_ArrayAdd($aChanges, $New[$i][0] & "|" & "(Added)" & "|" & $New[$i][1])
 		EndIf
 	Next
 
