@@ -1,1 +1,0 @@
-C:\Windows\System32\Sysprep\sysprep.exe /oobe /shutdown /generalize /unattend:C:\Windows\IT\autounattend.xml
