@@ -96,7 +96,7 @@ Switch $Command
 		$MenuItem1 = GUICtrlCreateMenu("&Advanced")
 		$MenuUpdateButton = GUICtrlCreateMenuItem("Update from GitHub", $MenuItem1)
 		$MenuVisitGitButton = GUICtrlCreateMenuItem("Visit GitHub Page", $MenuItem1)
-		$MenuShowLoginScriptsButton = GUICtrlCreateMenuItem("Show Login Scripts", $MenuItem1)
+		$MenuShowAllScriptsButton = GUICtrlCreateMenuItem("Show All Scripts", $MenuItem1)
 		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log", $MenuItem1)
 		$MenuOpenFolder = GUICtrlCreateMenuItem("Open Program Folder", $MenuItem1)
 		$Tab1 = GUICtrlCreateTab(7, 4, 809, 521)
@@ -244,11 +244,12 @@ Switch $Command
 
 					EndIf
 
-				Case $MenuShowLoginScriptsButton
+				Case $MenuShowAllScriptsButton
 					_Log("MenuUpdateButton")
 					_PopulateScripts($ScriptsTree, "AutoLogin")
 					_PopulateScripts($ScriptsTree, "AutoCustom")
 					_PopulateScripts($ScriptsTree, "AutoSystem")
+					_PopulateScripts($ScriptsTree, "OptAdvanced")
 
 				Case $MenuOpenFolder
 					_Log("MenuOpenFolder")
