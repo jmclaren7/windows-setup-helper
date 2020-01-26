@@ -17,6 +17,7 @@
 #include <TreeViewConstants.au3>
 #include <WindowsConstants.au3>
 #include <WinAPI.au3>
+#include <WinAPIFiles.au3>
 #include "includeExt\Json.au3"
 #include "includeExt\WinHttp.au3"
 #include "includeExt\ActivationStatus.au3"
@@ -24,6 +25,7 @@
 #include "includeExt\_Zip.au3"
 
 OnAutoItExitRegister("_Exit")
+_WinAPI_Wow64EnableWow64FsRedirection(False)
 
 If StringInStr(@ScriptFullPath, "$OEM$\$$\IT") Then
 	Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log")
