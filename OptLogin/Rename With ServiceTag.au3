@@ -10,8 +10,9 @@ $colItems = $objWMIService.ExecQuery("SELECT * FROM Win32_ComputerSystemProduct"
                                           $wbemFlagReturnImmediately + $wbemFlagForwardOnly)
 
 If IsObj($colItems) then
-   $Name = $Name&"-"&$objItem.IdentifyingNumber
-
+	For $objItem In $colItems
+   		$Name = $Name&"-"&$objItem.IdentifyingNumber
+	Next
 Endif
 
 _RenameComputer($Name)
