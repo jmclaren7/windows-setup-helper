@@ -37,7 +37,7 @@ Func _RenameComputer($iCompName, $iUserName = "", $iPassword = "")
     EndIf
 
     For $objComputer In $objWMIService.InstancesOf("Win32_ComputerSystem")
-        $Return = $objComputer.rename($iCompName,$iPassword,$iUserName)
+        $oReturn = $objComputer.rename($iCompName,$iPassword,$iUserName)
         If $oReturn <> 0 Then
             SetError(1)
             Return $oReturn
