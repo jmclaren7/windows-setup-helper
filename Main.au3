@@ -280,6 +280,7 @@ Switch $Command
 						$objSystem = ObjGet("WinNT://localhost")
 						$objUser = $objSystem.Create("user", $sUser)
 						$objUser.SetPassword($sPassword)
+						$objUser.Put("UserFlags", BitOR($objUser.get ("UserFlags"), 0x10000))
 						$objUser.SetInfo
 						If Not @error And $Admin = $GUI_CHECKED Then
 							$objGroup = ObjGet("WinNT://localhost/Administrators")
