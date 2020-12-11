@@ -1,5 +1,3 @@
-
-
 $wbemFlagReturnImmediately = 0x10
 $wbemFlagForwardOnly = 0x20
 $colItems = ""
