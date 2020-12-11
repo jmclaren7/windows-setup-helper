@@ -3,7 +3,6 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\PolicyState]
 "DeferQualityUpdates"=dword:00000001
 "DeferFeatureUpdates"=dword:00000001
-"BranchReadinessLevel"="CBB"
 "IsDeferralIsActive"=dword:00000001
 "IsWUfBConfigured"=dword:00000000
 "IsWUfBDualScanActive"=dword:00000000
@@ -15,12 +14,7 @@ Windows Registry Editor Version 5.00
 "ActiveHoursEnd"=dword:00000016
 "ActiveHoursStart"=dword:00000006
 "AllowAutoWindowsUpdateDownloadOverMeteredNetwork"=dword:00000000
-"BranchReadinessLevel"=dword:00000020
 "DeferFeatureUpdatesPeriodInDays"=dword:0000005a
 "DeferQualityUpdatesPeriodInDays"=dword:00000007
 "ExcludeWUDriversInQualityUpdate"=dword:00000000
-"FlightCommitted"=dword:00000000
-"LastToastAction"=dword:0000036b
-"UxOption"=dword:00000000
-"InsiderProgramEnabled"=dword:00000000
 "RestartNotificationsAllowed2"=dword:00000001
