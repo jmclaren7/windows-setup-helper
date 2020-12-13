@@ -66,6 +66,13 @@ Else
 EndIf
 
 Switch $Command
+	Case "bootmedia"
+		While 1
+			$input=InputBox($Title,"Enter Command"&@CRLF&@CRLF&$CmdLineRaw)
+			If @error Then ExitLoop
+			If $input="cmd" Then ShellExecute("cmd.exe")
+		WEnd
+
 	Case "system"
 		_RunFolder(@ScriptDir & "\AutoSystem\")
 
