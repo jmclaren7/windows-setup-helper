@@ -71,6 +71,7 @@ Switch $Command
 			$input=InputBox($Title,"Enter Command"&@CRLF&@CRLF&$CmdLineRaw)
 			If @error Then ExitLoop
 			If $input="cmd" Then ShellExecute("cmd.exe")
+			if $input="setup" Then Run(@ComSpec & " /c " & 'x:\setup.exe '&$CmdLineRaw, "", @SW_HIDE, $STDIO_INHERIT_PARENT)
 		WEnd
 
 	Case "system"

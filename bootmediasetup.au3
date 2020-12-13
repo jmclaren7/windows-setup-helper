@@ -9,14 +9,16 @@ $Title = "IT Setup Helper - Boot Media Loader"
 
 $Parameters = "/AutoIt3ExecuteScript Main.au3 bootmedia"
 
+Sleep(2000)
+
 For $i = 65 To 90
 	$Path = Chr($i) & ":\Windows 10 Images\20H2\sources\$OEM$\$$\IT\AutoIt3.exe"
 	If FileExists($Path) Then
 		ConsoleWrite("Found: "&$Path & ' ' & $Parameters&@CRLF)
 		$Return = Run(@ComSpec & " /c " & $Path & ' ' & $Parameters, "", @SW_HIDE)
 		ConsoleWrite("Run: "&$Return&@CRLF)
-		Sleep(1000)
+		Sleep(2000)
 	Endif
 Next
 
-Run(@ComSpec & " /c " & 'x:\setup2.exe '&$CmdLineRaw, "", @SW_HIDE, $STDIO_INHERIT_PARENT)
+;Run(@ComSpec & " /c " & 'x:\setup.exe '&$CmdLineRaw, "", @SW_HIDE, $STDIO_INHERIT_PARENT)
