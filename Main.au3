@@ -1,23 +1,23 @@
-#include <ButtonConstants.au3>
-#include <ComboConstants.au3>
-#include <Crypt.au3>
-#include <EditConstants.au3>
-#include <File.au3>
-#include <FileConstants.au3>
-#include <GuiConstantsEx.au3>
-#include <GuiListView.au3>
-#include <GuiTreeView.au3>
-#include <GuiStatusBar.au3>
-#include <Inet.au3>
-#include <InetConstants.au3>
-#include <ListViewConstants.au3>
-#include <Process.au3>
-#include <StaticConstants.au3>
-#include <TabConstants.au3>
-#include <TreeViewConstants.au3>
-#include <WindowsConstants.au3>
-#include <WinAPI.au3>
-#include <WinAPIFiles.au3>
+#include "include\ButtonConstants.au3"
+#include "include\ComboConstants.au3"
+#include "include\Crypt.au3"
+#include "include\EditConstants.au3"
+#include "include\File.au3"
+#include "include\FileConstants.au3"
+#include "include\GuiConstantsEx.au3"
+#include "include\GuiListView.au3"
+#include "include\GuiTreeView.au3"
+#include "include\GuiStatusBar.au3"
+#include "include\Inet.au3"
+#include "include\InetConstants.au3"
+#include "include\ListViewConstants.au3"
+#include "include\Process.au3"
+#include "include\StaticConstants.au3"
+#include "include\TabConstants.au3"
+#include "include\TreeViewConstants.au3"
+#include "include\WindowsConstants.au3"
+#include "include\WinAPI.au3"
+#include "include\WinAPIFiles.au3"
 #include "includeExt\Json.au3"
 #include "includeExt\WinHttp.au3"
 #include "includeExt\ActivationStatus.au3"
@@ -48,9 +48,19 @@ Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
 Global $StatusBar1
 Global $UserCreatedWithAdmin = False
 
-_Log("Start Script " & $CmdLineRaw)
+_Log($Title)
+_Log("$CmdLineRaw=" & $CmdLineRaw)
 _Log("@UserName=" & @UserName)
-_Log("@ScriptFullPath=" & @ScriptFullPath)
+_Log("@UserProfileDir=" & @UserProfileDir)
+_Log("@AppDataDir=" & @AppDataDir)
+_Log("@HomeDrive=" & @HomeDrive)
+_Log("@WindowsDir=" & @WindowsDir)
+_Log("@SystemDir=" & @SystemDir)
+_Log("@TempDir=" & @TempDir)
+_Log("@WorkingDir=" & @WorkingDir)
+_Log("PATH=" & EnvGet ("PATH"))
+
+If FileExists(@ScriptDir & "\noexecute") Then Exit
 
 Global $TokenAddHeader = IniRead(".token", "t", "t", "")
 If $TokenAddHeader = "" Then $TokenAddHeader = IniRead("git.token", "t", "t", "")
@@ -62,16 +72,95 @@ EndIf
 If $CmdLine[0] >= 1 Then
 	$Command = $CmdLine[1]
 Else
-	$Command = ""
+	$Command = "main-gui"
 EndIf
 
+_Log("Command: "&$Command)
+
 Switch $Command
-	Case "bootmedia"
+	Case "bootmedia", "boot-gui"
+		$BootDrive = StringLeft(@SystemDir,3)
+
+		; Start network
+		Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_SHOW, $RUN_CREATE_NEW_CONSOLE)
+
+		; Boot GUI
+		$GUIBoot = GUICreate("$Title", 625, 442, -1, -1)
+		GUISetBkColor(0xFFFFFF)
+		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 23, 392, 107, 25)
+		$AutomatedInstallButton = GUICtrlCreateButton("Continue Automated Install", 439, 392, 155, 25, $BS_DEFPUSHBUTTON)
+		$Label1 = GUICtrlCreateLabel("Automated Install Options", 24, 24, 213, 24)
+		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
+		GUICtrlSetColor(-1, 0x3399FF)
+		$Boot_ScriptsTree = GUICtrlCreateTreeView(360, 56, 233, 305, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$AdvancedButton = GUICtrlCreateButton("Advanced", 142, 392, 107, 25)
+		$Label2 = GUICtrlCreateLabel("Select scripts to automaticly run once installation is complete", 48, 72, 288, 17)
+		$Label3 = GUICtrlCreateLabel("Select normal Install to skip all automated install features", 48, 96, 268, 17)
+
+		Opt("WinTitleMatchMode", 2)
+		WinSetState ("bootmedia.exe", "", @SW_MINIMIZE)
+
+		GUISetState(@SW_SHOW)
+		WinSetTitle($GUIBoot, "", $Title)
+		GUISetIcon ($BootDrive & "sources\setup.exe")
+
+		; Generate script checkboxes
+		_PopulateScripts($Boot_ScriptsTree, "OptLogin")
+		_PopulateScripts($Boot_ScriptsTree, "OptCustom")
+
+		; Loop
 		While 1
-			$input=InputBox($Title,"Enter Command"&@CRLF&@CRLF&$CmdLineRaw)
-			If @error Then ExitLoop
-			If $input="cmd" Then ShellExecute("cmd.exe")
-			if $input="setup" Then Run(@ComSpec & " /c " & 'x:\setup.exe '&$CmdLineRaw, "", @SW_HIDE, $STDIO_INHERIT_PARENT)
+			$nMsg = GUIGetMsg()
+			Switch $nMsg
+				Case $GUI_EVENT_CLOSE
+					Exit
+
+				Case $AdvancedButton
+					_RunFile("cmd.exe")
+
+
+				Case $NormalInstallButton
+					_RunFile($BootDrive & "sources\setup.exe")
+					While 1
+						For $i = 65 To 90
+							$Path = Chr($i) & ":\Windows\IT"
+							If FileExists($Path) Then
+								$Return = DirRemove($Path, 1)
+								_Log("Found: "&$Path & " DirRemove: " & $Return)
+								Sleep(1000)
+							Endif
+						Next
+
+						Sleep(10)
+					Wend
+
+				Case $AutomatedInstallButton
+					_RunFile($BootDrive & "sources\setup.exe", "/unattend:" & @ScriptDir & "\autounattend.xml")
+
+					$aList = _RunTreeView($Boot_ScriptsTree, True)
+					For $i=0 to UBound($aList)-1
+						_Log("TreeItem: "& $aList[$i])
+					Next
+
+					While 1
+						For $i = 65 To 90
+							$Path = Chr($i) & ":\Windows\IT"
+							If FileExists($Path) Then
+								_Log("Found: " & $Path)
+								For $i=0 to UBound($aList)-1
+									$Dest = $Path & "\AutoLogin\"
+									$Return = FileCopy($aList[$i], $Dest)
+									_Log("FileCopy: " & $Return & " (" & $Dest & ")")
+
+								Next
+								Sleep(2000)
+							Endif
+						Next
+
+						Sleep(10)
+					Wend
+
+			EndSwitch
 		WEnd
 
 	Case "system"
@@ -98,7 +187,7 @@ Switch $Command
 		_RunFolder(@ScriptDir & "\AutoCustom\")
 		_RunFile(@ScriptFullPath)
 
-	Case ""
+	Case "main-gui", ""
 		#Region ### START Koda GUI section ###
 		$GUIMain = GUICreate("$Title", 823, 574, -1, -1)
 		$MenuItem2 = GUICtrlCreateMenu("&File")
@@ -140,7 +229,7 @@ Switch $Command
 		#EndRegion ### END Koda GUI section ###
 
 		;GUI Post Creation Setup
-		WinSetTitle($GUIMain, "", $TITLE)
+		WinSetTitle($GUIMain, "", $Title)
 		GUICtrlSendMsg($UsernameInput, $EM_SETCUEBANNER, False, "Username")
 		GUICtrlSendMsg($PasswordInput, $EM_SETCUEBANNER, False, "Password (optional)")
 
@@ -179,11 +268,6 @@ Switch $Command
 		_PopulateScripts($ScriptsTree, "OptLogin")
 		_PopulateScripts($ScriptsTree, "OptCustom")
 
-		;$TabSheet2 = GUICtrlCreateTabItem("Test")
-		;$GroupSheet2 = GUICtrlCreateGroup("Test Group", 400, 33, 401, 521)
-		;GUISetState(@SW_HIDE)
-		;GUISetState(@SW_SHOW)
-
 		_Log("Ready", True)
 
 		;GUI Loop
@@ -216,28 +300,7 @@ Switch $Command
 
 				Case $RunButton
 					_Log("RunButton")
-					$TreeViewItemTotal = _GUICtrlTreeView_GetCount($ScriptsTree)
-
-					For $TreeItemCount = 1 To $TreeViewItemTotal
-						If Not IsDeclared("hScriptsTreeItem") Then
-							$hScriptsTreeItem = _GUICtrlTreeView_GetFirstItem($ScriptsTree)
-						Else
-							$hScriptsTreeItem = _GUICtrlTreeView_GetNext($ScriptsTree, $hScriptsTreeItem)
-						EndIf
-
-						$hScriptsTreeItemParent = _GUICtrlTreeView_GetParentHandle($ScriptsTree, $hScriptsTreeItem)
-
-						If Not Int($hScriptsTreeItemParent) Then
-							ContinueLoop
-
-						ElseIf _GUICtrlTreeView_GetChecked($ScriptsTree, $hScriptsTreeItem) Then
-							$Folder = _GUICtrlTreeView_GetText($ScriptsTree, $hScriptsTreeItemParent)
-							$File = _GUICtrlTreeView_GetText($ScriptsTree, $hScriptsTreeItem)
-							$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
-							_RunFile($RunFullPath)
-
-						EndIf
-					Next
+					_RunTreeView($ScriptsTree)
 
 				Case $MenuUpdateButton
 					_Log("MenuUpdateButton")
@@ -350,6 +413,35 @@ Func _NotAdminMsg($hwnd = "")
 
 EndFunc   ;==>_NotAdminMsg
 
+
+Func _RunTreeView($TreeView, $Dry = False)
+	$TreeViewItemTotal = _GUICtrlTreeView_GetCount($TreeView)
+	Local $aList[0]
+
+	For $TreeItemCount = 1 To $TreeViewItemTotal
+		If Not IsDeclared("hScriptsTreeItem") Then
+			$hScriptsTreeItem = _GUICtrlTreeView_GetFirstItem($TreeView)
+		Else
+			$hScriptsTreeItem = _GUICtrlTreeView_GetNext($TreeView, $hScriptsTreeItem)
+		EndIf
+
+		$hScriptsTreeItemParent = _GUICtrlTreeView_GetParentHandle($TreeView, $hScriptsTreeItem)
+
+		If Not Int($hScriptsTreeItemParent) Then
+			ContinueLoop
+
+		ElseIf _GUICtrlTreeView_GetChecked($TreeView, $hScriptsTreeItem) Then
+			$Folder = _GUICtrlTreeView_GetText($TreeView, $hScriptsTreeItemParent)
+			$File = _GUICtrlTreeView_GetText($TreeView, $hScriptsTreeItem)
+			$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
+			If $Dry = False Then _RunFile($RunFullPath)
+			_ArrayAdd($aList, $RunFullPath)
+		EndIf
+	Next
+
+	Return $aList
+EndFunc
+
 Func _RunFolder($Path)
 	_Log("_RunFolder " & $Path)
 	$FileArray = _FileListToArray($Path, "*", $FLTA_FILES, True)
@@ -367,7 +459,7 @@ Func _RunFolder($Path)
 
 EndFunc   ;==>_RunFolder
 
-Func _RunFile($File, $Params = "")
+Func _RunFile($File, $Params = "", $WorkingDir = "")
 	_Log("_RunFile " & $File)
 	$Extension = StringTrimLeft($File, StringInStr($File, ".", 0, -1))
 	Switch $Extension
@@ -375,14 +467,14 @@ Func _RunFile($File, $Params = "")
 			_Log("  au3")
 			$RunLine = @AutoItExe & " /AutoIt3ExecuteScript """ & $File & """ " & $Params
 			;Return ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & $File & """ " & $Params)
-			Return Run($RunLine, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+			Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDIO_INHERIT_PARENT)
 
 		Case "ps1"
 			_Log("  ps1")
 			;$File = StringReplace($File, "$", "`$")
 			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Unrestricted -File """ & $File & """ " & $Params
 			_Log("$RunLine=" & $RunLine)
-			Return Run($RunLine, "", @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+			Return Run($RunLine, $WorkingDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case "reg"
 			_Log("  reg")
@@ -398,11 +490,11 @@ Func _RunFile($File, $Params = "")
 			EndIf
 
 			_Log("$RunLine=" & $RunLine)
-			Return Run($RunLine, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+			Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case Else
 			_Log("  other")
-			Return ShellExecute($File, $Params)
+			Return ShellExecute($File, $Params, $WorkingDir)
 
 	EndSwitch
 

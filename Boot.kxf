@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<object type="TAForm" name="GUIBoot">
+	<properties>
+		<property name="Left" vt="Int16">482</property>
+		<property name="Top" vt="Int16">523</property>
+		<property name="Width" vt="Int16">640</property>
+		<property name="Height" vt="Int16">480</property>
+		<property name="Caption" vt="String">$Title</property>
+		<property name="Color" vt="Ident">clWindow</property>
+		<property name="Font.Charset" vt="Ident">DEFAULT_CHARSET</property>
+		<property name="Font.Color" vt="Ident">clWindowText</property>
+		<property name="Font.Height" vt="Int8">-11</property>
+		<property name="Font.Name" vt="String">MS Sans Serif</property>
+		<property name="Font.Style" vt="Set"/>
+		<property name="OldCreateOrder" vt="False">False</property>
+		<property name="Position" vt="Ident">poDesktopCenter</property>
+		<property name="Visible" vt="True">True</property>
+		<property name="Style" vt="Int32">-1798701056</property>
+		<property name="ExStyle" vt="Int16">384</property>
+		<property name="Version" vt="String">1.04</property>
+		<property name="FormOptOnEvent" vt="False">False</property>
+		<property name="FormOptExpVars" vt="True">True</property>
+		<property name="FormOptPopulate" vt="False">False</property>
+		<property name="FormOptVarsForSet" vt="False">False</property>
+		<property name="FormOptIndentChar" vt="Int8">0</property>
+		<property name="FormOptIndentCount" vt="Int8">1</property>
+		<property name="FormOptIndentInit" vt="Int8">0</property>
+		<property name="FormOptVarScope" vt="Int8">0</property>
+		<property name="Resizing" vt="Set"/>
+		<property name="PixelsPerInch" vt="Int8">96</property>
+		<property name="TextHeight" vt="Int8">13</property>
+	</properties>
+	<components>
+		<object type="TAButton" name="NormalInstallButton">
+			<properties>
+				<property name="Left" vt="Int8">23</property>
+				<property name="Top" vt="Int16">392</property>
+				<property name="Width" vt="Int8">107</property>
+				<property name="Height" vt="Int8">25</property>
+				<property name="Caption" vt="String">Normal Install</property>
+				<property name="TabOrder" vt="Int8">0</property>
+				<property name="Color" vt="Ident">clBtnFace</property>
+				<property name="CtrlStyle" vt="Int32">1342373888</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set">DockWidth, DockHeight</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TAButton" name="AutomatedInstallButton">
+			<properties>
+				<property name="Left" vt="Int16">439</property>
+				<property name="Top" vt="Int16">392</property>
+				<property name="Width" vt="Int16">155</property>
+				<property name="Height" vt="Int8">25</property>
+				<property name="Caption" vt="String">Continue Automated Install</property>
+				<property name="TabOrder" vt="Int8">1</property>
+				<property name="Color" vt="Ident">clBtnFace</property>
+				<property name="CtrlStyle" vt="Int32">1342373889</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set">DockWidth, DockHeight</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TALabel" name="Label1">
+			<properties>
+				<property name="Left" vt="Int8">24</property>
+				<property name="Top" vt="Int8">24</property>
+				<property name="Width" vt="Int16">213</property>
+				<property name="Height" vt="Int8">24</property>
+				<property name="Caption" vt="String">Automated Install Options</property>
+				<property name="Font.Charset" vt="Ident">DEFAULT_CHARSET</property>
+				<property name="Font.Color" vt="Ident">clMenuHighlight</property>
+				<property name="Font.Height" vt="Int8">-16</property>
+				<property name="Font.Name" vt="String">MS Sans Serif</property>
+				<property name="Font.Style" vt="Set">fsBold</property>
+				<property name="ParentFont" vt="False">False</property>
+				<property name="TabOrder" vt="Int8">2</property>
+				<property name="HaveVariable" vt="False">False</property>
+				<property name="CtrlStyle" vt="Int32">1342308608</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set"/>
+			</properties>
+			<components/>
+		</object>
+		<object type="TATreeView" name="Boot_ScriptsTree">
+			<properties>
+				<property name="Left" vt="Int16">360</property>
+				<property name="Top" vt="Int8">56</property>
+				<property name="Width" vt="Int16">233</property>
+				<property name="Height" vt="Int16">305</property>
+				<property name="CtrlStyle" vt="Int32">1342374199</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set"/>
+				<property name="TabOrder" vt="Int8">3</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TAButton" name="AdvancedButton">
+			<properties>
+				<property name="Left" vt="Int16">142</property>
+				<property name="Top" vt="Int16">392</property>
+				<property name="Width" vt="Int8">107</property>
+				<property name="Height" vt="Int8">25</property>
+				<property name="Caption" vt="String">Advanced</property>
+				<property name="TabOrder" vt="Int8">4</property>
+				<property name="Color" vt="Ident">clBtnFace</property>
+				<property name="CtrlStyle" vt="Int32">1342373888</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set">DockWidth, DockHeight</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TALabel" name="Label2">
+			<properties>
+				<property name="Left" vt="Int8">48</property>
+				<property name="Top" vt="Int8">72</property>
+				<property name="Width" vt="Int16">288</property>
+				<property name="Height" vt="Int8">17</property>
+				<property name="Caption" vt="String">Select scripts to automaticly run once installation is complete</property>
+				<property name="TabOrder" vt="Int8">5</property>
+				<property name="HaveVariable" vt="False">False</property>
+				<property name="CtrlStyle" vt="Int32">1342308608</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set"/>
+			</properties>
+			<components/>
+		</object>
+		<object type="TALabel" name="Label3">
+			<properties>
+				<property name="Left" vt="Int8">48</property>
+				<property name="Top" vt="Int8">96</property>
+				<property name="Width" vt="Int16">268</property>
+				<property name="Height" vt="Int8">17</property>
+				<property name="Caption" vt="String">Select normal Install to skip all automated install features</property>
+				<property name="TabOrder" vt="Int8">6</property>
+				<property name="HaveVariable" vt="False">False</property>
+				<property name="CtrlStyle" vt="Int32">1342308608</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set"/>
+			</properties>
+			<components/>
+		</object>
+	</components>
+</object>
