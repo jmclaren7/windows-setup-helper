@@ -73,6 +73,7 @@ If $CmdLine[0] >= 1 Then
 	$Command = $CmdLine[1]
 Else
 	$Command = "main-gui"
+	$Command = "boot-gui"
 EndIf
 
 _Log("Command: "&$Command)
@@ -138,8 +139,8 @@ Switch $Command
 					_RunFile($BootDrive & "sources\setup.exe", "/unattend:" & @ScriptDir & "\autounattend.xml")
 
 					$aList = _RunTreeView($Boot_ScriptsTree, True)
-					For $i=0 to UBound($aList)-1
-						_Log("TreeItem: "& $aList[$i])
+					For $b=0 to UBound($aList)-1
+						_Log("TreeItem: "& $aList[$b])
 					Next
 
 					While 1
@@ -147,13 +148,13 @@ Switch $Command
 							$Path = Chr($i) & ":\Windows\IT"
 							If FileExists($Path) Then
 								_Log("Found: " & $Path)
-								For $i=0 to UBound($aList)-1
+								For $b=0 to UBound($aList)-1
 									$Dest = $Path & "\AutoLogin\"
-									$Return = FileCopy($aList[$i], $Dest)
+									$Return = FileCopy($aList[$b], $Dest)
 									_Log("FileCopy: " & $Return & " (" & $Dest & ")")
 
 								Next
-								Sleep(2000)
+								Sleep(4000)
 							Endif
 						Next
 
@@ -382,17 +383,14 @@ Func _PopulateScripts($TreeID, $Folder)
 	Local $FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILES, True)
 
 	If Not @error Then
-		;Local $OptLoginListItems[$FileArray[0] + 1]
-		_Log("OptLogin Files: " & $FileArray[0])
+		_Log($Folder & " Files (no filter): " & $FileArray[0])
 		Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
-		;GUICtrlSetState($FolderTreeItem,$GUI_DISABLE)
 		GUICtrlSetState($FolderTreeItem, $GUI_CHECKED)
 
 		For $i = 1 To $FileArray[0]
 			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
 			_Log("Added: " & $FileArray[$i])
 			$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
-			;$OptLoginListItems[$i] = GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
 			GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
 		Next
 
@@ -415,17 +413,26 @@ EndFunc   ;==>_NotAdminMsg
 
 
 Func _RunTreeView($TreeView, $Dry = False)
+	_Log("_RunTreeView")
 	$TreeViewItemTotal = _GUICtrlTreeView_GetCount($TreeView)
+	;_Log("$TreeViewItemTotal=" & $TreeViewItemTotal)
+
 	Local $aList[0]
 
 	For $TreeItemCount = 1 To $TreeViewItemTotal
+		;_Log("$TreeItemCount=" & $TreeItemCount)
+
 		If Not IsDeclared("hScriptsTreeItem") Then
 			$hScriptsTreeItem = _GUICtrlTreeView_GetFirstItem($TreeView)
 		Else
 			$hScriptsTreeItem = _GUICtrlTreeView_GetNext($TreeView, $hScriptsTreeItem)
 		EndIf
 
+		;_Log("$hScriptsTreeItem=" & $hScriptsTreeItem)
+
 		$hScriptsTreeItemParent = _GUICtrlTreeView_GetParentHandle($TreeView, $hScriptsTreeItem)
+
+		;_Log("$hScriptsTreeItemParent=" & $hScriptsTreeItemParent)
 
 		If Not Int($hScriptsTreeItemParent) Then
 			ContinueLoop
@@ -434,6 +441,7 @@ Func _RunTreeView($TreeView, $Dry = False)
 			$Folder = _GUICtrlTreeView_GetText($TreeView, $hScriptsTreeItemParent)
 			$File = _GUICtrlTreeView_GetText($TreeView, $hScriptsTreeItem)
 			$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
+			_Log("Checked: $RunFullPath=" & $RunFullPath)
 			If $Dry = False Then _RunFile($RunFullPath)
 			_ArrayAdd($aList, $RunFullPath)
 		EndIf
