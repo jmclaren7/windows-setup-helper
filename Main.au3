@@ -60,10 +60,10 @@ _Log("@TempDir=" & @TempDir)
 _Log("@WorkingDir=" & @WorkingDir)
 _Log("PATH=" & EnvGet ("PATH"))
 
-If FileExists(@ScriptDir & "\noexecute") Then Exit
+;If FileExists(@ScriptDir & "\noexecute") Then Exit
 
 Global $TokenAddHeader = IniRead(".token", "t", "t", "")
-If $TokenAddHeader = "" Then $TokenAddHeader = IniRead("git.token", "t", "t", "")
+;If $TokenAddHeader = "" Then $TokenAddHeader = IniRead("git.token", "t", "t", "")
 If $TokenAddHeader <> "" Then
 	_Log("Token Added")
 	$TokenAddHeader = "Authorization: token " & $TokenAddHeader
@@ -73,7 +73,6 @@ If $CmdLine[0] >= 1 Then
 	$Command = $CmdLine[1]
 Else
 	$Command = "main-gui"
-	$Command = "boot-gui"
 EndIf
 
 _Log("Command: "&$Command)
@@ -101,6 +100,8 @@ Switch $Command
 		Opt("WinTitleMatchMode", 2)
 		WinSetState ("bootmedia.exe", "", @SW_MINIMIZE)
 
+		;$TestButton = GUICtrlCreateButton("Test", 262, 392, 107, 25)
+
 		GUISetState(@SW_SHOW)
 		WinSetTitle($GUIBoot, "", $Title)
 		GUISetIcon ($BootDrive & "sources\setup.exe")
@@ -112,7 +113,11 @@ Switch $Command
 		; Loop
 		While 1
 			$nMsg = GUIGetMsg()
+
 			Switch $nMsg
+				Case $TestButton
+
+
 				Case $GUI_EVENT_CLOSE
 					Exit
 
@@ -136,12 +141,12 @@ Switch $Command
 					Wend
 
 				Case $AutomatedInstallButton
-					_RunFile($BootDrive & "sources\setup.exe", "/unattend:" & @ScriptDir & "\autounattend.xml")
-
-					$aList = _RunTreeView($Boot_ScriptsTree, True)
+					$aList = _RunTreeView($GUIBoot, $Boot_ScriptsTree, True)
 					For $b=0 to UBound($aList)-1
 						_Log("TreeItem: "& $aList[$b])
 					Next
+
+					_RunFile($BootDrive & "sources\setup.exe", "/unattend:" & @ScriptDir & "\autounattend.xml")
 
 					While 1
 						For $i = 65 To 90
@@ -150,8 +155,8 @@ Switch $Command
 								_Log("Found: " & $Path)
 								For $b=0 to UBound($aList)-1
 									$Dest = $Path & "\AutoLogin\"
-									$Return = FileCopy($aList[$b], $Dest)
-									_Log("FileCopy: " & $Return & " (" & $Dest & ")")
+									$Return = FileCopy($aList[$b], $Dest, 1)
+									If $Return Then _Log("FileCopy: " & $Dest)
 
 								Next
 								Sleep(4000)
@@ -162,6 +167,8 @@ Switch $Command
 					Wend
 
 			EndSwitch
+
+			Sleep(10)
 		WEnd
 
 	Case "system"
@@ -275,7 +282,6 @@ Switch $Command
 		While 1
 			$nMsg = GUIGetMsg()
 			Switch $nMsg
-
 				Case $GUI_EVENT_CLOSE
 					Exit
 
@@ -301,7 +307,7 @@ Switch $Command
 
 				Case $RunButton
 					_Log("RunButton")
-					_RunTreeView($ScriptsTree)
+					_RunTreeView($GUIMain, $ScriptsTree)
 
 				Case $MenuUpdateButton
 					_Log("MenuUpdateButton")
@@ -411,43 +417,30 @@ Func _NotAdminMsg($hwnd = "")
 
 EndFunc   ;==>_NotAdminMsg
 
-
-Func _RunTreeView($TreeView, $Dry = False)
+Func _RunTreeView($hWindow, $hTreeView, $Dry = False)
 	_Log("_RunTreeView")
-	$TreeViewItemTotal = _GUICtrlTreeView_GetCount($TreeView)
-	;_Log("$TreeViewItemTotal=" & $TreeViewItemTotal)
 
 	Local $aList[0]
 
-	For $TreeItemCount = 1 To $TreeViewItemTotal
-		;_Log("$TreeItemCount=" & $TreeItemCount)
+	For $iTop = 0 To ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "GetItemCount", "") - 1
+		$Folder = ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "GetText", "#"&$iTop)
 
-		If Not IsDeclared("hScriptsTreeItem") Then
-			$hScriptsTreeItem = _GUICtrlTreeView_GetFirstItem($TreeView)
-		Else
-			$hScriptsTreeItem = _GUICtrlTreeView_GetNext($TreeView, $hScriptsTreeItem)
-		EndIf
+		For $iSub = 0 To ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "GetItemCount", "#"&$iTop) - 1
+			$File = ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "GetText", "#"&$iTop&"|#"&$iSub)
+			$FileChecked = ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "IsChecked", "#"&$iTop&"|#"&$iSub)
 
-		;_Log("$hScriptsTreeItem=" & $hScriptsTreeItem)
+			If $FileChecked Then
+				$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
+				_Log("Checked: $RunFullPath=" & $RunFullPath)
+				If $Dry = False Then _RunFile($RunFullPath)
+				_ArrayAdd($aList, $RunFullPath)
+			Endif
+		Next
 
-		$hScriptsTreeItemParent = _GUICtrlTreeView_GetParentHandle($TreeView, $hScriptsTreeItem)
-
-		;_Log("$hScriptsTreeItemParent=" & $hScriptsTreeItemParent)
-
-		If Not Int($hScriptsTreeItemParent) Then
-			ContinueLoop
-
-		ElseIf _GUICtrlTreeView_GetChecked($TreeView, $hScriptsTreeItem) Then
-			$Folder = _GUICtrlTreeView_GetText($TreeView, $hScriptsTreeItemParent)
-			$File = _GUICtrlTreeView_GetText($TreeView, $hScriptsTreeItem)
-			$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
-			_Log("Checked: $RunFullPath=" & $RunFullPath)
-			If $Dry = False Then _RunFile($RunFullPath)
-			_ArrayAdd($aList, $RunFullPath)
-		EndIf
 	Next
 
 	Return $aList
+
 EndFunc
 
 Func _RunFolder($Path)
