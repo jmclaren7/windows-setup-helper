@@ -100,23 +100,20 @@ Switch $Command
 		Opt("WinTitleMatchMode", 2)
 		WinSetState("bootmedia.exe", "", @SW_MINIMIZE)
 
-		;$TestButton = GUICtrlCreateButton("Test", 262, 392, 107, 25)
-
 		GUISetState(@SW_SHOW)
 		WinSetTitle($GUIBoot, "", $Title)
 		GUISetIcon($BootDrive & "sources\setup.exe")
 
 		; Generate script checkboxes
 		_PopulateScripts($Boot_ScriptsTree, "OptLogin")
-		_PopulateScripts($Boot_ScriptsTree, "OptCustom")
+
+		_RunMulti("AutoSetup")
 
 		; Loop
 		While 1
 			$nMsg = GUIGetMsg()
 
 			Switch $nMsg
-				Case $TestButton
-
 
 				Case $GUI_EVENT_CLOSE
 					Exit
@@ -172,7 +169,7 @@ Switch $Command
 		WEnd
 
 	Case "system"
-		_RunFolder(@ScriptDir & "\AutoSystem\")
+		_RunMulti("AutoSystem")
 
 	Case "login"
 		ProcessWait("Explorer.exe", 60)
@@ -191,8 +188,7 @@ Switch $Command
 
 		WinMinimizeAll()
 
-		_RunFolder(@ScriptDir & "\AutoLogin\")
-		_RunFolder(@ScriptDir & "\AutoCustom\")
+		_RunMulti("AutoLogin")
 		_RunFile(@ScriptFullPath)
 
 	Case "main-gui", ""
@@ -274,7 +270,6 @@ Switch $Command
 
 		;Generate Script List
 		_PopulateScripts($ScriptsTree, "OptLogin")
-		_PopulateScripts($ScriptsTree, "OptCustom")
 
 		_Log("Ready", True)
 
@@ -327,7 +322,7 @@ Switch $Command
 				Case $MenuShowAllScriptsButton
 					_Log("MenuUpdateButton")
 					_PopulateScripts($ScriptsTree, "AutoLogin")
-					_PopulateScripts($ScriptsTree, "AutoCustom")
+					_PopulateScripts($ScriptsTree, "AutoSetup")
 					_PopulateScripts($ScriptsTree, "AutoSystem")
 					_PopulateScripts($ScriptsTree, "OptAdvanced")
 
@@ -387,7 +382,6 @@ EndSwitch
 
 Func _PopulateScripts($TreeID, $Folder)
 	Local $FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILES, True)
-
 	If Not @error Then
 		_Log($Folder & " Files (no filter): " & $FileArray[0])
 		Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
@@ -403,11 +397,14 @@ Func _PopulateScripts($TreeID, $Folder)
 		GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
 		GUICtrlSetState($FolderTreeItem, $GUI_UNCHECKED)
 
-		Return $FileArray
 	Else
-		_Log("No files")
-		Return 0
+		_Log($Folder & " No files or missing")
+
 	EndIf
+
+	If StringRight($Folder, 6) <> "Custom" Then _PopulateScripts($TreeID, $Folder & "Custom")
+
+	Return $FileArray
 
 EndFunc   ;==>_PopulateScripts
 
@@ -417,7 +414,7 @@ Func _NotAdminMsg($hwnd = "")
 
 EndFunc   ;==>_NotAdminMsg
 
-Func _RunTreeView($hWindow, $hTreeView, $Dry = False)
+Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
 	_Log("_RunTreeView")
 
 	Local $aList[0]
@@ -432,7 +429,7 @@ Func _RunTreeView($hWindow, $hTreeView, $Dry = False)
 			If $FileChecked Then
 				$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
 				_Log("Checked: $RunFullPath=" & $RunFullPath)
-				If $Dry = False Then _RunFile($RunFullPath)
+				If $ListOnly = False Then _RunFile($RunFullPath)
 				_ArrayAdd($aList, $RunFullPath)
 			EndIf
 		Next
@@ -442,6 +439,19 @@ Func _RunTreeView($hWindow, $hTreeView, $Dry = False)
 	Return $aList
 
 EndFunc   ;==>_RunTreeView
+
+Func _RunMulti($Folder)
+	_Log("_RunMulti " & $Folder)
+
+	$aFiles1 = _RunFolder(@ScriptDir & "\" & $Folder )
+	$aFiles2 = _RunFolder(@ScriptDir & "\" & $Folder & "Custom")
+
+	$iCount = _ArrayConcatenate ($aFiles1, $aFiles2, 1)
+
+	$aFiles1[0] = $iCount
+
+	Return $aFiles1
+EndFunc
 
 Func _RunFolder($Path)
 	_Log("_RunFolder " & $Path)
