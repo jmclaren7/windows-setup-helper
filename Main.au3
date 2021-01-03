@@ -58,7 +58,7 @@ _Log("@WindowsDir=" & @WindowsDir)
 _Log("@SystemDir=" & @SystemDir)
 _Log("@TempDir=" & @TempDir)
 _Log("@WorkingDir=" & @WorkingDir)
-_Log("PATH=" & EnvGet ("PATH"))
+_Log("PATH=" & EnvGet("PATH"))
 
 ;If FileExists(@ScriptDir & "\noexecute") Then Exit
 
@@ -75,11 +75,11 @@ Else
 	$Command = "main-gui"
 EndIf
 
-_Log("Command: "&$Command)
+_Log("Command: " & $Command)
 
 Switch $Command
 	Case "bootmedia", "boot-gui"
-		$BootDrive = StringLeft(@SystemDir,3)
+		$BootDrive = StringLeft(@SystemDir, 3)
 
 		; Start network
 		Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_SHOW, $RUN_CREATE_NEW_CONSOLE)
@@ -92,19 +92,19 @@ Switch $Command
 		$Label1 = GUICtrlCreateLabel("Automated Install Options", 24, 24, 213, 24)
 		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
 		GUICtrlSetColor(-1, 0x3399FF)
-		$Boot_ScriptsTree = GUICtrlCreateTreeView(360, 56, 233, 305, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$Boot_ScriptsTree = GUICtrlCreateTreeView(360, 56, 233, 305, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
 		$AdvancedButton = GUICtrlCreateButton("Advanced", 142, 392, 107, 25)
 		$Label2 = GUICtrlCreateLabel("Select scripts to automaticly run once installation is complete", 48, 72, 288, 17)
 		$Label3 = GUICtrlCreateLabel("Select normal Install to skip all automated install features", 48, 96, 268, 17)
 
 		Opt("WinTitleMatchMode", 2)
-		WinSetState ("bootmedia.exe", "", @SW_MINIMIZE)
+		WinSetState("bootmedia.exe", "", @SW_MINIMIZE)
 
 		;$TestButton = GUICtrlCreateButton("Test", 262, 392, 107, 25)
 
 		GUISetState(@SW_SHOW)
 		WinSetTitle($GUIBoot, "", $Title)
-		GUISetIcon ($BootDrive & "sources\setup.exe")
+		GUISetIcon($BootDrive & "sources\setup.exe")
 
 		; Generate script checkboxes
 		_PopulateScripts($Boot_ScriptsTree, "OptLogin")
@@ -132,18 +132,18 @@ Switch $Command
 							$Path = Chr($i) & ":\Windows\IT"
 							If FileExists($Path) Then
 								$Return = DirRemove($Path, 1)
-								_Log("Found: "&$Path & " DirRemove: " & $Return)
+								_Log("Found: " & $Path & " DirRemove: " & $Return)
 								Sleep(1000)
-							Endif
+							EndIf
 						Next
 
 						Sleep(10)
-					Wend
+					WEnd
 
 				Case $AutomatedInstallButton
 					$aList = _RunTreeView($GUIBoot, $Boot_ScriptsTree, True)
-					For $b=0 to UBound($aList)-1
-						_Log("TreeItem: "& $aList[$b])
+					For $b = 0 To UBound($aList) - 1
+						_Log("TreeItem: " & $aList[$b])
 					Next
 
 					_RunFile($BootDrive & "sources\setup.exe", "/unattend:" & @ScriptDir & "\autounattend.xml")
@@ -153,18 +153,18 @@ Switch $Command
 							$Path = Chr($i) & ":\Windows\IT"
 							If FileExists($Path) Then
 								_Log("Found: " & $Path)
-								For $b=0 to UBound($aList)-1
+								For $iFile = 0 To UBound($aList) - 1
 									$Dest = $Path & "\AutoLogin\"
-									$Return = FileCopy($aList[$b], $Dest, 1)
+									$Return = FileCopy($aList[$iFile], $Dest, 1)
 									If $Return Then _Log("FileCopy: " & $Dest)
 
 								Next
 								Sleep(4000)
-							Endif
+							EndIf
 						Next
 
 						Sleep(10)
-					Wend
+					WEnd
 
 			EndSwitch
 
@@ -289,7 +289,7 @@ Switch $Command
 					_Log("DisableAdminButton")
 
 					If @ComputerName = @LogonDomain And Not $UserCreatedWithAdmin Then
-						If MsgBox($MB_YESNO, $TITLE, "Are you sure?" & @CRLF & @CRLF & "This computer might not be joined to a domain and it looks like you haven't created a local user with admin rights.", 0, $GUIMain) <> $IDYES Then
+						If MsgBox($MB_YESNO, $Title, "Are you sure?" & @CRLF & @CRLF & "This computer might not be joined to a domain and it looks like you haven't created a local user with admin rights.", 0, $GUIMain) <> $IDYES Then
 							ContinueLoop
 						EndIf
 					EndIf
@@ -316,9 +316,9 @@ Switch $Command
 					$UpdatesCount = UBound($aUpdates)
 
 					If $UpdatesCount = 0 Then
-						MsgBox(0, $TITLE, "No updates")
+						MsgBox(0, $Title, "No updates")
 
-					ElseIf MsgBox($MB_YESNO, $TITLE, "Restart script?", 0, $GUIMain) = $IDYES Then
+					ElseIf MsgBox($MB_YESNO, $Title, "Restart script?", 0, $GUIMain) = $IDYES Then
 						_RunFile(@ScriptFullPath)
 						Exit
 
@@ -358,7 +358,7 @@ Switch $Command
 						$objSystem = ObjGet("WinNT://localhost")
 						$objUser = $objSystem.Create("user", $sUser)
 						$objUser.SetPassword($sPassword)
-						$objUser.Put("UserFlags", BitOR($objUser.get ("UserFlags"), 0x10000))
+						$objUser.Put("UserFlags", BitOR($objUser.get("UserFlags"), 0x10000))
 						$objUser.SetInfo
 						If Not @error And $Admin = $GUI_CHECKED Then
 							$objGroup = ObjGet("WinNT://localhost/Administrators")
@@ -366,7 +366,7 @@ Switch $Command
 						EndIf
 
 						If Not IsObj(ObjGet("WinNT://./" & $sUser & ", user")) Then
-							MsgBox($MB_ICONWARNING, $TITLE, "Error creating user", 0, $GUIMain)
+							MsgBox($MB_ICONWARNING, $Title, "Error creating user", 0, $GUIMain)
 							_Log("Error Creating User", True)
 						Else
 							If $Admin = $GUI_CHECKED Then $UserCreatedWithAdmin = True
@@ -413,7 +413,7 @@ EndFunc   ;==>_PopulateScripts
 
 Func _NotAdminMsg($hwnd = "")
 	_Log("_NotAdminMsg")
-	MsgBox($MB_OK, $TITLE, "Not running with admin rights.", 0, $hwnd)
+	MsgBox($MB_OK, $Title, "Not running with admin rights.", 0, $hwnd)
 
 EndFunc   ;==>_NotAdminMsg
 
@@ -422,26 +422,26 @@ Func _RunTreeView($hWindow, $hTreeView, $Dry = False)
 
 	Local $aList[0]
 
-	For $iTop = 0 To ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "GetItemCount", "") - 1
-		$Folder = ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "GetText", "#"&$iTop)
+	For $iTop = 0 To ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "GetItemCount", "") - 1
+		$Folder = ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "GetText", "#" & $iTop)
 
-		For $iSub = 0 To ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "GetItemCount", "#"&$iTop) - 1
-			$File = ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "GetText", "#"&$iTop&"|#"&$iSub)
-			$FileChecked = ControlTreeView ($GUIBoot, "", $Boot_ScriptsTree, "IsChecked", "#"&$iTop&"|#"&$iSub)
+		For $iSub = 0 To ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "GetItemCount", "#" & $iTop) - 1
+			$File = ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "GetText", "#" & $iTop & "|#" & $iSub)
+			$FileChecked = ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "IsChecked", "#" & $iTop & "|#" & $iSub)
 
 			If $FileChecked Then
 				$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
 				_Log("Checked: $RunFullPath=" & $RunFullPath)
 				If $Dry = False Then _RunFile($RunFullPath)
 				_ArrayAdd($aList, $RunFullPath)
-			Endif
+			EndIf
 		Next
 
 	Next
 
 	Return $aList
 
-EndFunc
+EndFunc   ;==>_RunTreeView
 
 Func _RunFolder($Path)
 	_Log("_RunFolder " & $Path)
@@ -565,7 +565,7 @@ Func _GitUpdate($Prompt = False)
 	EndIf
 
 	If $Prompt Then
-		If MsgBox($MB_YESNO, $TITLE, "Apply the following changes?" & @CRLF & @CRLF & "File Name, Old Size, New Size" & @CRLF & $ChangesString) <> $IDYES Then
+		If MsgBox($MB_YESNO, $Title, "Apply the following changes?" & @CRLF & @CRLF & "File Name, Old Size, New Size" & @CRLF & $ChangesString) <> $IDYES Then
 			FileDelete($TempZIP)
 			DirRemove($TempPath, $DIR_REMOVE)
 			SetError(1)
