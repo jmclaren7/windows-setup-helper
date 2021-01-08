@@ -119,8 +119,8 @@ Switch $Command
 					Exit
 
 				Case $AdvancedButton
+					_RunFile("taskmgr.exe")
 					_RunFile("cmd.exe")
-
 
 				Case $NormalInstallButton
 					_RunFile($BootDrive & "sources\setup.exe")
@@ -448,7 +448,7 @@ Func _RunMulti($Folder)
 
 	$iCount = _ArrayConcatenate ($aFiles1, $aFiles2, 1)
 
-	$aFiles1[0] = $iCount
+	;$aFiles1[0] = $iCount
 
 	Return $aFiles1
 EndFunc

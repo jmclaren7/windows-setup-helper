@@ -22,21 +22,36 @@ EndFunc
 
 Func _NetAdapterInfo()
 	_Log("Collecting Adapter Information")
-	Local $Data[6]
+	Local $aData[8]
 	Local $objWMIService = ObjGet('winmgmts:\\' & @ComputerName & '\root\CIMV2')
 	Local $colItems = $objWMIService.ExecQuery("SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled=true")
 	For $objAdapter In $colItems
 		If StringStripWS($objAdapter.DefaultIPGateway(0), 8) <> "" Then
-				$Data[1] = $objAdapter.DNSDomain
-				$Data[2] = $objAdapter.MACAddress
-				$Data[3] = $objAdapter.IPAddress(0)
-				$Data[4] = $objAdapter.DefaultIPGateway(0)
-				$Data[5] = $objAdapter.IPSubnet(0)
-				Return $Data
+				$aData[1] = $objAdapter.DNSDomain
+				$aData[2] = $objAdapter.MACAddress
+				$aData[3] = $objAdapter.IPAddress(0)
+				$aData[4] = $objAdapter.DefaultIPGateway(0)
+				$aData[5] = $objAdapter.IPSubnet(0)
+
+				Local $aIP = StringSplit($aData[3], ".")
+				Local $aSubnetMask = StringSplit($aData[5], ".")
+				Local $aSubnetAddress[5]
+				Local $aInverseMask[5]
+				Local $aBroadcastAddress[5]
+
+				For $i = 1 To $aIP[0]
+				   $aSubnetAddress[$i] = BitAND($aIP[$i], $aSubnetMask[$i])
+				   $aInverseMask[$i] = BitNOT($aSubnetMask[$i] - 256)
+				   $aBroadcastAddress[$i] = BitOR($aSubnetAddress[$i], $aInverseMask[$i])
+				Next
+				$aData[6] = $aSubnetAddress[1] & "." & $aSubnetAddress[2] & "." & $aSubnetAddress[3] & "." & $aSubnetAddress[4] + 1 & "-" & $aBroadcastAddress[1] & "." & $aBroadcastAddress[2] & "." & $aBroadcastAddress[3] & "." & $aBroadcastAddress[4] - 1
+				$aData[7] = ($aInverseMask[4] + 1) * ($aInverseMask[3] + 1) * ($aInverseMask[2] + 1) - 2
+
+				Return $aData
 		EndIf
 	Next
 
-	Return SetError(1, 0, $Data)
+	Return SetError(1, 0, $aData)
 EndFunc
 
 #cs ===============================================================================

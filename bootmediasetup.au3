@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Change2CUI=y
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.14
+#AutoIt3Wrapper_Change2CUI=n
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.18
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=y
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -9,6 +9,8 @@
 
 #include <AutoItConstants.au3>
 #include <MsgBoxConstants.au3>
+#include <GUIConstantsEx.au3>
+#include <WindowsConstants.au3>
 
 $Title = "IT Setup Helper - Boot Media Loader"
 
@@ -33,10 +35,15 @@ For $i = 65 To 90
 		;Run
 		$Execute = @ScriptFullPath & " /AutoIt3ExecuteScript " & "Main.au3" & " boot-gui"
 		ConsoleWrite("RunWait: " & $Execute & " (" & $Path & ")" & @CRLF)
-		$Return = RunWait(@ComSpec & " /c " & $Execute, $Path, @SW_SHOW, $STDIO_INHERIT_PARENT)
+		$Return = Run(@ComSpec & " /c " & $Execute, $Path, @SW_HIDE)
 		ConsoleWrite("$Return="&$Return&@CRLF)
 
-		Exit
+		While 1
+
+			Sleep(100)
+		WEnd
+
+
 	Endif
 
 	sleep(100)
