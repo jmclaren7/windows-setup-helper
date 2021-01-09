@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=n
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.16
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.25
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=y
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -58,6 +58,8 @@ While 1
 
 		$iSocket = TCPConnect($IP, GUICtrlRead ($PortInput))
 		If $iSocket > 0 Then
+			$MarkedForRemoval = False
+
 			;ConsoleWrite("Success: " & $IP & @CRLF)
 			If _GUICtrlListView_FindText($HostListView, $IP, -1, False) = -1 Then
 				$ListViewItem = GUICtrlCreateListViewItem($IP, $HostListView)
@@ -82,12 +84,20 @@ While 1
 		Else
 			;ConsoleWrite("Failed: " & $IP & @CRLF)
 			$ListItemIndex = _GUICtrlListView_FindText($HostListView, $IP, -1, False, True)
-
 			If $ListItemIndex <> -1 Then
 				ConsoleWrite("$ListItemIndex=" & $ListItemIndex & @CRLF)
-				_GUICtrlListView_DeleteItem($HostListView, $ListItemIndex)
+				If $MarkedForRemoval = True Then
+					_GUICtrlListView_DeleteItem($HostListView, $ListItemIndex)
+					ConsoleWrite("Removed " & $IP & @CRLF)
+					$MarkedForRemoval = False
+				Else
+					$MarkedForRemoval = True
+					TCPCloseSocket($iSocket)
+					Sleep(200)
+					$i = $i - 1
+				EndIf
 
-				ConsoleWrite("Removed " & $IP & @CRLF)
+
 			Endif
 
 
@@ -105,10 +115,14 @@ TCPShutdown()
 Func _Connect()
 	ConsoleWrite("_Connect" & @CRLF)
 
-	Local $Selected = _GUICtrlListView_GetSelectedIndices($HostListView)
+	Local $Selected = Int(_GUICtrlListView_GetSelectedIndices($HostListView))
+	ConsoleWrite("$Selected=" & $Selected & @CRLF)
+
 	If $Selected >= 0 Then
-		Local $IP = _GUICtrlListView_GetItemText($HostListView, 0)
-		If $IP <> "" Then Run(@ComSpec & " /c " & "vncviewer.exe " & $IP & "::" & GUICtrlRead ($PortInput) & " -password=" & GUICtrlRead ($PasswordInput), "", @SW_HIDE)
+		Local $IP = _GUICtrlListView_GetItemText($HostListView, $Selected)
+		$Execute = "vncviewer.exe " & $IP & "::" & GUICtrlRead ($PortInput) & " -password=" & GUICtrlRead ($PasswordInput)
+		ConsoleWrite("$Execute=" & $Execute & @CRLF)
+		If $IP <> "" Then Run(@ComSpec & " /c " & $Execute, "", @SW_HIDE)
 	Endif
 
 EndFunc

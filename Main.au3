@@ -78,24 +78,27 @@ EndIf
 _Log("Command: " & $Command)
 
 Switch $Command
-	Case "bootmedia", "boot-gui"
+	Case "boot-gui"
 		$BootDrive = StringLeft(@SystemDir, 3)
 
 		; Start network
-		Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_SHOW, $RUN_CREATE_NEW_CONSOLE)
+		Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
 
 		; Boot GUI
 		$GUIBoot = GUICreate("$Title", 625, 442, -1, -1)
 		GUISetBkColor(0xFFFFFF)
 		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 23, 392, 107, 25)
-		$AutomatedInstallButton = GUICtrlCreateButton("Continue Automated Install", 439, 392, 155, 25, $BS_DEFPUSHBUTTON)
+		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 159, 392, 107, 25, $BS_DEFPUSHBUTTON)
 		$Label1 = GUICtrlCreateLabel("Automated Install Options", 24, 24, 213, 24)
 		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
 		GUICtrlSetColor(-1, 0x3399FF)
-		$Boot_ScriptsTree = GUICtrlCreateTreeView(360, 56, 233, 305, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
-		$AdvancedButton = GUICtrlCreateButton("Advanced", 142, 392, 107, 25)
-		$Label2 = GUICtrlCreateLabel("Select scripts to automaticly run once installation is complete", 48, 72, 288, 17)
-		$Label3 = GUICtrlCreateLabel("Select normal Install to skip all automated install features", 48, 96, 268, 17)
+		$BootScriptsTreeView = GUICtrlCreateTreeView(24, 80, 241, 289, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$RunButton = GUICtrlCreateButton("Run", 486, 392, 107, 25)
+		$Label2 = GUICtrlCreateLabel("Select scripts to run after automated install", 24, 56, 203, 17)
+		$PEScriptTreeView = GUICtrlCreateTreeView(352, 80, 241, 289, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$Label3 = GUICtrlCreateLabel("Select scripts to run now in WinPE", 352, 56, 167, 17)
+		$AdvancedButton = GUICtrlCreateButton("Advanced", 352, 392, 107, 25)
+		GUISetState(@SW_SHOW)
 
 		Opt("WinTitleMatchMode", 2)
 		WinSetState("bootmedia.exe", "", @SW_MINIMIZE)
@@ -105,7 +108,8 @@ Switch $Command
 		GUISetIcon($BootDrive & "sources\setup.exe")
 
 		; Generate script checkboxes
-		_PopulateScripts($Boot_ScriptsTree, "OptLogin")
+		_PopulateScripts($BootScriptsTreeView, "OptLogin")
+		_PopulateScripts($PEScriptTreeView, "OptSetup")
 
 		_RunMulti("AutoSetup")
 
@@ -119,8 +123,16 @@ Switch $Command
 					Exit
 
 				Case $AdvancedButton
-					_RunFile("taskmgr.exe")
-					_RunFile("cmd.exe")
+					_PopulateScripts($PEScriptTreeView, "OptAdvanced")
+					_PopulateScripts($PEScriptTreeView, "OptLogin")
+					_PopulateScripts($PEScriptTreeView, "AutoLogin")
+					_PopulateScripts($PEScriptTreeView, "AutoSetup")
+					_PopulateScripts($PEScriptTreeView, "AutoSystem")
+
+					_PopulateScripts($BootScriptsTreeView, "OptAdvanced")
+
+				Case $RunButton
+					_RunTreeView($GUIBoot, $PEScriptTreeView)
 
 				Case $NormalInstallButton
 					_RunFile($BootDrive & "sources\setup.exe")
@@ -138,7 +150,7 @@ Switch $Command
 					WEnd
 
 				Case $AutomatedInstallButton
-					$aList = _RunTreeView($GUIBoot, $Boot_ScriptsTree, True)
+					$aList = _RunTreeView($GUIBoot, $BootScriptsTreeView, True)
 					For $b = 0 To UBound($aList) - 1
 						_Log("TreeItem: " & $aList[$b])
 					Next
@@ -385,7 +397,6 @@ Func _PopulateScripts($TreeID, $Folder)
 	If Not @error Then
 		_Log($Folder & " Files (no filter): " & $FileArray[0])
 		Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
-		GUICtrlSetState($FolderTreeItem, $GUI_CHECKED)
 
 		For $i = 1 To $FileArray[0]
 			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
@@ -395,7 +406,6 @@ Func _PopulateScripts($TreeID, $Folder)
 		Next
 
 		GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
-		GUICtrlSetState($FolderTreeItem, $GUI_UNCHECKED)
 
 	Else
 		_Log($Folder & " No files or missing")
