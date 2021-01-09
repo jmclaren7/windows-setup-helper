@@ -1,5 +1,6 @@
 git.token
 .token
 *.log
-/*.exe
+*.exe
+*.msi
 Include/
