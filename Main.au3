@@ -155,9 +155,9 @@ Switch $Command
 						_Log("TreeItem: " & $aList[$b])
 					Next
 
-					_RunFile($BootDrive & "sources\setup.exe", "/unattend:" & @ScriptDir & "\autounattend.xml")
+					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/unattend:" & @ScriptDir & "\autounattend.xml")
 
-					While 1
+					While ProcessExists($hSetup)
 						For $i = 65 To 90
 							$Path = Chr($i) & ":\Windows\IT"
 							If FileExists($Path) Then
@@ -172,7 +172,7 @@ Switch $Command
 							EndIf
 						Next
 
-						Sleep(10)
+						Sleep(100)
 					WEnd
 
 			EndSwitch
