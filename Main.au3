@@ -419,12 +419,12 @@ Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
 
 	Local $aList[0]
 
-	For $iTop = 0 To ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "GetItemCount", "") - 1
-		$Folder = ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "GetText", "#" & $iTop)
+	For $iTop = 0 To ControlTreeView($hWindow, "", $hTreeView, "GetItemCount", "") - 1
+		$Folder = ControlTreeView($hWindow, "", $hTreeView, "GetText", "#" & $iTop)
 
-		For $iSub = 0 To ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "GetItemCount", "#" & $iTop) - 1
-			$File = ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "GetText", "#" & $iTop & "|#" & $iSub)
-			$FileChecked = ControlTreeView($GUIBoot, "", $Boot_ScriptsTree, "IsChecked", "#" & $iTop & "|#" & $iSub)
+		For $iSub = 0 To ControlTreeView($hWindow, "", $hTreeView, "GetItemCount", "#" & $iTop) - 1
+			$File = ControlTreeView($hWindow, "", $hTreeView, "GetText", "#" & $iTop & "|#" & $iSub)
+			$FileChecked = ControlTreeView($hWindow, "", $hTreeView, "IsChecked", "#" & $iTop & "|#" & $iSub)
 
 			If $FileChecked Then
 				$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
