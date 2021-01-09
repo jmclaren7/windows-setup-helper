@@ -3,4 +3,5 @@ git.token
 *.log
 *.exe
 *.msi
+*.a3x
 Include/
