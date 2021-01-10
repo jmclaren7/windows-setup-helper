@@ -1,1 +1,0 @@
-WinSetState ( "X:\Windows\System32\bootmediasetup.exe", "", @SW_MINIMIZE)
