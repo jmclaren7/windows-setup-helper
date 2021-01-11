@@ -34,7 +34,7 @@ Else
 EndIf
 
 Global $MainSize = FileGetSize(@ScriptFullPath)
-Global $Version = "3.0.1." & $MainSize
+Global $Version = "4.0.0." & $MainSize
 
 Global $Title = "IT Setup Helper v" & $Version
 Global $DownloadUpdatedCount = 0
@@ -87,17 +87,19 @@ Switch $Command
 		; Boot GUI
 		$GUIBoot = GUICreate("$Title", 625, 442, -1, -1)
 		GUISetBkColor(0xFFFFFF)
-		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 23, 392, 107, 25)
-		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 159, 392, 107, 25, $BS_DEFPUSHBUTTON)
+		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 23, 392, 91, 25)
+		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 127, 392, 139, 25, $BS_DEFPUSHBUTTON)
 		$Label1 = GUICtrlCreateLabel("Automated Install Options", 24, 24, 213, 24)
 		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
 		GUICtrlSetColor(-1, 0x3399FF)
-		$BootScriptsTreeView = GUICtrlCreateTreeView(24, 80, 241, 289, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$BootScriptsTreeView = GUICtrlCreateTreeView(24, 80, 241, 249, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
 		$RunButton = GUICtrlCreateButton("Run", 486, 392, 107, 25)
 		$Label2 = GUICtrlCreateLabel("Select scripts to run after automated install", 24, 56, 203, 17)
 		$PEScriptTreeView = GUICtrlCreateTreeView(352, 80, 241, 289, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
 		$Label3 = GUICtrlCreateLabel("Select scripts to run now in WinPE", 352, 56, 167, 17)
 		$AdvancedButton = GUICtrlCreateButton("Advanced", 352, 392, 107, 25)
+		$ComputerNameInput = GUICtrlCreateInput("", 104, 344, 169, 21)
+		$Label4 = GUICtrlCreateLabel("Computer Name", 16, 347, 80, 17)
 		GUISetState(@SW_SHOW)
 
 		Opt("WinTitleMatchMode", 2)
@@ -155,7 +157,19 @@ Switch $Command
 						_Log("TreeItem: " & $aList[$b])
 					Next
 
-					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/unattend:" & @ScriptDir & "\autounattend.xml")
+					$AutounattendPath = @ScriptDir & "\autounattend.xml"
+					$ComputerName = GUICtrlRead($ComputerNameInput)
+
+					If $ComputerName <> "" Then
+						$AutounattendPath_New = @TempDir & "\autounattend.xml"
+						$sFileData = FileRead($AutounattendPath)
+						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>"&$ComputerName&"</ComputerName>")
+						FileWrite($AutounattendPath_New, $sFileData)
+						_Log("Changed Computer Name - FileWrite: "&@error)
+						$AutounattendPath = $AutounattendPath_New
+					EndIf
+
+					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/unattend:" & $AutounattendPath)
 
 					While ProcessExists($hSetup)
 						For $i = 65 To 90
