@@ -115,6 +115,10 @@ Switch $Command
 
 		_RunMulti("AutoSetup")
 
+		Local $hSetup
+		Local $CopyOptFiles = False
+		Local $DeleteOEMFiles = False
+
 		; Loop
 		While 1
 			$nMsg = GUIGetMsg()
@@ -138,18 +142,8 @@ Switch $Command
 
 				Case $NormalInstallButton
 					_RunFile($BootDrive & "sources\setup.exe")
-					While 1
-						For $i = 65 To 90
-							$Path = Chr($i) & ":\Windows\IT"
-							If FileExists($Path) Then
-								$Return = DirRemove($Path, 1)
-								_Log("Found: " & $Path & " DirRemove: " & $Return)
-								Sleep(1000)
-							EndIf
-						Next
-
-						Sleep(10)
-					WEnd
+					$DeleteOEMFiles = True
+					$CopyOptFiles = False
 
 				Case $AutomatedInstallButton
 					$aList = _RunTreeView($GUIBoot, $BootScriptsTreeView, True)
@@ -164,32 +158,47 @@ Switch $Command
 						$AutounattendPath_New = @TempDir & "\autounattend.xml"
 						$sFileData = FileRead($AutounattendPath)
 						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>"&$ComputerName&"</ComputerName>")
-						FileWrite($AutounattendPath_New, $sFileData)
-						_Log("Changed Computer Name - FileWrite: "&@error)
+						$hAutounattend = FileOpen($AutounattendPath_New, $FO_OVERWRITE)
+						FileWrite($hAutounattend, $sFileData)
+						_Log("Changed Computer Name - $hAutounattend=" & $hAutounattend & " - FileWriteError="&@error)
 						$AutounattendPath = $AutounattendPath_New
 					EndIf
 
 					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/unattend:" & $AutounattendPath)
-
-					While ProcessExists($hSetup)
-						For $i = 65 To 90
-							$Path = Chr($i) & ":\Windows\IT"
-							If FileExists($Path) Then
-								_Log("Found: " & $Path)
-								For $iFile = 0 To UBound($aList) - 1
-									$Dest = $Path & "\AutoLogin\"
-									$Return = FileCopy($aList[$iFile], $Dest, 1)
-									If $Return Then _Log("FileCopy: " & $Dest)
-
-								Next
-								Sleep(4000)
-							EndIf
-						Next
-
-						Sleep(100)
-					WEnd
+					$CopyOptFiles = True
+					$DeleteOEMFiles = False
 
 			EndSwitch
+
+			If $CopyOptFiles AND ProcessExists($hSetup) Then
+				_Log("CopyOptFiles")
+				For $i = 65 To 90
+					$Path = Chr($i) & ":\Windows\IT"
+					If FileExists($Path) Then
+						_Log("Found: " & $Path)
+						For $iFile = 0 To UBound($aList) - 1
+							$Dest = $Path & "\AutoLogin\"
+							$Return = FileCopy($aList[$iFile], $Dest, 1)
+							If $Return Then _Log("FileCopy: " & $Dest)
+
+						Next
+						Sleep(1000)
+					EndIf
+				Next
+			Endif
+
+			If $DeleteOEMFiles AND ProcessExists($hSetup) Then
+				_Log("DeleteOEMFiles")
+				For $i = 65 To 90
+					$Path = Chr($i) & ":\Windows\IT"
+					If FileExists($Path) Then
+						$Return = DirRemove($Path, 1)
+						_Log("Found: " & $Path & " DirRemove: " & $Return)
+						Sleep(1000)
+					EndIf
+				Next
+			EndIf
+
 
 			Sleep(10)
 		WEnd
