@@ -1,36 +1,49 @@
 #include <WinAPIProc.au3>
 
-ConsoleWrite("VNCServer" & @CRLF)
+_ConsoleWrite("VNCServer")
 For $i=1 to 6
 	Ping ("8.8.8.8", 1000)
 	If Not @error Then ExitLoop
 	Sleep(1000)
 Next
 
-FileChangeDir (@ScriptDir)
-ConsoleWrite(@WorkingDir & @CRLF)
-ConsoleWrite(@ScriptDir & @CRLF)
-
+FileChangeDir(@ScriptDir & "\vncserver")
+_ConsoleWrite("@WorkingDir="&@WorkingDir)
+_ConsoleWrite("@ScriptDir="&@ScriptDir)
 
 Run(@ComSpec & " /c " & 'wpeutil.exe disablefirewall', "", @SW_HIDE)
-Run(@ComSpec & " /c " & 'reg.exe import vncserver\vncserversettings.reg', "", @SW_HIDE)
 
-$VNCPid = Run(@ComSpec & " /c " & 'vncserver\vncserver.exe', "", @SW_HIDE)
+Run(@ComSpec & " /c " & 'reg.exe import tight_settings.reg', "", @SW_HIDE)
+$VNCPid = Run(@ComSpec & " /c " & 'tight_server.exe', "", @SW_HIDE)
 
-ConsoleWrite($VNCPid & @CRLF)
+;$VNCPid = Run(@ComSpec & " /c " & 'winvnc.exe', "", @SW_HIDE)
+
+_ConsoleWrite($VNCPid & @CRLF)
 
 If NOT StringInStr(@ScriptFullPath, "$OEM$") Then
 	$Parent = _ProcessGetParent(@AutoItPID)
-	ConsoleWrite($Parent & @CRLF)
+	_ConsoleWrite($Parent & @CRLF)
 
 	While ProcessExists($Parent)
 
 		Sleep(50)
 	Wend
 
-	ProcessClose("vncserver.exe")
-	ProcessClose("vncserver.exe")
+	ProcessClose($VNCPid)
+	ProcessClose("tight_server.exe")
+	;ProcessClose("winvnc.exe")
+
+Else
+	While ProcessExists($VNCPid)
+
+		Sleep(50)
+	Wend
+
 Endif
+
+Func _ConsoleWrite($Data)
+	ConsoleWrite(@ScriptName & ": " & $Data & @CRLF)
+EndFunc
 
 Func _ProcessGetParent($i_pid)
     Local Const $TH32CS_SNAPPROCESS = 0x00000002

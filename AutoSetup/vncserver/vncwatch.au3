@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=n
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.26
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.33
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=y
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -35,7 +35,7 @@ $PasswordInput = GUICtrlCreateInput("vncwatch", 8, 74, 153, 21)
 $Label2 = GUICtrlCreateLabel("Port", 8, 9, 23, 17)
 GUICtrlCreateLabel("Password", 8, 57, 50, 17)
 $AutoConnectCheckbox = GUICtrlCreateCheckbox("Automatically Connect", 8, 112, 153, 17)
-GUICtrlSetState(-1, $GUI_CHECKED)
+GUICtrlSetState(-1, $GUI_UNCHECKED)
 $HostListView = GUICtrlCreateListView("", 184, 8, 178, 142, BitOR($GUI_SS_DEFAULT_LISTVIEW,$LVS_SMALLICON,$LVS_NOCOLUMNHEADER,$LVS_NOLABELWRAP,$LVS_AUTOARRANGE,$WS_VSCROLL))
 GUICtrlSendMsg(-1, $LVM_SETCOLUMNWIDTH, 0, 178)
 GUISetState(@SW_SHOW)
@@ -120,28 +120,12 @@ Func _Connect()
 
 	If $Selected >= 0 Then
 		Local $IP = _GUICtrlListView_GetItemText($HostListView, $Selected)
-		$Execute = "vncviewer.exe " & $IP & "::" & GUICtrlRead ($PortInput) & " -password=" & GUICtrlRead ($PasswordInput)
+		$Execute = "tight_viewer.exe " & $IP & "::" & GUICtrlRead ($PortInput) & " -password=" & GUICtrlRead ($PasswordInput)
 		ConsoleWrite("$Execute=" & $Execute & @CRLF)
 		If $IP <> "" Then Run(@ComSpec & " /c " & $Execute, "", @SW_HIDE)
 	Endif
 
 EndFunc
-
-Func _ConnectOld()
-	ConsoleWrite("_Connect" & @CRLF)
-
-	Local $IP, $Item
-
-	$Item = GUICtrlRead($HostListView)
-	$IP = GUICtrlRead($Item)
-	If StringRight($IP, 1) = "|" Then $IP = StringLeft($IP, StringInStr($IP,"|")-1)
-
-	ConsoleWrite("$IP: " & $IP & @CRLF)
-
-	;If $IP <> "" Then Run(@ComSpec & " /c " & "vncviewer.exe " & $IP & "::" & GUICtrlRead ($PortInput) & " -password=" & GUICtrlRead ($PasswordInput), "", @SW_HIDE)
-
-
-Endfunc
 
 Func _Exit()
 	Exit
