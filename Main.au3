@@ -126,6 +126,7 @@ Switch $Command
 
 				Case $AdvancedButton
 					_PopulateScripts($PEScriptTreeView, "*")
+					_PopulateScripts($BootScriptsTreeView, "*")
 
 				Case $RunButton
 					_RunTreeView($GUIBoot, $PEScriptTreeView)
