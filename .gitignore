@@ -2,6 +2,7 @@ git.token
 .token
 *.log
 *.exe
+*.dll
 *.msi
 *.a3x
 Include/
