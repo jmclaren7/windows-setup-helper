@@ -471,6 +471,7 @@ Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
 			If $FileChecked Then
 				$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
 				_Log("Checked: $RunFullPath=" & $RunFullPath)
+				ControlTreeView($hWindow, "", $hTreeView, "Uncheck", "#" & $iTop & "|#" & $iSub)
 				If $ListOnly = False Then _RunFile($RunFullPath)
 				_ArrayAdd($aList, $RunFullPath)
 			EndIf
