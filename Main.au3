@@ -27,14 +27,9 @@
 OnAutoItExitRegister("_Exit")
 _WinAPI_Wow64EnableWow64FsRedirection(False)
 
-If StringInStr(@ScriptFullPath, "$OEM$\$$\IT") Then
-	Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log")
-Else
-	Global $LogFullPath = StringReplace(@ScriptFullPath, ".au3", ".log")
-EndIf
-
+Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log")
 Global $MainSize = FileGetSize(@ScriptFullPath)
-Global $Version = "4.0.0." & $MainSize
+Global $Version = "4.0.1." & $MainSize
 
 Global $Title = "IT Setup Helper v" & $Version
 Global $DownloadUpdatedCount = 0
@@ -50,6 +45,7 @@ Global $UserCreatedWithAdmin = False
 
 _Log($Title)
 _Log("$CmdLineRaw=" & $CmdLineRaw)
+
 _Log("@UserName=" & @UserName)
 _Log("@UserProfileDir=" & @UserProfileDir)
 _Log("@AppDataDir=" & @AppDataDir)
@@ -129,19 +125,13 @@ Switch $Command
 					Exit
 
 				Case $AdvancedButton
-					_PopulateScripts($PEScriptTreeView, "OptAdvanced")
-					_PopulateScripts($PEScriptTreeView, "OptLogin")
-					_PopulateScripts($PEScriptTreeView, "AutoLogin")
-					_PopulateScripts($PEScriptTreeView, "AutoSetup")
-					_PopulateScripts($PEScriptTreeView, "AutoSystem")
-
-					_PopulateScripts($BootScriptsTreeView, "OptAdvanced")
+					_PopulateScripts($PEScriptTreeView, "*")
 
 				Case $RunButton
 					_RunTreeView($GUIBoot, $PEScriptTreeView)
 
 				Case $NormalInstallButton
-					_RunFile($BootDrive & "sources\setup.exe")
+					$hSetup = _RunFile($BootDrive & "sources\setup.exe")
 					$DeleteOEMFiles = True
 					$CopyOptFiles = False
 
@@ -171,16 +161,15 @@ Switch $Command
 			EndSwitch
 
 			If $CopyOptFiles AND ProcessExists($hSetup) Then
-				_Log("CopyOptFiles")
+				;_Log("CopyOptFiles")
 				For $i = 65 To 90
 					$Path = Chr($i) & ":\Windows\IT"
 					If FileExists($Path) Then
+						$Dest = $Path & "\AutoLogin\"
 						_Log("Found: " & $Path)
 						For $iFile = 0 To UBound($aList) - 1
-							$Dest = $Path & "\AutoLogin\"
 							$Return = FileCopy($aList[$iFile], $Dest, 1)
-							If $Return Then _Log("FileCopy: " & $Dest)
-
+							_Log("FileCopy: " & $aList[$iFile] & " (" & $Return & ")")
 						Next
 						Sleep(1000)
 					EndIf
@@ -188,12 +177,13 @@ Switch $Command
 			Endif
 
 			If $DeleteOEMFiles AND ProcessExists($hSetup) Then
-				_Log("DeleteOEMFiles")
+				;_Log("DeleteOEMFiles")
 				For $i = 65 To 90
 					$Path = Chr($i) & ":\Windows\IT"
 					If FileExists($Path) Then
+						_Log("Found: " & $Path)
 						$Return = DirRemove($Path, 1)
-						_Log("Found: " & $Path & " DirRemove: " & $Return)
+						_Log("DirRemove: " & $Path & " (" & $Return & ")")
 						Sleep(1000)
 					EndIf
 				Next
@@ -356,10 +346,7 @@ Switch $Command
 
 				Case $MenuShowAllScriptsButton
 					_Log("MenuUpdateButton")
-					_PopulateScripts($ScriptsTree, "AutoLogin")
-					_PopulateScripts($ScriptsTree, "AutoSetup")
-					_PopulateScripts($ScriptsTree, "AutoSystem")
-					_PopulateScripts($ScriptsTree, "OptAdvanced")
+					_PopulateScripts($ScriptsTree, "*")
 
 				Case $MenuOpenFolder
 					_Log("MenuOpenFolder")
@@ -416,26 +403,48 @@ Switch $Command
 EndSwitch
 
 Func _PopulateScripts($TreeID, $Folder)
-	Local $FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILES, True)
-	If Not @error Then
-		_Log($Folder & " Files (no filter): " & $FileArray[0])
-		Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
+	_Log("_PopulateScripts " & $Folder)
 
-		For $i = 1 To $FileArray[0]
-			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
-			_Log("Added: " & $FileArray[$i])
-			$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
-			GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
+	Local $FileArray[0]
+
+	If $Folder = "*" Then
+		_Log("Wildcard")
+		_GUICtrlTreeView_DeleteAll($TreeID)
+
+		Local $aList = _FileListToArrayRec(@ScriptDir, "auto*;opt*|*custom", $FLTAR_FOLDERS, $FLTAR_NORECUR, $FLTAR_NOSORT, $FLTAR_NOPATH)
+		_Log("$aList=" & _ArrayToString($aList))
+
+		Local $aFileList
+
+		For $f=1 to $aList[0]
+			$List = _PopulateScripts($TreeID, $aList[$f])
+			_ArrayConcatenate($FileArray, $List, 1)
 		Next
 
-		GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
+		Return $FileArray
 
 	Else
-		_Log($Folder & " No files or missing")
+		$FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILES, True)
+		If Not @error Then
+			_Log($Folder & " Files (no filter): " & $FileArray[0])
+			Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
 
+			For $i = 1 To $FileArray[0]
+				If StringInStr($FileArray[$i], "\.") Then ContinueLoop
+				_Log("Added: " & $FileArray[$i])
+				$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
+				GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
+			Next
+
+			GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
+
+		Else
+			_Log($Folder & " No files or missing")
+
+		EndIf
+
+		If StringRight($Folder, 6) <> "Custom" Then _PopulateScripts($TreeID, $Folder & "Custom")
 	EndIf
-
-	If StringRight($Folder, 6) <> "Custom" Then _PopulateScripts($TreeID, $Folder & "Custom")
 
 	Return $FileArray
 
