@@ -146,15 +146,21 @@ Switch $Command
 					$ComputerName = GUICtrlRead($ComputerNameInput)
 
 					If $ComputerName <> "" Then
+						_Log("$ComputerName=" & $ComputerName)
 						$AutounattendPath_New = @TempDir & "\autounattend.xml"
 						$sFileData = FileRead($AutounattendPath)
 						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>"&$ComputerName&"</ComputerName>")
+						_Log("StringReplace @extended=" & @extended)
+
 						$hAutounattend = FileOpen($AutounattendPath_New, $FO_OVERWRITE)
 						FileWrite($hAutounattend, $sFileData)
-						_Log("Changed Computer Name - $hAutounattend=" & $hAutounattend & " - FileWriteError="&@error)
+						_Log("FileWrite @error="&@error)
+						FileClose($hAutounattend)
+
 						$AutounattendPath = $AutounattendPath_New
 					EndIf
 
+					_Log("$AutounattendPath=" & $AutounattendPath)
 					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/unattend:" & $AutounattendPath)
 					$CopyOptFiles = True
 					$DeleteOEMFiles = False
@@ -191,7 +197,7 @@ Switch $Command
 			EndIf
 
 
-			Sleep(10)
+			Sleep(20)
 		WEnd
 
 	Case "system"
@@ -517,7 +523,7 @@ Func _RunFolder($Path)
 EndFunc   ;==>_RunFolder
 
 Func _RunFile($File, $Params = "", $WorkingDir = "")
-	_Log("_RunFile " & $File)
+	_Log("_RunFile " & $File & " " & $Params)
 	$Extension = StringTrimLeft($File, StringInStr($File, ".", 0, -1))
 	Switch $Extension
 		Case "au3", "a3x"
