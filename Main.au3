@@ -161,7 +161,7 @@ Switch $Command
 					EndIf
 
 					_Log("$AutounattendPath=" & $AutounattendPath)
-					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/unattend:" & $AutounattendPath)
+					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
 					$CopyOptFiles = True
 					$DeleteOEMFiles = False
 
@@ -195,6 +195,7 @@ Switch $Command
 					EndIf
 				Next
 			EndIf
+
 
 
 			Sleep(20)
