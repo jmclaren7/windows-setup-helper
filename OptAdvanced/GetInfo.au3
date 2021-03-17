@@ -7,5 +7,5 @@ _ConsoleWrite("@DesktopHeight="&@DesktopHeight)
 
 
 Func _ConsoleWrite($Data)
-	ConsoleWrite($Data & @CRLF)
+	ConsoleWrite(@ScriptName & ": " & $Data & @CRLF)
 EndFunc
