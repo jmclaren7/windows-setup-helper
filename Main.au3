@@ -68,7 +68,7 @@ EndIf
 If $CmdLine[0] >= 1 Then
 	$Command = $CmdLine[1]
 Else
-	$Command = "main-gui"
+	$Command = "boot-gui"
 EndIf
 
 _Log("Command: " & $Command)
@@ -433,16 +433,17 @@ Func _PopulateScripts($TreeID, $Folder)
 		Return $FileArray
 
 	Else
-		$FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILES, True)
+		$FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
 		If Not @error Then
 			_Log($Folder & " Files (no filter): " & $FileArray[0])
 			Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
 
 			For $i = 1 To $FileArray[0]
-				If StringInStr($FileArray[$i], "\.") Then ContinueLoop
-				_Log("Added: " & $FileArray[$i])
+				If StringInStr($FileArray[$i], "\.") Then ContinueLoop ;Use . for hidden
+				If StringInStr(FileGetAttrib($FileArray[$i]), "D") And NOT FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop ;allow folders if then contain main.au3
 				$FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
 				GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
+				_Log("Added: " & $FileArray[$i])
 			Next
 
 			GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
@@ -509,11 +510,12 @@ EndFunc
 
 Func _RunFolder($Path)
 	_Log("_RunFolder " & $Path)
-	$FileArray = _FileListToArray($Path, "*", $FLTA_FILES, True)
+	$FileArray = _FileListToArray($Path, "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
 	If Not @error Then
 		_Log("Files: " & $FileArray[0])
 		For $i = 1 To $FileArray[0]
 			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
+			If StringInStr(FileGetAttrib($FileArray[$i]), "D") And NOT FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop
 			_Log($FileArray[$i])
 			_RunFile($FileArray[$i])
 		Next
@@ -526,6 +528,11 @@ EndFunc   ;==>_RunFolder
 
 Func _RunFile($File, $Params = "", $WorkingDir = "")
 	_Log("_RunFile " & $File & " " & $Params)
+
+	If StringInStr(FileGetAttrib($File), "D") And FileExists($File & "\main.au3") Then
+		$File = $File & "\main.au3"
+	EndIf
+
 	$Extension = StringTrimLeft($File, StringInStr($File, ".", 0, -1))
 	Switch $Extension
 		Case "au3", "a3x"
