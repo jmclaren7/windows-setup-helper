@@ -31,7 +31,7 @@ Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log"
 Global $MainSize = FileGetSize(@ScriptFullPath)
 Global $Version = "4.0.1." & $MainSize
 
-Global $Title = "IT Setup Helper v" & $Version
+Global $Title = "Windows Setup Helper v" & $Version
 Global $DownloadUpdatedCount = 0
 Global $DownloadErrors = 0
 Global $DownloadUpdated = ""
@@ -81,21 +81,22 @@ Switch $Command
 		Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
 
 		; Boot GUI
-		$GUIBoot = GUICreate("$Title", 625, 442, -1, -1)
+		$GUIBoot = GUICreate("$Title", 605, 422, -1, -1)
 		GUISetBkColor(0xFFFFFF)
-		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 23, 392, 91, 25)
-		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 127, 392, 139, 25, $BS_DEFPUSHBUTTON)
-		$Label1 = GUICtrlCreateLabel("Automated Install Options", 24, 24, 213, 24)
-		GUICtrlSetFont(-1, 12, 800, 0, "MS Sans Serif")
-		GUICtrlSetColor(-1, 0x3399FF)
-		$BootScriptsTreeView = GUICtrlCreateTreeView(24, 80, 241, 249, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
-		$RunButton = GUICtrlCreateButton("Run", 486, 392, 107, 25)
-		$Label2 = GUICtrlCreateLabel("Select scripts to run after automated install", 24, 56, 203, 17)
-		$PEScriptTreeView = GUICtrlCreateTreeView(352, 80, 241, 289, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
-		$Label3 = GUICtrlCreateLabel("Select scripts to run now in WinPE", 352, 56, 167, 17)
-		$AdvancedButton = GUICtrlCreateButton("Advanced", 352, 392, 107, 25)
-		$ComputerNameInput = GUICtrlCreateInput("", 104, 344, 169, 21)
-		$Label4 = GUICtrlCreateLabel("Computer Name", 16, 347, 80, 17)
+		$Group1 = GUICtrlCreateGroup("WinPE Tools", 8, 8, 289, 401)
+		$RunButton = GUICtrlCreateButton("Run", 166, 368, 107, 25)
+		$PEScriptTreeView = GUICtrlCreateTreeView(32, 56, 241, 289, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$Label3 = GUICtrlCreateLabel("Select scripts to run now in WinPE", 32, 32, 167, 17)
+		$AdvancedButton = GUICtrlCreateButton("Advanced", 32, 368, 107, 25)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		$Group2 = GUICtrlCreateGroup("Install", 304, 8, 289, 401)
+		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 328, 369, 91, 25)
+		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 432, 369, 139, 25, $BS_DEFPUSHBUTTON)
+		$BootScriptsTreeView = GUICtrlCreateTreeView(321, 56, 241, 257, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$Label2 = GUICtrlCreateLabel("Select scripts to run after automated install", 329, 33, 203, 17)
+		$ComputerNameInput = GUICtrlCreateInput("", 409, 329, 169, 21)
+		$Label4 = GUICtrlCreateLabel("Computer Name", 321, 332, 80, 17)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUISetState(@SW_SHOW)
 
 		Opt("WinTitleMatchMode", 2)
