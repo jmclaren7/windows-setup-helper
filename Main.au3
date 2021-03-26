@@ -68,7 +68,7 @@ EndIf
 If $CmdLine[0] >= 1 Then
 	$Command = $CmdLine[1]
 Else
-	$Command = "boot-gui"
+	$Command = "main-gui"
 EndIf
 
 _Log("Command: " & $Command)
@@ -115,6 +115,7 @@ Switch $Command
 		Local $hSetup
 		Local $CopyOptFiles = False
 		Local $DeleteOEMFiles = False
+		Local $Reboot = False
 
 		; Loop
 		While 1
@@ -155,7 +156,7 @@ Switch $Command
 
 						$hAutounattend = FileOpen($AutounattendPath_New, $FO_OVERWRITE)
 						FileWrite($hAutounattend, $sFileData)
-						_Log("FileWrite @error="&@error)
+						_Log("FileWrite @error=" & @error)
 						FileClose($hAutounattend)
 
 						$AutounattendPath = $AutounattendPath_New
@@ -168,24 +169,30 @@ Switch $Command
 
 			EndSwitch
 
-			If $CopyOptFiles AND ProcessExists($hSetup) Then
-				;_Log("CopyOptFiles")
+			If $CopyOptFiles AND NOT ProcessExists($hSetup) Then
+				_Log("CopyOptFiles")
 				For $i = 65 To 90
 					$Path = Chr($i) & ":\Windows\IT"
 					If FileExists($Path) Then
 						$Dest = $Path & "\AutoLogin\"
 						_Log("Found: " & $Path)
+						;$SuccessCount = 0
 						For $iFile = 0 To UBound($aList) - 1
 							$Return = FileCopy($aList[$iFile], $Dest, 1)
+							;If Not @error then $SuccessCount+=1
 							_Log("FileCopy: " & $aList[$iFile] & " (" & $Return & ")")
 						Next
-						Sleep(1000)
+						;_Log("FileCopy: " & $SuccessCount & " of " & UBound($aList))
+						;Sleep(1000)
 					EndIf
 				Next
+
+				$Reboot = True
+				$CopyOptFiles = False
 			Endif
 
-			If $DeleteOEMFiles AND ProcessExists($hSetup) Then
-				;_Log("DeleteOEMFiles")
+			If $DeleteOEMFiles AND NOT ProcessExists($hSetup) Then
+				_Log("DeleteOEMFiles")
 				For $i = 65 To 90
 					$Path = Chr($i) & ":\Windows\IT"
 					If FileExists($Path) Then
@@ -195,9 +202,16 @@ Switch $Command
 						Sleep(1000)
 					EndIf
 				Next
+
+				$Reboot = True
+				$DeleteOEMFiles = False
 			EndIf
 
-
+			If $Reboot Then ;AND NOT ProcessExists($hSetup)
+				$Return = Msgbox(1, $Title, "Rebooting in 10 seconds", 10)
+				If $Return = $IDTIMEOUT OR $Return = $IDOK Then Exit
+				$Reboot = False
+			Endif
 
 			Sleep(20)
 		WEnd
