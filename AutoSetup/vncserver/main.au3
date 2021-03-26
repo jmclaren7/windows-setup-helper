@@ -7,7 +7,7 @@ For $i=1 to 6
 	Sleep(1000)
 Next
 
-FileChangeDir(@ScriptDir & "\vncserver")
+FileChangeDir(@ScriptDir)
 _ConsoleWrite("@WorkingDir="&@WorkingDir)
 _ConsoleWrite("@ScriptDir="&@ScriptDir)
 
