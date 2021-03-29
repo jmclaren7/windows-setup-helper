@@ -176,14 +176,11 @@ Switch $Command
 					If FileExists($Path) Then
 						$Dest = $Path & "\AutoLogin\"
 						_Log("Found: " & $Path)
-						;$SuccessCount = 0
 						For $iFile = 0 To UBound($aList) - 1
 							$Return = FileCopy($aList[$iFile], $Dest, 1)
-							;If Not @error then $SuccessCount+=1
 							_Log("FileCopy: " & $aList[$iFile] & " (" & $Return & ")")
 						Next
-						;_Log("FileCopy: " & $SuccessCount & " of " & UBound($aList))
-						;Sleep(1000)
+
 					EndIf
 				Next
 
@@ -207,8 +204,10 @@ Switch $Command
 				$DeleteOEMFiles = False
 			EndIf
 
-			If $Reboot Then ;AND NOT ProcessExists($hSetup)
-				$Return = Msgbox(1, $Title, "Rebooting in 10 seconds", 10)
+			If $Reboot Then
+				_Log("Reboot")
+				Beep(500, 1000)
+				$Return = Msgbox(1, $Title, "Rebooting in 15 seconds", 15)
 				If $Return = $IDTIMEOUT OR $Return = $IDOK Then Exit
 				$Reboot = False
 			Endif
