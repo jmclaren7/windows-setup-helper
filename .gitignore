@@ -1,5 +1,4 @@
-git.token
-.token
+*.token
 *.log
 *.exe
 *.dll
