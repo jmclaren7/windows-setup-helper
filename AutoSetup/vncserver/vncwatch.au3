@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=n
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.33
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.34
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=y
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -20,6 +20,9 @@ ConsoleWrite(@CRLF&"Start"&@CRLF)
 
 Opt("GUIOnEventMode", 1)
 Opt("TCPTimeout", 10)
+
+Global $ViewerFullPath = @TempDir & "\tight_viewer.exe"
+FileInstall("tight_viewer.exe", $ViewerFullPath)
 
 TCPStartup()
 
@@ -120,7 +123,7 @@ Func _Connect()
 
 	If $Selected >= 0 Then
 		Local $IP = _GUICtrlListView_GetItemText($HostListView, $Selected)
-		$Execute = "tight_viewer.exe " & $IP & "::" & GUICtrlRead ($PortInput) & " -password=" & GUICtrlRead ($PasswordInput)
+		$Execute = $ViewerFullPath & " " & $IP & "::" & GUICtrlRead ($PortInput) & " -password=" & GUICtrlRead ($PasswordInput)
 		ConsoleWrite("$Execute=" & $Execute & @CRLF)
 		If $IP <> "" Then Run(@ComSpec & " /c " & $Execute, "", @SW_HIDE)
 	Endif
