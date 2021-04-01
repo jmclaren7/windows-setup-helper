@@ -6,6 +6,7 @@
 #include "include\FileConstants.au3"
 #include "include\GuiConstantsEx.au3"
 #include "include\GuiListView.au3"
+#include "include\GuiTab.au3"
 #include "include\GuiTreeView.au3"
 #include "include\GuiStatusBar.au3"
 #include "include\Inet.au3"
@@ -23,6 +24,7 @@
 #include "includeExt\ActivationStatus.au3"
 #include "includeExt\Custom.au3"
 #include "includeExt\_Zip.au3"
+
 
 OnAutoItExitRegister("_Exit")
 _WinAPI_Wow64EnableWow64FsRedirection(False)
@@ -56,10 +58,7 @@ _Log("@TempDir=" & @TempDir)
 _Log("@WorkingDir=" & @WorkingDir)
 _Log("PATH=" & EnvGet("PATH"))
 
-;If FileExists(@ScriptDir & "\noexecute") Then Exit
-
 Global $TokenAddHeader = IniRead(".token", "t", "t", "")
-;If $TokenAddHeader = "" Then $TokenAddHeader = IniRead("git.token", "t", "t", "")
 If $TokenAddHeader <> "" Then
 	_Log("Token Added")
 	$TokenAddHeader = "Authorization: token " & $TokenAddHeader
@@ -74,147 +73,6 @@ EndIf
 _Log("Command: " & $Command)
 
 Switch $Command
-	Case "boot-gui"
-		$BootDrive = StringLeft(@SystemDir, 3)
-
-		; Start network
-		Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
-
-		; Boot GUI
-		$GUIBoot = GUICreate("$Title", 605, 422, -1, -1)
-		GUISetBkColor(0xFFFFFF)
-		$Group1 = GUICtrlCreateGroup("WinPE Tools", 8, 8, 289, 401)
-		$RunButton = GUICtrlCreateButton("Run", 166, 368, 107, 25)
-		$PEScriptTreeView = GUICtrlCreateTreeView(32, 56, 241, 289, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
-		$Label3 = GUICtrlCreateLabel("Select scripts to run now in WinPE", 32, 32, 167, 17)
-		$AdvancedButton = GUICtrlCreateButton("Advanced", 32, 368, 107, 25)
-		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		$Group2 = GUICtrlCreateGroup("Install", 304, 8, 289, 401)
-		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 328, 369, 91, 25)
-		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 432, 369, 139, 25, $BS_DEFPUSHBUTTON)
-		$BootScriptsTreeView = GUICtrlCreateTreeView(321, 56, 241, 257, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
-		$Label2 = GUICtrlCreateLabel("Select scripts to run after automated install", 329, 33, 203, 17)
-		$ComputerNameInput = GUICtrlCreateInput("", 409, 329, 169, 21)
-		$Label4 = GUICtrlCreateLabel("Computer Name", 321, 332, 80, 17)
-		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		GUISetState(@SW_SHOW)
-
-		Opt("WinTitleMatchMode", 2)
-		WinSetState("bootmedia.exe", "", @SW_MINIMIZE)
-
-		GUISetState(@SW_SHOW)
-		WinSetTitle($GUIBoot, "", $Title)
-		GUISetIcon($BootDrive & "sources\setup.exe")
-
-		; Generate script checkboxes
-		_PopulateScripts($BootScriptsTreeView, "OptLogin")
-		_PopulateScripts($PEScriptTreeView, "OptSetup")
-
-		_RunMulti("AutoSetup")
-
-		Local $hSetup
-		Local $CopyOptFiles = False
-		Local $DeleteOEMFiles = False
-		Local $Reboot = False
-
-		; Loop
-		While 1
-			$nMsg = GUIGetMsg()
-
-			Switch $nMsg
-
-				Case $GUI_EVENT_CLOSE
-					Exit
-
-				Case $AdvancedButton
-					_PopulateScripts($PEScriptTreeView, "*")
-					_PopulateScripts($BootScriptsTreeView, "*")
-
-				Case $RunButton
-					_RunTreeView($GUIBoot, $PEScriptTreeView)
-
-				Case $NormalInstallButton
-					$hSetup = _RunFile($BootDrive & "sources\setup.exe")
-					$DeleteOEMFiles = True
-					$CopyOptFiles = False
-
-				Case $AutomatedInstallButton
-					$aList = _RunTreeView($GUIBoot, $BootScriptsTreeView, True)
-					For $b = 0 To UBound($aList) - 1
-						_Log("TreeItem: " & $aList[$b])
-					Next
-
-					$AutounattendPath = @ScriptDir & "\autounattend.xml"
-					$ComputerName = GUICtrlRead($ComputerNameInput)
-
-					If $ComputerName <> "" Then
-						_Log("$ComputerName=" & $ComputerName)
-						$AutounattendPath_New = @TempDir & "\autounattend.xml"
-						$sFileData = FileRead($AutounattendPath)
-						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>"&$ComputerName&"</ComputerName>")
-						_Log("StringReplace @extended=" & @extended)
-
-						$hAutounattend = FileOpen($AutounattendPath_New, $FO_OVERWRITE)
-						FileWrite($hAutounattend, $sFileData)
-						_Log("FileWrite @error=" & @error)
-						FileClose($hAutounattend)
-
-						$AutounattendPath = $AutounattendPath_New
-					EndIf
-
-					_Log("$AutounattendPath=" & $AutounattendPath)
-					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
-					$CopyOptFiles = True
-					$DeleteOEMFiles = False
-
-			EndSwitch
-
-			If $CopyOptFiles AND NOT ProcessExists($hSetup) Then
-				_Log("CopyOptFiles")
-				For $i = 65 To 90
-					$Path = Chr($i) & ":\Windows\IT"
-					If FileExists($Path) Then
-						$Dest = $Path & "\AutoLogin\"
-						_Log("Found: " & $Path)
-						For $iFile = 0 To UBound($aList) - 1
-							$Return = FileCopy($aList[$iFile], $Dest, 1)
-							_Log("FileCopy: " & $aList[$iFile] & " (" & $Return & ")")
-						Next
-
-					EndIf
-				Next
-
-				$Reboot = True
-				$CopyOptFiles = False
-			Endif
-
-			If $DeleteOEMFiles AND NOT ProcessExists($hSetup) Then
-				_Log("DeleteOEMFiles")
-				For $i = 65 To 90
-					$Path = Chr($i) & ":\Windows\IT"
-					If FileExists($Path) Then
-						_Log("Found: " & $Path)
-						$Return = DirRemove($Path, 1)
-						_Log("DirRemove: " & $Path & " (" & $Return & ")")
-						Sleep(1000)
-					EndIf
-				Next
-
-				$Reboot = True
-				$DeleteOEMFiles = False
-			EndIf
-
-			If $Reboot Then
-				_Log("Reboot")
-				Beep(500, 1000)
-				$Return = Msgbox(1, $Title, "Rebooting in 15 seconds", 15)
-				If $Return = $IDTIMEOUT OR $Return = $IDOK Then Exit
-				$Reboot = False
-			Endif
-
-			Sleep(20)
-		WEnd
-
 	Case "system"
 		_RunMulti("AutoSystem")
 
@@ -238,8 +96,8 @@ Switch $Command
 		_RunMulti("AutoLogin")
 		_RunFile(@ScriptFullPath)
 
-	Case "main-gui", ""
-		#Region ### START Koda GUI section ###
+	Case "main-gui", "boot-gui"
+		#Region ### START Koda GUI section ### Form=main.kxf
 		$GUIMain = GUICreate("$Title", 823, 574, -1, -1)
 		$MenuItem2 = GUICtrlCreateMenu("&File")
 		$MenuExitButton = GUICtrlCreateMenuItem("Exit", $MenuItem2)
@@ -249,16 +107,17 @@ Switch $Command
 		$MenuShowAllScriptsButton = GUICtrlCreateMenuItem("Show All Scripts", $MenuItem1)
 		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log", $MenuItem1)
 		$MenuOpenFolder = GUICtrlCreateMenuItem("Open Program Folder", $MenuItem1)
+		$SwitchTabsMenu = GUICtrlCreateMenuItem("Switch Mode", $MenuItem1)
 		$Tab1 = GUICtrlCreateTab(7, 4, 809, 521)
-		$TabSheet1 = GUICtrlCreateTabItem("Main")
+		$MainTabSheet = GUICtrlCreateTabItem(" ")
 		$Group1 = GUICtrlCreateGroup("Scripts", 399, 33, 401, 481)
-		$Presets = GUICtrlCreateCombo("Presets", 415, 57, 369, 25, BitOR($CBS_DROPDOWN, $CBS_AUTOHSCROLL))
+		$Presets = GUICtrlCreateCombo("Presets", 415, 57, 369, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
 		GUICtrlSetState(-1, $GUI_DISABLE)
-		$ScriptsTree = GUICtrlCreateTreeView(415, 97, 369, 369, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
+		$ScriptsTreeView = GUICtrlCreateTreeView(415, 97, 369, 369, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
 		$RunButton = GUICtrlCreateButton("Run", 711, 481, 75, 25)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		$Group2 = GUICtrlCreateGroup("Information", 22, 32, 361, 257)
-		$InfoList = GUICtrlCreateListView("", 31, 50, 346, 230, BitOR($GUI_SS_DEFAULT_LISTVIEW, $LVS_SMALLICON), 0)
+		$InfoList = GUICtrlCreateListView("", 31, 50, 346, 230, BitOR($GUI_SS_DEFAULT_LISTVIEW,$LVS_SMALLICON), 0)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		$Group3 = GUICtrlCreateGroup("Create Local User", 22, 426, 361, 89)
 		$CreateLocalUserButton = GUICtrlCreateButton("Create Local User", 235, 478, 131, 25)
@@ -272,6 +131,20 @@ Switch $Command
 		$DisableAdminButton = GUICtrlCreateButton("Disable Administrator", 35, 354, 160, 25)
 		$SignOutButton = GUICtrlCreateButton("Sign Out", 35, 389, 160, 25)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		$BootTabSheet = GUICtrlCreateTabItem(" ")
+		$Group5 = GUICtrlCreateGroup("WinPE Tools", 19, 37, 385, 473)
+		$PERunButton = GUICtrlCreateButton("Run", 273, 470, 107, 25)
+		$PEScriptTreeView = GUICtrlCreateTreeView(43, 85, 345, 377, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$Label3 = GUICtrlCreateLabel("Select scripts to run now in WinPE", 43, 61, 167, 17)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
+		$Group6 = GUICtrlCreateGroup("Install", 411, 37, 385, 473)
+		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 427, 470, 131, 25)
+		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 619, 470, 163, 25, $BS_DEFPUSHBUTTON)
+		$PEInstallTreeView = GUICtrlCreateTreeView(428, 85, 353, 337, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$Label2 = GUICtrlCreateLabel("Select scripts to run after automated install", 436, 62, 203, 17)
+		$PEComputerNameInput = GUICtrlCreateInput("", 612, 430, 169, 21)
+		$Label4 = GUICtrlCreateLabel("Computer Name", 524, 433, 80, 17)
+		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateTabItem("")
 		$StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
 		_GUICtrlStatusBar_SetSimple($StatusBar1)
@@ -279,12 +152,12 @@ Switch $Command
 		GUISetState(@SW_SHOW)
 		#EndRegion ### END Koda GUI section ###
 
-		;GUI Post Creation Setup
+		; GUI Post Creation Setup
 		WinSetTitle($GUIMain, "", $Title)
 		GUICtrlSendMsg($UsernameInput, $EM_SETCUEBANNER, False, "Username")
 		GUICtrlSendMsg($PasswordInput, $EM_SETCUEBANNER, False, "Password (optional)")
 
-		;Info List Generation
+		; Info List Generation
 		If IsAdmin() Then
 			GUICtrlCreateListViewItem("Running with admin rights", $InfoList)
 			GUICtrlSetColor(-1, "0x00a500")
@@ -315,17 +188,60 @@ Switch $Command
 		GUICtrlCreateListViewItem("IP/Gateway: " & $NetInfo[3] & "/" & $NetInfo[4], $InfoList)
 		GUICtrlCreateListViewItem("MAC: " & $NetInfo[2], $InfoList)
 
-		;Generate Script List
-		_PopulateScripts($ScriptsTree, "OptLogin")
+		; Generate Script List
+		_PopulateScripts($ScriptsTreeView, "OptLogin")
+		_PopulateScripts($PEInstallTreeView, "OptLogin")
+		_PopulateScripts($PEScriptTreeView, "OptSetup")
+
+		Local $hSetup
+		Local $CopyOptFiles = False
+		Local $DeleteOEMFiles = False
+		Local $Reboot = False
+		Local $BootDrive = StringLeft(@SystemDir, 3)
+
+		; Tab/Mode specific
+		If $Command="boot-gui" Then
+			; Start network
+			Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
+
+			; Set GUI Icon
+
+			GUISetIcon($BootDrive & "sources\setup.exe")
+
+			; Run automatic setup scripts
+			_RunMulti("AutoSetup")
+
+			; ?
+			Opt("WinTitleMatchMode", 2)
+
+			; Minimize console window
+			WinSetState("bootmedia.exe", "", @SW_MINIMIZE)
+
+		EndIf
 
 		_Log("Ready", True)
 
 		;GUI Loop
 		While 1
+			$CurrentTab=GUICtrlRead($Tab1)
+			If $Command="boot-gui" AND $CurrentTab=0 Then
+				GUICtrlSetState($BootTabSheet, $GUI_SHOW)
+			Elseif $Command="main-gui" AND $CurrentTab=1 Then
+				GUICtrlSetState($MainTabSheet, $GUI_SHOW)
+			Endif
+
 			$nMsg = GUIGetMsg()
 			Switch $nMsg
-				Case $GUI_EVENT_CLOSE
+				Case $GUI_EVENT_CLOSE, $MenuExitButton
+					If $Command="boot-gui" AND MsgBox(1, $Title, "Closing the program will reboot the system while in WinPE.") <> 1 Then ContinueLoop
 					Exit
+
+				Case $SwitchTabsMenu
+					If $Command="boot-gui" Then
+						$Command="main-gui"
+					Elseif $Command="main-gui" Then
+						$Command="boot-gui"
+					Endif
 
 				Case $DisableAdminButton
 					_Log("DisableAdminButton")
@@ -349,7 +265,7 @@ Switch $Command
 
 				Case $RunButton
 					_Log("RunButton")
-					_RunTreeView($GUIMain, $ScriptsTree)
+					_RunTreeView($GUIMain, $ScriptsTreeView)
 
 				Case $MenuUpdateButton
 					_Log("MenuUpdateButton")
@@ -367,8 +283,11 @@ Switch $Command
 					EndIf
 
 				Case $MenuShowAllScriptsButton
-					_Log("MenuUpdateButton")
-					_PopulateScripts($ScriptsTree, "*")
+					_Log("MenuShowAllScriptsButton")
+					_PopulateScripts($ScriptsTreeView, "*")
+
+					_PopulateScripts($PEScriptTreeView, "*")
+					_PopulateScripts($PEInstallTreeView, "*")
 
 				Case $MenuOpenFolder
 					_Log("MenuOpenFolder")
@@ -416,7 +335,88 @@ Switch $Command
 
 					EndIf
 
-			EndSwitch
+				Case $PERunButton
+					_RunTreeView($GUIMain, $PEScriptTreeView)
+
+				Case $NormalInstallButton
+					$hSetup = _RunFile($BootDrive & "sources\setup.exe")
+					$DeleteOEMFiles = True
+					$CopyOptFiles = False
+
+				Case $AutomatedInstallButton
+					$aList = _RunTreeView($GUIMain, $PEInstallTreeView, True)
+					For $b = 0 To UBound($aList) - 1
+						_Log("TreeItem: " & $aList[$b])
+					Next
+
+					$AutounattendPath = @ScriptDir & "\autounattend.xml"
+					$ComputerName = GUICtrlRead($PEComputerNameInput)
+
+					If $ComputerName <> "" Then
+						_Log("$ComputerName=" & $ComputerName)
+						$AutounattendPath_New = @TempDir & "\autounattend.xml"
+						$sFileData = FileRead($AutounattendPath)
+						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>"&$ComputerName&"</ComputerName>")
+						_Log("StringReplace @extended=" & @extended)
+
+						$hAutounattend = FileOpen($AutounattendPath_New, $FO_OVERWRITE)
+						FileWrite($hAutounattend, $sFileData)
+						_Log("FileWrite @error=" & @error)
+						FileClose($hAutounattend)
+
+						$AutounattendPath = $AutounattendPath_New
+					EndIf
+
+					_Log("$AutounattendPath=" & $AutounattendPath)
+					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
+					$CopyOptFiles = True
+					$DeleteOEMFiles = False
+
+				EndSwitch
+
+				If $CopyOptFiles AND NOT ProcessExists($hSetup) Then
+					_Log("CopyOptFiles")
+					For $i = 65 To 90
+						$Path = Chr($i) & ":\Windows\IT"
+						If FileExists($Path) Then
+							$Dest = $Path & "\AutoLogin\"
+							_Log("Found: " & $Path)
+							For $iFile = 0 To UBound($aList) - 1
+								$Return = FileCopy($aList[$iFile], $Dest, 1)
+								_Log("FileCopy: " & $aList[$iFile] & " (" & $Return & ")")
+							Next
+
+						EndIf
+					Next
+
+					$Reboot = True
+					$CopyOptFiles = False
+				Endif
+
+				If $DeleteOEMFiles AND NOT ProcessExists($hSetup) Then
+					_Log("DeleteOEMFiles")
+					For $i = 65 To 90
+						$Path = Chr($i) & ":\Windows\IT"
+						If FileExists($Path) Then
+							_Log("Found: " & $Path)
+							$Return = DirRemove($Path, 1)
+							_Log("DirRemove: " & $Path & " (" & $Return & ")")
+							Sleep(1000)
+						EndIf
+					Next
+
+					$Reboot = True
+					$DeleteOEMFiles = False
+				EndIf
+
+				If $Reboot Then
+					_Log("Reboot")
+					Beep(500, 1000)
+					$Return = Msgbox(1, $Title, "Rebooting in 15 seconds", 15)
+					If $Return = $IDTIMEOUT OR $Return = $IDOK Then Exit
+					$Reboot = False
+				Endif
+
 		WEnd
 
 	Case Else
