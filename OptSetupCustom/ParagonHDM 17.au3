@@ -1,4 +1,5 @@
-MsgBox(0, @ScriptName, "ParagonHDM causes an issue with the Windows installer, reboot if you need to run the installer."&@LF&@LF&"Use the ""EndTask"" button in the top left to exit ParagonHDM without rebooting.")
+$Msg = MsgBox(1, @ScriptName, "ParagonHDM causes an issue with the Windows installer, reboot if you need to run the installer."&@LF&@LF&"Use the ""EndTask"" button in the top left to exit ParagonHDM without rebooting.")
+If $Msg <> 1 Then Exit
 
 $SystemDrive = Stringleft(@SystemDir, 2)
 $Pid = ShellExecute($SystemDrive & "\Programs\Paragon Software\program\hdm17.exe")
