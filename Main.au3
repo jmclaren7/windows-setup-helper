@@ -265,12 +265,12 @@ Switch $Command
 
 				Case $DeleteHelperButton
 					_Log("CleaupButton")
-					FileDelete(@DesktopDir & "\IT Setup Folder")
+					FileDelete(@DesktopDir & "\IT Setup Folder.lnk")
 					FileDelete(@DesktopDir & "\IT Setup Helper.lnk")
 					If FileExists(@WindowsDir & "\IT\Main.au3") Then
-						_RunDos("ping 127.0.0.1 -n 2 && rmdir /s /q " & @WindowsDir & "\IT")
+						Run(@ComSpec & " /c " & "ping 127.0.0.1 -n 3 && rmdir /s /q " & @WindowsDir & "\IT")
 					EndIf
-					Exit
+					ProcessClose(@AutoItPID)
 
 				Case $RunButton
 					_Log("RunButton")
