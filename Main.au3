@@ -109,7 +109,7 @@ Switch $Command
 		$MenuOpenFolder = GUICtrlCreateMenuItem("Open Program Folder", $MenuItem1)
 		$SwitchTabsMenu = GUICtrlCreateMenuItem("Switch Mode", $MenuItem1)
 		$Tab1 = GUICtrlCreateTab(7, 4, 809, 521)
-		$MainTabSheet = GUICtrlCreateTabItem(" ")
+		$MainTabSheet = GUICtrlCreateTabItem("&")
 		$Group1 = GUICtrlCreateGroup("Scripts", 399, 33, 401, 481)
 		$Presets = GUICtrlCreateCombo("Presets", 415, 57, 369, 25, BitOR($CBS_DROPDOWN,$CBS_AUTOHSCROLL))
 		GUICtrlSetState(-1, $GUI_DISABLE)
@@ -128,10 +128,11 @@ Switch $Command
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		$Group4 = GUICtrlCreateGroup("Actions", 22, 294, 361, 129)
 		$JoinButton = GUICtrlCreateButton("Domain && Computer Name", 35, 319, 160, 25)
-		$DisableAdminButton = GUICtrlCreateButton("Disable Administrator", 35, 354, 160, 25)
-		$SignOutButton = GUICtrlCreateButton("Sign Out", 35, 389, 160, 25)
+		$DisableAdminButton = GUICtrlCreateButton("Disable Administrator", 211, 319, 160, 25)
+		$SignOutButton = GUICtrlCreateButton("Sign Out", 211, 389, 160, 25)
+		$DeleteHelperButton = GUICtrlCreateButton("Delete Install Helper", 211, 354, 160, 25)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		$BootTabSheet = GUICtrlCreateTabItem(" ")
+		$BootTabSheet = GUICtrlCreateTabItem("&")
 		$Group5 = GUICtrlCreateGroup("WinPE Tools", 19, 37, 385, 473)
 		$PERunButton = GUICtrlCreateButton("Run", 273, 470, 107, 25)
 		$PEScriptTreeView = GUICtrlCreateTreeView(43, 85, 345, 377, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
@@ -205,7 +206,6 @@ Switch $Command
 			Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
 
 			; Set GUI Icon
-
 			GUISetIcon($BootDrive & "sources\setup.exe")
 
 			; Run automatic setup scripts
@@ -263,6 +263,15 @@ Switch $Command
 					_Log("SignOutButton")
 					Shutdown(0)
 
+				Case $DeleteHelperButton
+					_Log("CleaupButton")
+					FileDelete(@DesktopDir & "\IT Setup Folder")
+					FileDelete(@DesktopDir & "\IT Setup Helper.lnk")
+					If FileExists(@WindowsDir & "\IT\Main.au3") Then
+						_RunDos("ping 127.0.0.1 -n 2 && rmdir /s /q " & @WindowsDir & "\IT")
+					EndIf
+					Exit
+
 				Case $RunButton
 					_Log("RunButton")
 					_RunTreeView($GUIMain, $ScriptsTreeView)
@@ -285,17 +294,16 @@ Switch $Command
 				Case $MenuShowAllScriptsButton
 					_Log("MenuShowAllScriptsButton")
 					_PopulateScripts($ScriptsTreeView, "*")
-
 					_PopulateScripts($PEScriptTreeView, "*")
 					_PopulateScripts($PEInstallTreeView, "*")
 
 				Case $MenuOpenFolder
 					_Log("MenuOpenFolder")
-					ShellExecute(@ScriptDir)
+					_RunFile("explorer.exe", @ScriptDir)
 
 				Case $MenuOpenLog
 					_Log("MenuOpenLog")
-					ShellExecute($LogFullPath)
+					_RunFile($LogFullPath)
 
 				Case $MenuVisitGitButton
 					_Log("Opening Browser...", True)
