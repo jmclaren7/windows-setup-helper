@@ -386,6 +386,8 @@ Switch $Command
 								_Log("FileCopy: " & $aList[$iFile] & " (" & $Return & ")")
 							Next
 
+							FileCopy($LogFullPath, $Path & "\pe.log")
+
 						EndIf
 					Next
 
