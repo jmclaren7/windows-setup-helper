@@ -12,6 +12,8 @@ While 1
 	$nMsg = GUIGetMsg()
 	Switch $nMsg
 		Case $ForceCloseButton
+			$Msg = MsgBox(4, @ScriptName, "Are you sure you want to exit?"&@LF&@LF&"Note: you can also use alt+tab to switch to other windows.")
+			If $Msg <> 1 Then ContinueLoop
 			ProcessClose($Pid)
 			Exit
 	EndSwitch
