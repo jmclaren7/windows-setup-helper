@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=y
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.93
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.97
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=y
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -9,6 +9,7 @@
 ConsoleWrite("Start "&@ScriptFullPath&@CRLF)
 ConsoleWrite("@System="&@SystemDir&@CRLF)
 ConsoleWrite("@WorkingDir="&@WorkingDir&@CRLF)
+ConsoleWrite("@ComSpec="&@ComSpec&@CRLF)
 
 #include <AutoitConstants.au3>
 
@@ -26,8 +27,6 @@ For $i = 64 To 90
 		ConsoleWrite("$Execute=" & $Execute & @CRLF)
 		$Return = Run($Execute, $Path, @SW_HIDE, 8)
 		ConsoleWrite("$Return="&$Return&@CRLF)
-
-		WinSetState(@ScriptFullPath, "", @SW_MINIMIZE)
 
 		While ProcessExists($Return)
 			ConsoleWrite(StdoutRead ($Return))
