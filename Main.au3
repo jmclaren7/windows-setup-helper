@@ -97,6 +97,17 @@ Switch $Command
 		_RunFile(@ScriptFullPath)
 
 	Case "main-gui", "boot-gui"
+		; Mode specific
+		If $Command="boot-gui" Then
+			; Hide console windows
+			Sleep(500)
+			WinSetState(@ComSpec, "", @SW_HIDE)
+			Sleep(500)
+			WinSetState(@ComSpec, "", @SW_HIDE) ;Something prevents it working if ran only once or too fast?
+			WinSetState("winpehelper.exe", "", @SW_HIDE)
+
+		EndIf
+
 		#Region ### START Koda GUI section ### Form=main.kxf
 		$GUIMain = GUICreate("$Title", 767, 543, -1, -1)
 		$MenuItem2 = GUICtrlCreateMenu("&File")
@@ -104,6 +115,7 @@ Switch $Command
 		$MenuItem1 = GUICtrlCreateMenu("&Advanced")
 		$MenuUpdateButton = GUICtrlCreateMenuItem("Update from GitHub", $MenuItem1)
 		$MenuVisitGitButton = GUICtrlCreateMenuItem("Visit GitHub Page", $MenuItem1)
+		$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $MenuItem1)
 		$MenuShowAllScriptsButton = GUICtrlCreateMenuItem("Show All Scripts", $MenuItem1)
 		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log", $MenuItem1)
 		$MenuOpenFolder = GUICtrlCreateMenuItem("Open Program Folder", $MenuItem1)
@@ -209,10 +221,6 @@ Switch $Command
 
 			; ?
 			Opt("WinTitleMatchMode", 2)
-
-			; Minimize console window
-			WinSetState("bootmedia.exe", "", @SW_MINIMIZE)
-
 		EndIf
 
 		_Log("Ready", True)
@@ -292,6 +300,10 @@ Switch $Command
 					_PopulateScripts($ScriptsTreeView, "*")
 					_PopulateScripts($PEScriptTreeView, "*")
 					_PopulateScripts($PEInstallTreeView, "*")
+
+				Case $MenuShowConsole
+					WinSetState(@ComSpec, "", @SW_SHOW)
+					WinSetState("winpehelper.exe", "", @SW_SHOW)
 
 				Case $MenuOpenFolder
 					_Log("MenuOpenFolder")

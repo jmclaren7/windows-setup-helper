@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <object type="TAForm" name="GUIMain">
 	<properties>
-		<property name="Left" vt="Int16">768</property>
-		<property name="Top" vt="Int16">499</property>
+		<property name="Left" vt="Int16">880</property>
+		<property name="Top" vt="Int16">528</property>
 		<property name="Width" vt="Int16">782</property>
 		<property name="Height" vt="Int16">581</property>
 		<property name="Caption" vt="String">$Title</property>
@@ -490,6 +490,12 @@
 						<object type="TAMenuItem" name="MenuVisitGitButton">
 							<properties>
 								<property name="Caption" vt="String">Visit GitHub Page</property>
+							</properties>
+							<components/>
+						</object>
+						<object type="TAMenuItem" name="MenuShowConsole">
+							<properties>
+								<property name="Caption" vt="String">Show Console</property>
 							</properties>
 							<components/>
 						</object>
