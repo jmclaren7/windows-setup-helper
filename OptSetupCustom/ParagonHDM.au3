@@ -1,4 +1,6 @@
-$Msg = MsgBox(1, @ScriptName, "ParagonHDM causes an issue with the Windows installer, reboot if you need to run the installer."&@LF&@LF&"Use the ""EndTask"" button in the top left to exit ParagonHDM without rebooting.")
+$Title = @ScriptFullPath
+
+$Msg = MsgBox(1, $Title, "ParagonHDM causes an issue with the Windows installer, reboot if you need to run the installer."&@LF&@LF&"Use the ""EndTask"" button in the top left to exit ParagonHDM without rebooting.")
 If $Msg <> 1 Then Exit
 
 $SystemDrive = Stringleft(@SystemDir, 2)
@@ -13,13 +15,14 @@ While 1
 	$nMsg = GUIGetMsg()
 	Switch $nMsg
 		Case $ForceCloseButton
-			$Msg = MsgBox(4, @ScriptName, "Are you sure you want to exit?"&@LF&@LF&"Note: you can also use alt+tab to switch to other windows.")
-			If $Msg <> 6 Then ContinueLoop
+			$Msg = MsgBox(4, $Title, "Are you sure you want to exit?"&@LF&@LF&"Note: you can also use alt+tab to switch to other windows.")
+			If $Msg <> 6 Then ContinueLoop ;6=Yes
 			ProcessClose($Pid)
-			Exit
+
 	EndSwitch
 
-	If NOT ProcessExists($Pid) Then Exit
-
+	If NOT ProcessExists($Pid) Then
+		Exit
+	EndIf
 	Sleep(20)
 Wend
