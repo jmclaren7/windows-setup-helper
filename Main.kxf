@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <object type="TAForm" name="GUIMain">
 	<properties>
-		<property name="Left" vt="Int16">934</property>
-		<property name="Top" vt="Int16">410</property>
-		<property name="Width" vt="Int16">823</property>
-		<property name="Height" vt="Int16">590</property>
+		<property name="Left" vt="Int16">768</property>
+		<property name="Top" vt="Int16">499</property>
+		<property name="Width" vt="Int16">782</property>
+		<property name="Height" vt="Int16">581</property>
 		<property name="Caption" vt="String">$Title</property>
 		<property name="Color" vt="Ident">clBtnFace</property>
 		<property name="Font.Charset" vt="Ident">DEFAULT_CHARSET</property>
@@ -47,8 +47,8 @@
 			<properties>
 				<property name="Left" vt="Int8">7</property>
 				<property name="Top" vt="Int8">4</property>
-				<property name="Width" vt="Int16">793</property>
-				<property name="Height" vt="Int16">503</property>
+				<property name="Width" vt="Int16">753</property>
+				<property name="Height" vt="Int16">495</property>
 				<property name="ActivePage" vt="Ident">MainTabSheet</property>
 				<property name="Font.Charset" vt="Ident">DEFAULT_CHARSET</property>
 				<property name="Font.Color" vt="Ident">clWindowText</property>
@@ -78,8 +78,8 @@
 							<properties>
 								<property name="Left" vt="Int16">382</property>
 								<property name="Top" vt="Int8">4</property>
-								<property name="Width" vt="Int16">393</property>
-								<property name="Height" vt="Int16">460</property>
+								<property name="Width" vt="Int16">356</property>
+								<property name="Height" vt="Int16">452</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
 								<property name="Caption" vt="String">Scripts</property>
@@ -89,10 +89,10 @@
 							<components>
 								<object type="TATreeView" name="ScriptsTreeView">
 									<properties>
-										<property name="Left" vt="Int8">16</property>
+										<property name="Left" vt="Int8">10</property>
 										<property name="Top" vt="Int8">24</property>
-										<property name="Width" vt="Int16">360</property>
-										<property name="Height" vt="Int16">390</property>
+										<property name="Width" vt="Int16">335</property>
+										<property name="Height" vt="Int16">382</property>
 										<property name="CtrlStyle" vt="Int32">1342374199</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
 										<property name="Resizing" vt="Set"/>
@@ -102,8 +102,8 @@
 								</object>
 								<object type="TAButton" name="RunButton">
 									<properties>
-										<property name="Left" vt="Int16">272</property>
-										<property name="Top" vt="Int16">424</property>
+										<property name="Left" vt="Int16">240</property>
+										<property name="Top" vt="Int16">416</property>
 										<property name="Width" vt="Int8">107</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Run</property>
@@ -132,9 +132,9 @@
 							<components>
 								<object type="TAListView" name="InfoList">
 									<properties>
-										<property name="Left" vt="Int8">9</property>
+										<property name="Left" vt="Int8">5</property>
 										<property name="Top" vt="Int8">18</property>
-										<property name="Width" vt="Int16">346</property>
+										<property name="Width" vt="Int16">350</property>
 										<property name="Height" vt="Int16">230</property>
 										<property name="CtrlStyle" vt="Int32">1342373903</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
@@ -150,7 +150,7 @@
 						<object type="TAGroup" name="Group3">
 							<properties>
 								<property name="Left" vt="Int8">11</property>
-								<property name="Top" vt="Int16">375</property>
+								<property name="Top" vt="Int16">367</property>
 								<property name="Width" vt="Int16">361</property>
 								<property name="Height" vt="Int8">89</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
@@ -224,7 +224,7 @@
 								<property name="Left" vt="Int8">11</property>
 								<property name="Top" vt="Int16">265</property>
 								<property name="Width" vt="Int16">361</property>
-								<property name="Height" vt="Int8">105</property>
+								<property name="Height" vt="Int8">97</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
 								<property name="Caption" vt="String">Actions</property>
@@ -312,8 +312,8 @@
 							<properties>
 								<property name="Left" vt="Int8">8</property>
 								<property name="Top" vt="Int8">8</property>
-								<property name="Width" vt="Int16">377</property>
-								<property name="Height" vt="Int16">460</property>
+								<property name="Width" vt="Int16">360</property>
+								<property name="Height" vt="Int16">452</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
 								<property name="Caption" vt="String">WinPE Tools</property>
@@ -323,8 +323,8 @@
 							<components>
 								<object type="TAButton" name="PERunButton">
 									<properties>
-										<property name="Left" vt="Int16">246</property>
-										<property name="Top" vt="Int16">425</property>
+										<property name="Left" vt="Int16">238</property>
+										<property name="Top" vt="Int16">417</property>
 										<property name="Width" vt="Int8">107</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Run</property>
@@ -339,9 +339,9 @@
 								<object type="TATreeView" name="PEScriptTreeView">
 									<properties>
 										<property name="Left" vt="Int8">16</property>
-										<property name="Top" vt="Int8">48</property>
-										<property name="Width" vt="Int16">345</property>
-										<property name="Height" vt="Int16">369</property>
+										<property name="Top" vt="Int8">24</property>
+										<property name="Width" vt="Int16">330</property>
+										<property name="Height" vt="Int16">385</property>
 										<property name="CtrlStyle" vt="Int32">1342374199</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
 										<property name="Resizing" vt="Set"/>
@@ -349,32 +349,17 @@
 									</properties>
 									<components/>
 								</object>
-								<object type="TALabel" name="Label3">
-									<properties>
-										<property name="Left" vt="Int8">24</property>
-										<property name="Top" vt="Int8">24</property>
-										<property name="Width" vt="Int16">167</property>
-										<property name="Height" vt="Int8">17</property>
-										<property name="Caption" vt="String">Select scripts to run now in WinPE</property>
-										<property name="TabOrder" vt="Int8">2</property>
-										<property name="HaveVariable" vt="False">False</property>
-										<property name="CtrlStyle" vt="Int32">1342308608</property>
-										<property name="CtrlExStyle" vt="Int8">0</property>
-										<property name="Resizing" vt="Set"/>
-									</properties>
-									<components/>
-								</object>
 							</components>
 						</object>
 						<object type="TAGroup" name="Group6">
 							<properties>
-								<property name="Left" vt="Int16">400</property>
+								<property name="Left" vt="Int16">376</property>
 								<property name="Top" vt="Int8">8</property>
-								<property name="Width" vt="Int16">377</property>
-								<property name="Height" vt="Int16">460</property>
+								<property name="Width" vt="Int16">360</property>
+								<property name="Height" vt="Int16">452</property>
 								<property name="CtrlStyle" vt="Int32">1342308359</property>
 								<property name="CtrlExStyle" vt="Int8">0</property>
-								<property name="Caption" vt="String">Install</property>
+								<property name="Caption" vt="String">Post-Install Scripts</property>
 								<property name="TabOrder" vt="Int8">1</property>
 								<property name="Resizing" vt="Set"/>
 							</properties>
@@ -382,7 +367,7 @@
 								<object type="TAButton" name="NormalInstallButton">
 									<properties>
 										<property name="Left" vt="Int8">16</property>
-										<property name="Top" vt="Int16">425</property>
+										<property name="Top" vt="Int16">417</property>
 										<property name="Width" vt="Int16">131</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Normal Install</property>
@@ -396,8 +381,8 @@
 								</object>
 								<object type="TAButton" name="AutomatedInstallButton">
 									<properties>
-										<property name="Left" vt="Int16">192</property>
-										<property name="Top" vt="Int16">425</property>
+										<property name="Left" vt="Int16">176</property>
+										<property name="Top" vt="Int16">417</property>
 										<property name="Width" vt="Int16">163</property>
 										<property name="Height" vt="Int8">25</property>
 										<property name="Caption" vt="String">Automated Install</property>
@@ -412,9 +397,9 @@
 								<object type="TATreeView" name="PEInstallTreeView">
 									<properties>
 										<property name="Left" vt="Int8">17</property>
-										<property name="Top" vt="Int8">48</property>
-										<property name="Width" vt="Int16">345</property>
-										<property name="Height" vt="Int16">337</property>
+										<property name="Top" vt="Int8">24</property>
+										<property name="Width" vt="Int16">330</property>
+										<property name="Height" vt="Int16">345</property>
 										<property name="CtrlStyle" vt="Int32">1342374199</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
 										<property name="Resizing" vt="Set"/>
@@ -422,28 +407,13 @@
 									</properties>
 									<components/>
 								</object>
-								<object type="TALabel" name="Label2">
-									<properties>
-										<property name="Left" vt="Int8">25</property>
-										<property name="Top" vt="Int8">25</property>
-										<property name="Width" vt="Int16">203</property>
-										<property name="Height" vt="Int8">17</property>
-										<property name="Caption" vt="String">Select scripts to run after automated install</property>
-										<property name="TabOrder" vt="Int8">3</property>
-										<property name="HaveVariable" vt="False">False</property>
-										<property name="CtrlStyle" vt="Int32">1342308608</property>
-										<property name="CtrlExStyle" vt="Int8">0</property>
-										<property name="Resizing" vt="Set"/>
-									</properties>
-									<components/>
-								</object>
 								<object type="TAInput" name="PEComputerNameInput">
 									<properties>
-										<property name="Left" vt="Int16">185</property>
-										<property name="Top" vt="Int16">393</property>
+										<property name="Left" vt="Int16">169</property>
+										<property name="Top" vt="Int16">385</property>
 										<property name="Width" vt="Int16">169</property>
 										<property name="Height" vt="Int8">21</property>
-										<property name="TabOrder" vt="Int8">4</property>
+										<property name="TabOrder" vt="Int8">3</property>
 										<property name="CtrlStyle" vt="Int32">1342374016</property>
 										<property name="CtrlExStyle" vt="Int16">512</property>
 										<property name="Resizing" vt="Set">DockHeight</property>
@@ -452,12 +422,12 @@
 								</object>
 								<object type="TALabel" name="Label4">
 									<properties>
-										<property name="Left" vt="Int8">97</property>
-										<property name="Top" vt="Int16">396</property>
+										<property name="Left" vt="Int8">89</property>
+										<property name="Top" vt="Int16">388</property>
 										<property name="Width" vt="Int8">80</property>
 										<property name="Height" vt="Int8">17</property>
 										<property name="Caption" vt="String">Computer Name</property>
-										<property name="TabOrder" vt="Int8">5</property>
+										<property name="TabOrder" vt="Int8">4</property>
 										<property name="HaveVariable" vt="False">False</property>
 										<property name="CtrlStyle" vt="Int32">1342308608</property>
 										<property name="CtrlExStyle" vt="Int8">0</property>
@@ -474,8 +444,8 @@
 		<object type="TAStatusBar" name="StatusBar1">
 			<properties>
 				<property name="Left" vt="Int8">0</property>
-				<property name="Top" vt="Int16">512</property>
-				<property name="Width" vt="Int16">807</property>
+				<property name="Top" vt="Int16">503</property>
+				<property name="Width" vt="Int16">766</property>
 				<property name="Height" vt="Int8">19</property>
 				<property name="Panels" vt="Collection">
 					<collection>
