@@ -31,7 +31,7 @@ _WinAPI_Wow64EnableWow64FsRedirection(False)
 
 Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log")
 Global $MainSize = FileGetSize(@ScriptFullPath)
-Global $Version = "4.0.1." & $MainSize
+Global $Version = "4.0.2." & $MainSize
 
 Global $Title = "Windows Setup Helper v" & $Version
 Global $DownloadUpdatedCount = 0
