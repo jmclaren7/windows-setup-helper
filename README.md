@@ -39,4 +39,5 @@ This project integrates a flexible set of scripts and tools into the Windows ins
 3. Select your USB device and ISO image
 4. Set the addiotinal options as shown in the image (Target system: "BIOS or UEFI", File system: FAT32)
 5. Click start
+
 ![image](https://user-images.githubusercontent.com/3019173/130369524-0f8de223-60f7-4bd5-8a38-0bb15c621c5b.png)
