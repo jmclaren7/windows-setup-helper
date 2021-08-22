@@ -1,10 +1,8 @@
-
-$Default = ""
 While 1
-	$Command=InputBox(@ScriptName,"Enter command", $Default)
-	if @error then continueloop
-	$Default = $Command
+	$Command=InputBox(@ScriptName,"Enter command")
 	$aCommand=StringSplit($Command," ")
+
+	If @error = 1 Then Exit
 
 	Switch $aCommand[1]
 		Case "exit"
