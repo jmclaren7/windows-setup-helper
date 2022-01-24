@@ -1,5 +1,5 @@
 @ECHO OFF
-set image-root=H:\Windows 10 Images\21H1
+set image-root=H:\Windows 10 Images\21H2
 set additions1=H:\Windows 10 Images\Additions
 
 del "%image-root%\Auto-saved*.xml"
