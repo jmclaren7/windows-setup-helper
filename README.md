@@ -1,37 +1,30 @@
-# itdeployhelper
-This project integrates a flexible set of scripts and tools into the Windows install media to make workstation deployments easier while also adding tools and features to the Windows PE enviroment.
+# Work in Progress
+This project integrates a flexible set of scripts and tools into the Windows install media to make deployments easier while also adding tools and features to the Windows PE enviroment.
 
 ## Features
 * Only interaction during Windows installation will be partition setup unless you select "Normal Install"
-* Uses $OEM$ folder on install media which is copied to install drive where scripts are run post-install
-* Automatic login to administrator account (default password is 1234, you will need disable the administrator account when you're done)
-* Runs scripts automatically
-* Runs a GUI on first login to run additional routines and list additional scripts
-* Can be updated
-* Scripts and tools can be added to an existing USB media
+* All files are integrated into the boot.wim image, this means you can netboot this image and use the same tools
+* Automatic login to administrator account (default password is 1234, you will need to disable the administrator account when you're done)
+* Automatically Runs scripts that were selected before the setup proccess was started
 
 ## Required External Components
-* AutoIT3 executables (64bit required for WinPE)
-* AutoIT3 built-in UDFs (Now included)
+* AutoIT3.exe executable (64bit version)
 
 ## Suggested Tools To Add For The WindowsPE Boot Enviroment
 * TightVNC
 * Explorer++
 * Password Refixer (Comercial)
-* Paragon Hard Disk Manager (Comercial)
+* MacriumRescue (Comercial)
 
 ## Adding Tools/Scripts/Programs
-* Once a USB drive is created you can update the available tools by adding them to \sources\$OEM$\$$\IT\
-* Folders that start with "Opt" contain items that needs to by manualy launched
-* Folders that start with "Auto" will launch automaticly
-* Folders with the word "Setup" are used from within the WindowsPE boot enviroment
-* Folders with the word "Login" are used from within the Windows install when it first boots
+* Files in the "Tools" folder are used from within the WindowsPE boot enviroment
+* Files in the "Logon" folder are selectable before install and then executed after install completes
 
-## Preparing Install
+## Preparing
+* 
 
-## Integrating 3rd Party Tools Into WinPE
-
-## Making The ISO
+## Create ISO
+* 
 
 ## USB Setup (From ISO)
 1. Download and open Rufus (https://rufus.ie/)

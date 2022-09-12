@@ -1,0 +1,10 @@
+NoLockScreen Swipe.reg
+Power Settings.bat
+Disable AcrylicBackgroundOnLogon.reg
+Disable ModernLockScreen.reg
+Enable Delete Confirm.reg
+Set Background Red.bat
+Start Windows Updates.bat
+ResolveTechSupport.exe
+Disable Edge FirstRun.reg
+Set TargetVersion 21H2.bat

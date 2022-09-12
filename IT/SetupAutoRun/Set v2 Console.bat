@@ -1,0 +1,1 @@
+reg.exe add HKCU\Console /v ForceV2 /t REG_DWORD /d 0 /f
