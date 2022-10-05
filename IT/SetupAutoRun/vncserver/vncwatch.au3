@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Icon=icon.ico
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Change2CUI=n
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.35
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.42
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=y
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -59,18 +59,19 @@ ConsoleWrite("Ready"&@CRLF)
 
 While 1
 	$aIPList = _GetIpAddressList(GUICtrlRead ($Input1))
-	_GUICtrlStatusBar_SetText($StatusBar1, "Scanning...")
+	_GUICtrlStatusBar_SetText($StatusBar1, "Scanning... " & Ubound($aIPList))
 
 	For $i = 0 To Ubound($aIPList)-1
 		$IP = $aIPList[$i]
 		;ConsoleWrite("$IP="&$IP&@CRLF)
+		_GUICtrlStatusBar_SetText($StatusBar1, "Scanning: "&$IP)
 
 
 		$iSocket = TCPConnect($IP, GUICtrlRead ($PortInput))
 		If $iSocket > 0 Then
 			$MarkedForRemoval = False
 
-			;ConsoleWrite("Success: " & $IP & @CRLF)
+			ConsoleWrite("Success: " & $IP & @CRLF)
 			If _GUICtrlListView_FindText($HostListView, $IP, -1, False) = -1 Then
 				$ListViewItem = GUICtrlCreateListViewItem($IP, $HostListView)
 				ConsoleWrite("Added " & $IP & @CRLF)
@@ -129,16 +130,18 @@ Func _DefaultIPRange()
 	For $IPConfig in $IPConfigSet
 			For $x = 0 to UBound($IPConfig.IPAddress) - 1
 				If Not StringInStr($IPConfig.IPAddress($x), ".") Then ContinueLoop
-				;ConsoleWrite("IP: "&$IPConfig.IPAddress($x)&@CRLF)
+				ConsoleWrite("IP: "&$IPConfig.IPAddress($x)&@CRLF)
 
 				For $y = 0 to UBound($IPConfig.DefaultIPGateway) - 1
-					;ConsoleWrite("Gateway: "&$IPConfig.DefaultIPGateway($y)&@CRLF)
+					ConsoleWrite("Gateway: "&$IPConfig.DefaultIPGateway($y)&@CRLF)
 					$CIDR = StringLeft($IPConfig.IPAddress($x),StringInStr($IPConfig.DefaultIPGateway($y),".",0,-1)) & "*"
-					;ConsoleWrite($CIDR&@CRLF)
+					ConsoleWrite($CIDR&@CRLF)
 					Return $CIDR
 				Next
 			Next
 	Next
+
+	Return StringLeft(@IPAddress1,StringInStr(@IPAddress1,".",0,-1)) & "*"
 Endfunc
 
 Func _Connect()

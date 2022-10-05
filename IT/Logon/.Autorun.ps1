@@ -44,6 +44,8 @@ $Run | ForEach-Object {
     }else{
         Start-Process $Item.FullName
     }
+
+    Start-Sleep 1
 }
 
 "Complete, displaying prompt..."
@@ -51,7 +53,7 @@ $Run | ForEach-Object {
 Start-Sleep 2
 
 $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
-$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 10 seconds",10,"Setup Helper",4+32)
+$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 60 seconds, press ok to remove now",60,"Setup Helper",4+32)
 $MsgBox
 switch  ($MsgBox) {
     {"6", "-1" -contains $_} { 
