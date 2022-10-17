@@ -4,6 +4,6 @@ $Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Domain & Name.lnk")
 $Shortcut.TargetPath = "SystemPropertiesComputerName.exe"
 $Shortcut.Save()
 
-$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Users Manager.lnk")
+$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Users Managment.lnk")
 $Shortcut.TargetPath = "lusrmgr.msc"
 $Shortcut.Save()

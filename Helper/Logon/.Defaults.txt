@@ -1,3 +1,4 @@
+Admin Desktop Shorcuts.ps1
 NoLockScreen Swipe.reg
 Power Settings.bat
 Disable AcrylicBackgroundOnLogon.reg

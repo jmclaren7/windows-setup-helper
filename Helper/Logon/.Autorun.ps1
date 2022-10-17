@@ -40,7 +40,9 @@ $Run | ForEach-Object {
     $Item.Name
 
     if($Item.Extension -eq ".reg"){
-        Start-Process reg -ArgumentList "import `"$($Item.FullName)`""
+        Start-Process reg.exe -ArgumentList "import `"$($Item.FullName)`""
+    }elseif($Item.Extension -eq ".ps1"){
+        Start-Process powershell.exe -ArgumentList "-file `"$($Item.FullName)`""
     }else{
         Start-Process $Item.FullName
     }
@@ -53,7 +55,7 @@ $Run | ForEach-Object {
 Start-Sleep 2
 
 $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
-$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 60 seconds, press ok to remove now",60,"Setup Helper",4+32)
+$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 60 seconds, press 'yes' to remove now or 'no' to cancel automatic removal",60,"Setup Helper",4+32)
 $MsgBox
 switch  ($MsgBox) {
     {"6", "-1" -contains $_} { 

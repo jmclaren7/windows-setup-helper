@@ -5,7 +5,7 @@
 #include "include\File.au3"
 #include "include\FileConstants.au3"
 #include "include\GuiConstantsEx.au3"
-#Include "include\GuiEdit.au3"
+#include "include\GuiEdit.au3"
 #include "include\GuiListView.au3"
 #include "include\GuiTab.au3"
 #include "include\GuiTreeView.au3"
@@ -21,6 +21,7 @@
 #include "include\WinAPI.au3"
 #include "include\WinAPIFiles.au3"
 #include "include\Date.au3"
+
 #include "includeExt\Json.au3"
 #include "includeExt\WinHttp.au3"
 #include "includeExt\ActivationStatus.au3"
@@ -73,7 +74,7 @@ Switch $Command
 		$MenuExitButton = GUICtrlCreateMenuItem("Exit", $MenuItem2)
 		$MenuItem1 = GUICtrlCreateMenu("&Advanced")
 		$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $MenuItem1)
-		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log", $MenuItem1)
+		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $MenuItem1)
 		$ShowHiddenTools = GUICtrlCreateMenuItem("Show Hidden Tools", $MenuItem1)
 		$Tab1 = GUICtrlCreateTab(7, 4, 753, 495)
 		$BootTabSheet = GUICtrlCreateTabItem("&")
@@ -90,8 +91,6 @@ Switch $Command
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateTabItem("")
 		$StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
-		_GUICtrlStatusBar_SetSimple($StatusBar1)
-		_GUICtrlStatusBar_SetText($StatusBar1, "")
 		GUISetState(@SW_SHOW)
 		#EndRegion ### END Koda GUI section ###
 
@@ -118,32 +117,32 @@ Switch $Command
 		If $IsPE Then _RunMulti("SetupAutoRun")
 
 		; Hide console windows
-		For $i=1 to 10
-			WinSetState("winpehelper.exe", "", @SW_HIDE)
-			WinSetState(@ComSpec, "", @SW_HIDE)
-			Sleep(200)
-		Next
+		_Log("Hide console window")
+		WinSetState($Title&" Log", "", @SW_HIDE)
 
 		_Log("Ready", True)
 
+		; Setup statusbar prerequisites
+		$StatusBar = ""
+		Global $InternetPing = 0
+		AdlibRegister ("_InternetPing", 1000)
+
 		;GUI Loop
 		While 1
-			$nMsg = GUIGetMsg()
+			$nMsgA = GUIGetMsg(1)
+			$nMsg = $nMsgA[0]
 			Switch $nMsg
 				Case $GUI_EVENT_CLOSE, $MenuExitButton
+					If $nMsgA[1] <> $GUIMain Then ContinueLoop
 					If $IsPE And MsgBox(1, $Title, "Closing the program will reboot the system while in WinPE.") <> 1 Then ContinueLoop
 					Exit
 
- 				Case $ShowHiddenTools
- 					_Log("ShowHiddenTools")
- 					_PopulateScripts($PEScriptTreeView, "Advanced")
+				Case $ShowHiddenTools
+					_Log("ShowHiddenTools")
+					_PopulateScripts($PEScriptTreeView, "Advanced")
 
 				Case $MenuShowConsole
-					For $i=1 to 10
-						WinSetState("winpehelper.exe", "", @SW_SHOW)
-						WinSetState(@ComSpec, "", @SW_SHOW)
-						Sleep(100)
-					Next
+					WinSetState($Title&" Log", "", @SW_SHOW)
 
 				Case $MenuOpenLog
 					_Log("MenuOpenLog")
@@ -153,10 +152,15 @@ Switch $Command
 					_RunTreeView($GUIMain, $PEScriptTreeView)
 
 				Case $NormalInstallButton
-					$hSetup = _RunFile($BootDrive & "sources\setup.exe")
+					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/noreboot")
 					$CopyAutoLogonFiles = False
 
 				Case $AutomatedInstallButton
+					If IsDeclared($hSetup) And ProcessExists($hSetup) Then
+						MsgBox(0, "Error - " & $Title, "Setup is already running, please close it first")
+						ContinueLoop
+					EndIf
+
 					$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
 					For $b = 0 To UBound($aAutoLogonCopy) - 1
 						_Log("TreeItem: " & $aAutoLogonCopy[$b])
@@ -169,7 +173,7 @@ Switch $Command
 						_Log("$ComputerName=" & $ComputerName)
 						$AutounattendPath_New = @TempDir & "\autounattend.xml"
 						$sFileData = FileRead($AutounattendPath)
-						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>"&$ComputerName&"</ComputerName>")
+						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>" & $ComputerName & "</ComputerName>")
 						_Log("StringReplace @extended=" & @extended)
 
 						$hAutounattend = FileOpen($AutounattendPath_New, $FO_OVERWRITE)
@@ -187,25 +191,31 @@ Switch $Command
 
 			EndSwitch
 
-			If $CopyAutoLogonFiles AND NOT ProcessExists($hSetup) Then
+			If $CopyAutoLogonFiles And Not ProcessExists($hSetup) Then
 				_Log("Copy AutoLogon Files")
 				For $i = 65 To 91
 					$Drive = Chr($i) & ":"
 					$TestFile = $Drive & "\Windows\System32\Config\SYSTEM"
-					$Target = $Drive & "\Temp\FirstLogon\"
+					$Target = $Drive & "\Temp\Helper\"
 
-					If FileExists($TestFile) And _FileModifiedAge($TestFile)<600000 Then
+					If FileExists($TestFile) And _FileModifiedAge($TestFile) < 600000 Then
 						_Log("Found: " & $TestFile)
 
+						; Copy the answers file so it can be used with registry key method during oobe
+						; This is to deal with WDS overriding our answers file
+						; Doing this also requieres that have a registry value set in out install image
+						$Return = FileCopy($AutounattendPath, $Target, 1 + 8)
+						_Log("FileCopy: " & $AutounattendPath & " (" & $Return & ")")
+
 						If UBound($aAutoLogonCopy) Then
-							$AutoLogonSource = StringLeft($aAutoLogonCopy[0],StringInStr($aAutoLogonCopy[0],"\",0,-1))&".Autorun.ps1" ;hack because we dont know the directory
-							$Return = FileCopy($AutoLogonSource, $Target, 1+8)
+							$AutoLogonSource = StringLeft($aAutoLogonCopy[0], StringInStr($aAutoLogonCopy[0], "\", 0, -1)) & ".Autorun.ps1" ;hack because we dont know the directory
+							$Return = FileCopy($AutoLogonSource, $Target, 1 + 8)
 							_Log("FileCopy: " & $AutoLogonSource & " (" & $Return & ")")
 
 						EndIf
 
 						For $iFile = 0 To UBound($aAutoLogonCopy) - 1
-							$Return = FileCopy($aAutoLogonCopy[$iFile], $Target, 1+8)
+							$Return = FileCopy($aAutoLogonCopy[$iFile], $Target, 1 + 8)
 							_Log("FileCopy: " & $aAutoLogonCopy[$iFile] & " (" & $Return & ")")
 						Next
 
@@ -220,22 +230,41 @@ Switch $Command
 
 				$RebootPrompt = True
 				$CopyAutoLogonFiles = False
-			Endif
+			EndIf
 
 			If $RebootPrompt Then
 				_Log("Reboot")
 				Beep(500, 1000)
-				$Return = Msgbox(1+48+262144, $Title, "Rebooting in 15 seconds", 15)
-				If $Return = $IDTIMEOUT OR $Return = $IDOK Then Exit
+				$Return = MsgBox(1 + 48 + 262144, $Title, "Rebooting in 15 seconds", 15)
+				If $Return = $IDTIMEOUT Or $Return = $IDOK Then Exit
 				$RebootPrompt = False
-			Endif
+			EndIf
 
+			; Update status bar
+			$Connected = "Offline"
+			If $InternetPing Then $Connected = "Online"
+			$StatusBar_New = $Connected
+
+			$IPAddresses = @IPAddress1 & " " & @IPAddress2 & " " & @IPAddress3 & " " & @IPAddress4
+			$StatusBar_New &= "  |  " & StringStripWS(StringReplace($IPAddresses, "0.0.0.0", ""), 1+2+4)
+
+			$MemStats = MemGetStats()
+			$StatusBar_New &= "  |  " & Round($MemStats[1] / 1024 / 1024) & "GB"
+
+
+			If $StatusBar <> $StatusBar_New Then
+				_Log("Updating statusbar")
+				$StatusBar = $StatusBar_New
+				_GUICtrlStatusBar_SetText($StatusBar1, $StatusBar)
+			EndIf
 		WEnd
 
 	Case Else
 		_Log("Command unknown")
 
 EndSwitch
+
+;=========== =========== =========== =========== =========== =========== =========== ===========
 
 Func _PopulateScripts($TreeID, $Folder)
 	_Log("_PopulateScripts " & $Folder)
@@ -244,7 +273,7 @@ Func _PopulateScripts($TreeID, $Folder)
 
 	_Log(@ScriptDir & "\" & $Folder & "\.Defaults.txt")
 	Local $sDefaults = FileRead(@ScriptDir & "\" & $Folder & "\.Defaults.txt")
-	If Not @error Then _Log("Defaults list: "&$sDefaults)
+	If Not @error Then _Log("Defaults list: " & $sDefaults)
 
 	If $Folder = "*" Then ;Depricated
 		_Log("Wildcard")
@@ -255,7 +284,7 @@ Func _PopulateScripts($TreeID, $Folder)
 
 		Local $aFileList
 
-		For $f=1 to $aList[0]
+		For $f = 1 To $aList[0]
 			$List = _PopulateScripts($TreeID, $aList[$f])
 			_ArrayConcatenate($FileArray, $List, 1)
 		Next
@@ -272,7 +301,7 @@ Func _PopulateScripts($TreeID, $Folder)
 				Local $FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
 
 				If StringInStr($FileArray[$i], "\.") Then ContinueLoop ;Use . for hidden
-				If StringInStr(FileGetAttrib($FileArray[$i]), "D") And NOT FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop ;allow folders only if they contain main.au3
+				If StringInStr(FileGetAttrib($FileArray[$i]), "D") And Not FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop ;allow folders only if they contain main.au3
 
 				_Log("Adding: " & $FileArray[$i])
 
@@ -282,8 +311,8 @@ Func _PopulateScripts($TreeID, $Folder)
 				; If item is in defaults file the check it
 				If StringInStr($sDefaults, $FileName) Then
 					_Log("Set state checked")
-					GUICtrlSetState (-1, $GUI_CHECKED)
-				endif
+					GUICtrlSetState(-1, $GUI_CHECKED)
+				EndIf
 
 			Next
 
@@ -339,15 +368,15 @@ EndFunc   ;==>_RunTreeView
 Func _RunMulti($Folder)
 	_Log("_RunMulti " & $Folder)
 
-	$aFiles1 = _RunFolder(@ScriptDir & "\" & $Folder )
+	$aFiles1 = _RunFolder(@ScriptDir & "\" & $Folder)
 	$aFiles2 = _RunFolder(@ScriptDir & "\" & $Folder & "Custom")
 
-	$iCount = _ArrayConcatenate ($aFiles1, $aFiles2, 1)
+	$iCount = _ArrayConcatenate($aFiles1, $aFiles2, 1)
 
 	;$aFiles1[0] = $iCount
 
 	Return $aFiles1
-EndFunc
+EndFunc   ;==>_RunMulti
 
 Func _RunFolder($Path)
 	_Log("_RunFolder " & $Path)
@@ -356,7 +385,7 @@ Func _RunFolder($Path)
 		_Log("Files: " & $FileArray[0])
 		For $i = 1 To $FileArray[0]
 			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
-			If StringInStr(FileGetAttrib($FileArray[$i]), "D") And NOT FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop
+			If StringInStr(FileGetAttrib($FileArray[$i]), "D") And Not FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop
 			_Log($FileArray[$i])
 			_RunFile($FileArray[$i])
 		Next
@@ -379,12 +408,11 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 		Case "au3", "a3x"
 			_Log("  au3")
 			$RunLine = @AutoItExe & " /AutoIt3ExecuteScript """ & $File & """ " & $Params
-			;Return ShellExecute(@AutoItExe, "/AutoIt3ExecuteScript """ & $File & """ " & $Params)
+			_Log("$RunLine=" & $RunLine)
 			Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDIO_INHERIT_PARENT)
 
 		Case "ps1"
 			_Log("  ps1")
-			;$File = StringReplace($File, "$", "`$")
 			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Unrestricted -File """ & $File & """ " & $Params
 			_Log("$RunLine=" & $RunLine)
 			Return Run($RunLine, $WorkingDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
@@ -413,52 +441,33 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 
 EndFunc   ;==>_RunFile
 
+Func _InternetPing()
+	$InternetPing = Ping( "8.8.8.8", 400)
 
-Func _RecSizeAndHash($Path) ; Return Array with RelativePath|Size|MD5
-	_Log("_RecSizeAndHash - " & $Path)
-	Local $aOutput[0][3]
-
-	If StringRight($Path, 1) = "\" Then $Path = StringTrimRight($Path, 1)
-	Local $aFiles = _FileListToArrayRec($Path, "*", $FLTAR_FILES + $FLTAR_NOHIDDEN + $FLTAR_NOSYSTEM + $FLTAR_NOLINK, $FLTAR_RECUR, $FLTAR_NOSORT, $FLTAR_RELPATH)
-
-	If Not @error Then
-		For $i = 1 To $aFiles[0]
-			$ThisFileRelPath = $aFiles[$i]
-			$ThisFileFullPath = $Path & "\" & $ThisFileRelPath
-			$ThisSize = FileGetSize($ThisFileFullPath)
-			$ThisHash = _Crypt_HashFile($ThisFileFullPath, $CALG_MD5)
-			_ArrayAdd($aOutput, $ThisFileRelPath & "|" & $ThisSize & "|" & $ThisHash, 0, "|")
-		Next
-	EndIf
-
-	Return $aOutput
-
-EndFunc   ;==>_RecSizeAndHash
+EndFunc
 
 Func _Log($Msg, $Statusbar = False)
 	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC & "> "
 
 	If Not IsDeclared("LogEdit") Then
-		Global $LogWindow = GUICreate($Title & " Log", 750, 450, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX), $WS_EX_TOPMOST)
+		Global $LogWindow = GUICreate($Title & " Log", 750, 450, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX))
 		Global $LogEdit = GUICtrlCreateEdit("", 0, 0, 750, 450, BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
 		GUICtrlSetFont(-1, 10, 400, 0, "Consolas")
 		GUICtrlSetColor(-1, 0xFFFFFF)
 		GUICtrlSetBkColor(-1, 0x000000)
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 		GUISetState(@SW_SHOW)
 		_GUICtrlEdit_AppendText($LogEdit, $Msg)
-
-		GUIRegisterMsg ($WM_COMMAND, "_WM_COMMAND")
 	Else
 
 		_GUICtrlEdit_BeginUpdate($LogEdit)
 		_GUICtrlEdit_AppendText($LogEdit, @CRLF & $Msg)
 		_GUICtrlEdit_LineScroll($LogEdit, -StringLen($Msg), _GUICtrlEdit_GetLineCount($LogEdit))
-		_GUICtrlEdit_EndUpdate ($LogEdit)
+		_GUICtrlEdit_EndUpdate($LogEdit)
 
 	EndIf
 
-	If $StatusBar Then _GUICtrlStatusBar_SetText($StatusBar, $Msg)
+	If $Statusbar Then _GUICtrlStatusBar_SetText($Statusbar, $Msg)
 	ConsoleWrite($sTime & $Msg & @CRLF)
 	If IsDeclared("LogFullPath") Then
 		FileWrite($LogFullPath, $sTime & $Msg & @CRLF)

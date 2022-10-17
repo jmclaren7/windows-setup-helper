@@ -1,19 +1,17 @@
 @ECHO OFF
 Call :Admin
 
-set image-root=H:\Windows 10 Images\21H2-2022
 set additions-root=H:\Windows 10 Images
 set target=%TEMP%\NLTmpMnt01
 
 del "%image-root%\Auto-saved*.xml"
 del "%image-root%\NTLite.log"
 
-robocopy "%~dp0\IT" "%target%\IT" /mir
+robocopy "%~dp0\Helper" "%target%\Helper" /mir
 robocopy "%~dp0\Windows" "%target%\Windows" /e /xx
 
-robocopy "%additions-root%\Macrium" "%target%" /e /xx
 robocopy "%additions-root%\Additions" "%target%" /e /xx
-
+robocopy "%additions-root%\Additions-Macrium" "%target%" /e /xx
 
 pause
 exit
