@@ -9,4 +9,4 @@ Start Windows Updates.bat
 ResolveTechSupport.exe
 Disable Edge FirstRun.reg
 Set TargetVersion 21H2.bat
-Disable Auto Logon.reg
+Disable Auto Logon.regSet TargetVersion 22H2.bat
