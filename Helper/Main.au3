@@ -36,8 +36,9 @@ Opt("WinTitleMatchMode", -2)
 Opt("TrayIconHide", 1)
 
 Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log")
-Global $MainSize = FileGetSize(@ScriptFullPath)
-Global $Version = "5.0.0." & $MainSize
+Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED , $FT_STRING), 2)
+
+Global $Version = "5.1.0." & $Date
 
 Global $Title = "Windows Setup Helper v" & $Version
 Global $GUIMain
@@ -76,7 +77,6 @@ Switch $Command
 		$MenuItem1 = GUICtrlCreateMenu("&Advanced")
 		$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $MenuItem1)
 		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $MenuItem1)
-		$ShowHiddenTools = GUICtrlCreateMenuItem("Show Hidden Tools", $MenuItem1)
 		$Tab1 = GUICtrlCreateTab(7, 4, 753, 495)
 		$BootTabSheet = GUICtrlCreateTabItem("&")
 		$Group5 = GUICtrlCreateGroup("WinPE Tools", 19, 37, 360, 452)
@@ -101,7 +101,9 @@ Switch $Command
 
 		; Generate Script List
 		_PopulateScripts($PEInstallTreeView, "Logon")
+		_PopulateScripts($PEInstallTreeView, "LogonBasics", False, 1)
 		_PopulateScripts($PEScriptTreeView, "Tools")
+		_PopulateScripts($PEScriptTreeView, "Advanced", False, 2)
 
 		Local $hSetup
 		Local $RebootPrompt = False
@@ -144,11 +146,6 @@ Switch $Command
 					If $nMsgA[1] <> $GUIMain Then ContinueLoop
 					If $IsPE And MsgBox(1, $Title, "Closing the program will reboot the system while in WinPE.") <> 1 Then ContinueLoop
 					Exit
-
-				Case $ShowHiddenTools
-					_Log("ShowHiddenTools")
-					_PopulateScripts($PEScriptTreeView, "Advanced")
-					$ShowHiddenTools = -1
 
 				Case $MenuShowConsole
 					WinSetState($Title&" Log", "", @SW_SHOW)
@@ -216,13 +213,14 @@ Switch $Command
 						$Return = FileCopy($AutounattendPath, $Target, 1 + 8)
 						_Log("FileCopy: " & $AutounattendPath & " (" & $Return & ")")
 
+						; Copy the script that is run at Logon and runs the other scripts we copy
 						If UBound($aAutoLogonCopy) Then
-							$AutoLogonSource = StringLeft($aAutoLogonCopy[0], StringInStr($aAutoLogonCopy[0], "\", 0, -1)) & ".Autorun.ps1" ;hack because we dont know the directory
+							$AutoLogonSource = @ScriptDir & "\Logon\.Autorun.ps1"
 							$Return = FileCopy($AutoLogonSource, $Target, 1 + 8)
 							_Log("FileCopy: " & $AutoLogonSource & " (" & $Return & ")")
-
 						EndIf
 
+						; Copy selected files from the install list
 						For $iFile = 0 To UBound($aAutoLogonCopy) - 1
 							$Return = FileCopy($aAutoLogonCopy[$iFile], $Target, 1 + 8)
 							_Log("FileCopy: " & $aAutoLogonCopy[$iFile] & " (" & $Return & ")")
@@ -276,12 +274,11 @@ EndSwitch
 
 ;=========== =========== =========== =========== =========== =========== =========== ===========
 
-Func _PopulateScripts($TreeID, $Folder)
+Func _PopulateScripts($TreeID, $Folder, $Expand = True, $SetAll = 0)
 	_Log("_PopulateScripts " & $Folder)
 
 	Local $FileArray[0]
 
-	_Log(@ScriptDir & "\" & $Folder & "\.Defaults.txt")
 	Local $sDefaults = FileRead(@ScriptDir & "\" & $Folder & "\.Defaults.txt")
 	If Not @error Then _Log("Defaults list: " & $sDefaults)
 
@@ -289,6 +286,7 @@ Func _PopulateScripts($TreeID, $Folder)
 	If Not @error Then
 		_Log($Folder & " Files (no filter): " & $FileArray[0])
 		Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
+		If $SetAll = 1 Then GUICtrlSetState($FolderTreeItem, $GUI_CHECKED)
 
 		For $i = 1 To $FileArray[0]
 			Local $FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
@@ -302,14 +300,15 @@ Func _PopulateScripts($TreeID, $Folder)
 			GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
 
 			; If item is in defaults file the check it
-			If StringInStr($sDefaults, $FileName) Then
+			If $SetAll <> 2 AND (StringInStr($sDefaults, $FileName) OR $SetAll = 1) Then
 				_Log("Set state checked")
 				GUICtrlSetState(-1, $GUI_CHECKED)
+
 			EndIf
 
 		Next
 
-		GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
+		If $Expand Then GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
 
 	Else
 		_Log($Folder & " No files or missing")
