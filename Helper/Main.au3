@@ -19,6 +19,7 @@
 #include "include\TreeViewConstants.au3"
 #include "include\WindowsConstants.au3"
 #include "include\WinAPI.au3"
+#include "include\WinAPISys.au3"
 #include "include\WinAPIFiles.au3"
 #include "include\Date.au3"
 
@@ -96,6 +97,7 @@ Switch $Command
 
 		; GUI Post Creation Setup
 		WinSetTitle($GUIMain, "", $Title)
+		GUICtrlSendMsg($PEComputerNameInput, $EM_SETCUEBANNER, False, "(Optional)")
 
 		; Generate Script List
 		_PopulateScripts($PEInstallTreeView, "Logon")
@@ -114,7 +116,7 @@ Switch $Command
 		GUISetIcon($BootDrive & "sources\setup.exe")
 
 		; Run automatic setup scripts
-		If $IsPE Then _RunMulti("SetupAutoRun")
+		If $IsPE Then _RunMulti("PEAutoRun")
 
 		; Hide console windows
 		_Log("Hide console window")
@@ -140,6 +142,7 @@ Switch $Command
 				Case $ShowHiddenTools
 					_Log("ShowHiddenTools")
 					_PopulateScripts($PEScriptTreeView, "Advanced")
+					$ShowHiddenTools = -1
 
 				Case $MenuShowConsole
 					WinSetState($Title&" Log", "", @SW_SHOW)
@@ -203,7 +206,7 @@ Switch $Command
 
 						; Copy the answers file so it can be used with registry key method during oobe
 						; This is to deal with WDS overriding our answers file
-						; Doing this also requieres that have a registry value set in out install image
+						; Doing this also requieres that have a registry value set in the install image
 						$Return = FileCopy($AutounattendPath, $Target, 1 + 8)
 						_Log("FileCopy: " & $AutounattendPath & " (" & $Return & ")")
 
@@ -242,7 +245,7 @@ Switch $Command
 
 			; Update status bar
 			$Connected = "Offline"
-			If $InternetPing Then $Connected = "Online"
+			If $InternetPing Then $Connected = "Online ("&$InternetPing&"ms)"
 			$StatusBar_New = $Connected
 
 			$IPAddresses = @IPAddress1 & " " & @IPAddress2 & " " & @IPAddress3 & " " & @IPAddress4
@@ -257,6 +260,8 @@ Switch $Command
 				$StatusBar = $StatusBar_New
 				_GUICtrlStatusBar_SetText($StatusBar1, $StatusBar)
 			EndIf
+
+			Sleep(1)
 		WEnd
 
 	Case Else
