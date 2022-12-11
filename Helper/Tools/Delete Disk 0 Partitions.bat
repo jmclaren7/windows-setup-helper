@@ -3,8 +3,8 @@
 echo.
 echo WANRING, DATA LOSS IF YOU CONTINUE
 echo.
-choice /C yn /N /M "Delete Partitions? (y/N)"
-if /I "%errorlevel%" neq "1" goto end
+SET /P input=Delete Partitions? (y/N)?
+IF /I "%input%" NEQ "Y" GOTO end
 
 (echo Select Disk 0
 echo clean
