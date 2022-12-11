@@ -255,7 +255,8 @@ Switch $Command
 			$StatusBar_New = $Connected
 
 			$IPAddresses = @IPAddress1 & " " & @IPAddress2 & " " & @IPAddress3 & " " & @IPAddress4
-			$StatusBar_New &= "  |  " & StringStripWS(StringReplace($IPAddresses, "0.0.0.0", ""), 1+2+4)
+			$IPAddresses = StringStripWS(StringReplace($IPAddresses, "0.0.0.0", ""), 1+2+4)
+			$StatusBar_New &= "  |  " & StringReplace($IPAddresses, " ", "  ")
 
 			$StatusBar_New &= $StatusBar_Once
 
