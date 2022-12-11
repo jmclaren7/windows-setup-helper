@@ -1,5 +1,7 @@
 $MyInvocation.MyCommand.Path | Split-Path | Push-Location
 
+"Processing logon scripts..."
+
 Start-Sleep 2
 
 $Like = @(
@@ -56,14 +58,16 @@ Start-Sleep 2
 
 $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
 $MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 60 seconds, press 'yes' to remove now or 'no' to cancel automatic removal",60,"Setup Helper",4+32)
-$MsgBox
+
 switch  ($MsgBox) {
     {"6", "-1" -contains $_} { 
-        "Yes"
-        Remove-Item -Force -Confirm:$false * 
+        "Deleting script folder"
+        #Remove-Item -Force -Confirm:$false * 
+		Set-Location ..
+		Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force
     }
     default { 
-        "Default"
+        "No or timeout, leaving scripts in place"
         Exit 
     }
 }
