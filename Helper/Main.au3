@@ -280,56 +280,39 @@ Func _PopulateScripts($TreeID, $Folder)
 	Local $sDefaults = FileRead(@ScriptDir & "\" & $Folder & "\.Defaults.txt")
 	If Not @error Then _Log("Defaults list: " & $sDefaults)
 
-	If $Folder = "*" Then ;Depricated
-		_Log("Wildcard")
-		_GUICtrlTreeView_DeleteAll($TreeID)
+	$FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
+	If Not @error Then
+		_Log($Folder & " Files (no filter): " & $FileArray[0])
+		Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
 
-		Local $aList = _FileListToArrayRec(@ScriptDir, "auto*;opt*|*custom", $FLTAR_FOLDERS, $FLTAR_NORECUR, $FLTAR_NOSORT, $FLTAR_NOPATH)
-		_Log("$aList=" & _ArrayToString($aList))
+		For $i = 1 To $FileArray[0]
+			Local $FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
 
-		Local $aFileList
+			If StringInStr($FileArray[$i], "\.") Then ContinueLoop ;Use . for hidden
+			If StringInStr(FileGetAttrib($FileArray[$i]), "D") And Not FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop ;allow folders only if they contain main.au3
 
-		For $f = 1 To $aList[0]
-			$List = _PopulateScripts($TreeID, $aList[$f])
-			_ArrayConcatenate($FileArray, $List, 1)
+			_Log("Adding: " & $FileArray[$i])
+
+			; Create item
+			GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
+
+			; If item is in defaults file the check it
+			If StringInStr($sDefaults, $FileName) Then
+				_Log("Set state checked")
+				GUICtrlSetState(-1, $GUI_CHECKED)
+			EndIf
+
 		Next
 
-		Return $FileArray
+		GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
 
 	Else
-		$FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
-		If Not @error Then
-			_Log($Folder & " Files (no filter): " & $FileArray[0])
-			Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
+		_Log($Folder & " No files or missing")
 
-			For $i = 1 To $FileArray[0]
-				Local $FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
-
-				If StringInStr($FileArray[$i], "\.") Then ContinueLoop ;Use . for hidden
-				If StringInStr(FileGetAttrib($FileArray[$i]), "D") And Not FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop ;allow folders only if they contain main.au3
-
-				_Log("Adding: " & $FileArray[$i])
-
-				; Create item
-				GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
-
-				; If item is in defaults file the check it
-				If StringInStr($sDefaults, $FileName) Then
-					_Log("Set state checked")
-					GUICtrlSetState(-1, $GUI_CHECKED)
-				EndIf
-
-			Next
-
-			GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
-
-		Else
-			_Log($Folder & " No files or missing")
-
-		EndIf
-
-		If StringRight($Folder, 6) <> "Custom" Then _PopulateScripts($TreeID, $Folder & "Custom")
 	EndIf
+
+	; If this the current folder isnt a custom folder, then try to process a custom folder
+	If StringRight($Folder, 6) <> "Custom" Then _PopulateScripts($TreeID, $Folder & "Custom")
 
 	Return $FileArray
 
