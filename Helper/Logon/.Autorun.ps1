@@ -62,7 +62,6 @@ $MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 60 s
 switch  ($MsgBox) {
     {"6", "-1" -contains $_} { 
         "Deleting script folder"
-        #Remove-Item -Force -Confirm:$false * 
 		Set-Location ..
 		Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force
     }
