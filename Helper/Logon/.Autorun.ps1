@@ -57,16 +57,14 @@ $Run | ForEach-Object {
 Start-Sleep 2
 
 $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
-$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 60 seconds, press 'yes' to remove now or 'no' to cancel automatic removal",60,"Setup Helper",4+32)
+$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 2 minutes, press 'yes' to remove now or 'no' to cancel automatic removal.", 120, "Setup Helper", 1+32)
 
-switch  ($MsgBox) {
-    {"6", "-1" -contains $_} { 
-        "Deleting script folder"
-		Set-Location ..
-		Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force
-    }
-    default { 
-        "No or timeout, leaving scripts in place"
-        Exit 
-    }
+If ($MsgBox -ne 1 -AND $MsgBox -ne -1) { Exit }
+
+"Deleting script folder"
+Set-Location ..
+Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force
+
+if(-Not $?){
+    Powershell.exe -NoLogo
 }
