@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <object type="TAForm" name="GUIMain">
 	<properties>
-		<property name="Left" vt="Int16">818</property>
-		<property name="Top" vt="Int16">446</property>
+		<property name="Left" vt="Int16">830</property>
+		<property name="Top" vt="Int16">474</property>
 		<property name="Width" vt="Int16">782</property>
 		<property name="Height" vt="Int16">581</property>
 		<property name="Caption" vt="String">$Title</property>
@@ -256,12 +256,6 @@
 						<object type="TAMenuItem" name="MenuOpenLog">
 							<properties>
 								<property name="Caption" vt="String">Open Log File</property>
-							</properties>
-							<components/>
-						</object>
-						<object type="TAMenuItem" name="ShowHiddenTools">
-							<properties>
-								<property name="Caption" vt="String">Show Hidden Tools</property>
 							</properties>
 							<components/>
 						</object>
