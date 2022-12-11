@@ -41,15 +41,28 @@ $Run | ForEach-Object {
     $Item = Get-ChildItem $_
     $Item.Name
 
+	# Wait for Windows Installer to be available
+	for($i = 0; $i -lt 10; $i++){
+		try{
+			$Mutex = [System.Threading.Mutex]::OpenExisting("Global\_MSIExecute")
+			$Mutex.Dispose()
+		}catch{
+			break
+		}
+
+		Start-Sleep 3
+	}
+
+	# Run the item
     if($Item.Extension -eq ".reg"){
-        Start-Process reg.exe -ArgumentList "import `"$($Item.FullName)`""
+        $Proc = Start-Process reg.exe -ArgumentList "import `"$($Item.FullName)`"" -PassThru
     }elseif($Item.Extension -eq ".ps1"){
-        Start-Process powershell.exe -ArgumentList "-file `"$($Item.FullName)`""
+        $Proc = Start-Process powershell.exe -ArgumentList "-file `"$($Item.FullName)`"" -PassThru
     }else{
-        Start-Process $Item.FullName
+        $Proc = Start-Process $Item.FullName -PassThru
     }
 
-    Start-Sleep 1
+    $Proc | Wait-Process -Timeout 10
 }
 
 "Complete, displaying prompt..."
