@@ -128,6 +128,12 @@ Switch $Command
 		$StatusBar = ""
 		Global $InternetPing = 0
 		AdlibRegister ("_InternetPing", 1000)
+		$MemStats = MemGetStats()
+		$StatusBar_Once = ""
+		$StatusBar_Once &= "  |  " & Round($MemStats[1] / 1024 / 1024) & "GB"
+		$StatusBar_Once &= "  |  " & _WMIC("cpu get NumberOfCores") & "/" & _WMIC("cpu get NumberOfLogicalProcessors") & " Cores"
+		$Serial = _WMIC("bios get serialnumber")
+		If $Serial <> "System Serial Number" Then $StatusBar_Once &= "  |  " & $Serial
 
 		;GUI Loop
 		While 1
@@ -251,9 +257,7 @@ Switch $Command
 			$IPAddresses = @IPAddress1 & " " & @IPAddress2 & " " & @IPAddress3 & " " & @IPAddress4
 			$StatusBar_New &= "  |  " & StringStripWS(StringReplace($IPAddresses, "0.0.0.0", ""), 1+2+4)
 
-			$MemStats = MemGetStats()
-			$StatusBar_New &= "  |  " & Round($MemStats[1] / 1024 / 1024) & "GB"
-
+			$StatusBar_New &= $StatusBar_Once
 
 			If $StatusBar <> $StatusBar_New Then
 				_Log("Updating statusbar")
@@ -432,6 +436,37 @@ EndFunc   ;==>_RunFile
 Func _InternetPing()
 	$InternetPing = Ping( "8.8.8.8", 400)
 
+EndFunc
+
+Func _WMIC($Command, $Search="", $Trim="=")
+	Local $CMDOut = @TempDir & "\wmic_out.txt"
+	RunWait(@ComSpec & ' /c ' & 'wmic ' & $Command & ' /value > ' & $CMDOut, "", @SW_HIDE)
+
+	Local $hFile = FileOpen($CMDOut, 0)
+	Local $Return
+
+	If $Search<>"" Then
+		While 1
+			$Return = FileReadLine($hFile)
+			If @error Then Return
+			If StringLeft($Return,StringLen($Search)) = $Search Then
+				ExitLoop
+			Endif
+
+		WEnd
+	Else
+		$Return = FileRead($hFile)
+		$Return = StringStripWS($Return, 1+2)
+	Endif
+
+	If $Trim Then
+		$Return = StringTrimLeft($Return, StringInStr($Return, $Trim) + StringLen($Trim) - 1)
+		$Return = StringStripWS($Return, 1+2)
+	Endif
+
+	FileClose($hFile)
+
+	Return($Return)
 EndFunc
 
 Func _Log($Msg, $Statusbar = False)
