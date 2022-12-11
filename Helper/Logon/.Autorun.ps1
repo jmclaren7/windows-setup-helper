@@ -42,15 +42,16 @@ $Run | ForEach-Object {
     $Item.Name
 
 	# Wait for Windows Installer to be available
-	for($i = 0; $i -lt 10; $i++){
+	for($i = 0; $i -lt 12; $i++){
 		try{
 			$Mutex = [System.Threading.Mutex]::OpenExisting("Global\_MSIExecute")
 			$Mutex.Dispose()
+			"Windows Installer is busy, waiting..."
 		}catch{
-			break
+			Break
 		}
-
-		Start-Sleep 3
+		
+		Start-Sleep 5
 	}
 
 	# Run the item
@@ -62,7 +63,10 @@ $Run | ForEach-Object {
         $Proc = Start-Process $Item.FullName -PassThru
     }
 
-    $Proc | Wait-Process -Timeout 10
+    $Proc | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue
+	if($Proc.HasExited -eq $False){
+		"Process has not finished, trying to continue..."
+	}
 }
 
 "Complete, displaying prompt..."
