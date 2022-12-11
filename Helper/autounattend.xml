@@ -47,13 +47,13 @@
 					</LocalAccount>
 				</LocalAccounts>
 			</UserAccounts>
-			<FirstLogonCommands>
-				<SynchronousCommand  wcm:action="add">
+			<LogonCommands>
+				<AsynchronousCommand wcm:action="add">
 					<CommandLine>powershell -EP Bypass -File C:\Temp\Helper\.Autorun.ps1</CommandLine>
 					<Description>Start Logon Scripts</Description>
 					<Order>1</Order>
-				</SynchronousCommand >
-			</FirstLogonCommands>
+				</AsynchronousCommand>
+			</LogonCommands>
 		</component>
 	</settings>
 	<settings pass="specialize">
