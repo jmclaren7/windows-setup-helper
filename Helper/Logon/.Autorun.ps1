@@ -48,6 +48,7 @@ $Run | ForEach-Object {
 			$Mutex.Dispose()
 			"Windows Installer is busy, waiting..."
 		}catch{
+            Start-Sleep 2
 			Break
 		}
 		
