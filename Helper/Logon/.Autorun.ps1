@@ -75,7 +75,7 @@ $Run | ForEach-Object {
 Start-Sleep 2
 
 $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
-$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 2 minutes, press 'yes' to remove now or 'no' to cancel automatic removal.", 120, "Setup Helper", 1+32)
+$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 2 minutes, press 'ok' to remove now or 'cancel' to stop automatic removal.", 120, "Setup Helper", 1+32)
 
 If ($MsgBox -ne 1 -AND $MsgBox -ne -1) { Exit }
 
