@@ -3,6 +3,4 @@ Power Settings.bat
 Set Background Red.bat
 ResolveTechSupport.exe
 Set TargetVersion 22H2.bat
-Ninite Chrome Installer.exe
-Ninite Reader.exe
 Dell Command Update.ps1
