@@ -30,7 +30,7 @@ net session >nul 2>&1
 if %errorLevel% == 0 (
   echo Success: Administrative permissions confirmed, continuing.
 ) else (
-  echo Failure: Not running with elevated permisions, please restart tool.
+  echo Failure: Not running with elevated permissions, please restart tool.
   pause >nul
   exit
 )
