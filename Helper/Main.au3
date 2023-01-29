@@ -209,7 +209,7 @@ Switch $Command
 
 						; Copy the answers file so it can be used with registry key method during oobe
 						; This is to deal with WDS overriding our answers file
-						; Doing this also requieres that have a registry value set in the install image
+						; Doing this also requieres a registry value set in the install image
 						$Return = FileCopy($AutounattendPath, $Target, 1 + 8)
 						_Log("FileCopy: " & $AutounattendPath & " (" & $Return & ")")
 
