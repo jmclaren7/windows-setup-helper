@@ -1,5 +1,4 @@
 Admin Desktop Shortcuts.ps1
 Power Settings.bat
-Set Background Red.bat
 ResolveTechSupport.exe
-Dell Command Update.ps1Set TargetVersion Win11-22H2.bat
+Set TargetVersion Win11-22H2.bat
