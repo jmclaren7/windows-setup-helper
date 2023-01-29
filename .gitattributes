@@ -1,3 +1,4 @@
 * text eol=crlf
 *.au3 text eol=crlf
 *.a3x binary
+*.reg text working-tree-encoding=UTF-16
