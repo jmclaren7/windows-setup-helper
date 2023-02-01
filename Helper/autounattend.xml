@@ -49,7 +49,7 @@
 			</UserAccounts>
 			<LogonCommands>
 				<AsynchronousCommand wcm:action="add">
-					<CommandLine>powershell -EP Bypass -File C:\Temp\Helper\.Autorun.ps1</CommandLine>
+					<CommandLine>powershell -ep bypass -f C:\Temp\Helper\.Autorun.ps1</CommandLine>
 					<Description>Start Logon Scripts</Description>
 					<Order>1</Order>
 				</AsynchronousCommand>
