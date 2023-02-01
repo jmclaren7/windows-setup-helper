@@ -152,7 +152,8 @@ Switch $Command
 
 				Case $MenuOpenLog
 					_Log("MenuOpenLog")
-					_RunFile($LogFullPath)
+					;_RunFile($LogFullPath) ; Not working in Win11 PE
+					ShellExecute("notepad.exe",$LogFullPath)
 
 				Case $PERunButton
 					_RunTreeView($GUIMain, $PEScriptTreeView)
@@ -172,25 +173,31 @@ Switch $Command
 						_Log("TreeItem: " & $aAutoLogonCopy[$b])
 					Next
 
-					$AutounattendPath = @ScriptDir & "\autounattend.xml"
-					$ComputerName = GUICtrlRead($PEComputerNameInput)
+					; Read the autounattend.xml file to memory
+					$sFileData = FileRead(@ScriptDir & "\autounattend.xml")
 
+					; Make modifications to autounattend.xml
+					$ComputerName = GUICtrlRead($PEComputerNameInput)
 					If $ComputerName <> "" Then
 						_Log("$ComputerName=" & $ComputerName)
-						$AutounattendPath_New = @TempDir & "\autounattend.xml"
-						$sFileData = FileRead($AutounattendPath)
 						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>" & $ComputerName & "</ComputerName>")
 						_Log("StringReplace @extended=" & @extended)
-
-						$hAutounattend = FileOpen($AutounattendPath_New, $FO_OVERWRITE)
-						FileWrite($hAutounattend, $sFileData)
-						_Log("FileWrite @error=" & @error)
-						FileClose($hAutounattend)
-
-						$AutounattendPath = $AutounattendPath_New
 					EndIf
 
+					If @OSVersion = "WIN_11" Then
+						_Log("WIN_11")
+						$sFileData = StringReplace($sFileData, "Windows 10", "Windows 11")
+						_Log("StringReplace @extended=" & @extended)
+					EndIf
+
+					; Save modifications to autounattend.xml in new location
+					$AutounattendPath = @TempDir & "\autounattend.xml"
 					_Log("$AutounattendPath=" & $AutounattendPath)
+					$hAutounattend = FileOpen($AutounattendPath, $FO_OVERWRITE)
+					FileWrite($hAutounattend, $sFileData)
+					_Log("FileWrite @error=" & @error)
+					FileClose($hAutounattend)
+
 					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
 
 					$CopyAutoLogonFiles = True
