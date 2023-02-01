@@ -81,7 +81,7 @@ If ($MsgBox -ne 1 -AND $MsgBox -ne -1) { Exit }
 
 "Deleting script folder"
 Set-Location ..
-Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force
+Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force -ErrorAction SilentlyContinue
 
 if(-Not $?){
     Powershell.exe -NoLogo
