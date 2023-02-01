@@ -13,8 +13,8 @@ robocopy "%~dp0\Helper" "%target%\Helper" /mir /NFL /NDL
 robocopy "%~dp0\Windows" "%target%\Windows" /e /xx /NFL /NDL
 
 REM Copy additional files to the image (Make sure to include required files like Autoit.exe)
-robocopy "H:\Windows 10 Images\Additions" "%target%" /e /xx /NFL /NDL
-robocopy "H:\Windows 10 Images\Additions-Macrium" "%target%" /e /xx /NFL /NDL
+robocopy "H:\Windows Images\Additions" "%target%" /e /xx /NFL /NDL
+robocopy "H:\Windows Images\Additions-Macrium" "%target%" /e /xx /NFL /NDL
 
 REM Remove extra files from image
 del "%target%\Auto-saved*.xml"
