@@ -10,7 +10,7 @@ If ($(Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer -like "*Dell
 
     $ProgressPreference = 'SilentlyContinue';
     $ua='Mozilla/5.0 (Windows NT; Windows NT 10.0; en-US) AppleWebKit/534.6 (KHTML, like Gecko) Chrome/7.0.500.0 Safari/534.6';
-    Invoke-WebRequest 'https://dl.dell.com/FOLDER09268356M/1/Dell-Command-Update-Windows-Universal-Application_CJ0G9_WIN_4.7.1_A00.EXE' -useragent $ua -outfile 'dcu.exe'
+    Invoke-WebRequest 'https://dl.dell.com/FOLDER10408436M/1/Dell-Command-Update-Windows-Universal-Application_1WR6C_WIN_5.0.0_A00.EXE' -useragent $ua -outfile 'dcu.exe'
 
     Start-Process "dcu.exe" -Args "/s" -Wait -NoNewWindow
 
