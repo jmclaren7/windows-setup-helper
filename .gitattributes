@@ -1,3 +1,3 @@
 *.au3 text eol=crlf
 *.a3x binary
-*.reg text eol=crlf
+*.reg text diff eol=crlf
