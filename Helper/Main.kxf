@@ -229,43 +229,17 @@
 		<object type="TMainMenu" name="MainMenu1">
 			<properties/>
 			<components>
-				<object type="TAMenuItem" name="MenuItem2">
+				<object type="TAMenuItem" name="FileMenu">
 					<properties>
 						<property name="Caption" vt="String">&amp;File</property>
 					</properties>
-					<components>
-						<object type="TAMenuItem" name="MenuExitButton">
-							<properties>
-								<property name="Caption" vt="String">Exit</property>
-							</properties>
-							<components/>
-						</object>
-					</components>
+					<components/>
 				</object>
-				<object type="TAMenuItem" name="MenuItem1">
+				<object type="TAMenuItem" name="AdvancedMenu">
 					<properties>
 						<property name="Caption" vt="String">&amp;Advanced</property>
 					</properties>
-					<components>
-						<object type="TAMenuItem" name="MenuShowConsole">
-							<properties>
-								<property name="Caption" vt="String">Show Console</property>
-							</properties>
-							<components/>
-						</object>
-						<object type="TAMenuItem" name="MenuOpenLog">
-							<properties>
-								<property name="Caption" vt="String">Open Log File</property>
-							</properties>
-							<components/>
-						</object>
-						<object type="TAMenuItem" name="MenuReloadScripts">
-							<properties>
-								<property name="Caption" vt="String">Reload Scripts</property>
-							</properties>
-							<components/>
-						</object>
-					</components>
+					<components/>
 				</object>
 			</components>
 		</object>
