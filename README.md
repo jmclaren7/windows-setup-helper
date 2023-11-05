@@ -7,7 +7,7 @@ This project integrates a flexible set of scripts and tools into the Windows ins
 The objective is to leave the Windows install image (install.wim) unmodified so that it can be replaced or updated easily and so the option of using an unmodified install.wim is always available while still having your tools, customizations and automations available. The flexibility of have Windows installation media with these options can be most useful when you are routinely working in different environments with very different requirements.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/main/Extra/Screenshot1.png?raw=true">
+  <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/Screenshot1.png?raw=true">
 </p>
 
 ## Features
@@ -71,5 +71,5 @@ Using DSIM is more advanced and doesn't offer a way to create a bootable ISO whe
 5. Click start
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/main/Extra/Rufus1.png?raw=true">
+  <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/Rufus1.png?raw=true">
 </p>
