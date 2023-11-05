@@ -29,26 +29,30 @@
 #include "includeExt\Custom.au3"
 #include "includeExt\_Zip.au3"
 
-
+; Register a function to run whenever the script exits
 OnAutoItExitRegister("_Exit")
+
+; Fix for issues working in a 64-bit only environment
 _WinAPI_Wow64EnableWow64FsRedirection(False)
+
 Opt("WinTitleMatchMode", -2)
 Opt("TrayIconHide", 1)
 
-Global $LogFullPath = StringReplace(@TempDir & "\" & @ScriptName, ".au3", ".log")
-Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED , $FT_STRING), 2)
+FileChangeDir(@ScriptDir)
 
-Global $Version = "5.1.0." & $Date
-
+Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
+Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 2)
+Global $Version = "5.2.0." & $Date
 Global $Title = "Windows Setup Helper v" & $Version
 Global $GUIMain
 Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
 Global $StatusBar1
-Global $IsPE = StringInStr(@WindowsDir, "x")
+Global $IsPE = StringInStr(@WindowsDir, "X:")
+Global $DoubleClick = False
+Global $Debug = False
 
 _Log($Title)
 _Log("$CmdLineRaw=" & $CmdLineRaw)
-
 _Log("@UserName=" & @UserName)
 _Log("@UserProfileDir=" & @UserProfileDir)
 _Log("@AppDataDir=" & @AppDataDir)
@@ -59,6 +63,7 @@ _Log("@TempDir=" & @TempDir)
 _Log("@WorkingDir=" & @WorkingDir)
 _Log("PATH=" & EnvGet("PATH"))
 
+; Check for command line parameters
 If $CmdLine[0] >= 1 Then
 	$Command = $CmdLine[1]
 Else
@@ -72,38 +77,47 @@ Switch $Command
 
 		#Region ### START Koda GUI section ###
 		$GUIMain = GUICreate("$Title", 767, 543, -1, -1)
-		$MenuItem2 = GUICtrlCreateMenu("&File")
-		$MenuExitButton = GUICtrlCreateMenuItem("Exit", $MenuItem2)
-		$MenuItem1 = GUICtrlCreateMenu("&Advanced")
-		$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $MenuItem1)
-		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $MenuItem1)
+		$FileMenu = GUICtrlCreateMenu("&File")
+		$AdvancedMenu = GUICtrlCreateMenu("&Advanced")
 		$Tab1 = GUICtrlCreateTab(7, 4, 753, 495)
 		$BootTabSheet = GUICtrlCreateTabItem("&")
 		$Group5 = GUICtrlCreateGroup("WinPE Tools", 19, 37, 360, 452)
 		$PERunButton = GUICtrlCreateButton("Run", 257, 454, 107, 25)
-		$PEScriptTreeView = GUICtrlCreateTreeView(35, 61, 330, 385, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$PEScriptTreeView = GUICtrlCreateTreeView(35, 61, 330, 385)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		$Group6 = GUICtrlCreateGroup("Post-Install Scripts", 387, 37, 360, 452)
+		$Group6 = GUICtrlCreateGroup("First Logon Scripts", 387, 37, 360, 452)
 		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 403, 454, 131, 25)
 		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 563, 454, 163, 25, $BS_DEFPUSHBUTTON)
-		$PEInstallTreeView = GUICtrlCreateTreeView(404, 61, 330, 345, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+		$PEInstallTreeView = GUICtrlCreateTreeView(404, 61, 330, 345, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
 		$PEComputerNameInput = GUICtrlCreateInput("", 556, 422, 169, 21)
 		$Label4 = GUICtrlCreateLabel("Computer Name", 476, 425, 80, 17)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateTabItem("")
 		$StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
+		_GUICtrlStatusBar_SetSimple($StatusBar1)
+		_GUICtrlStatusBar_SetText($StatusBar1, "")
 		GUISetState(@SW_SHOW)
 		#EndRegion ### END Koda GUI section ###
+
+		; File Menu Items
+		$MenuExitButton = GUICtrlCreateMenuItem("Exit", $FileMenu)
+
+		; Advanced Menu Items
+		$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $AdvancedMenu)
+		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
+		$MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
+		$MenuRelistScripts = GUICtrlCreateMenuItem("Relist Scripts", $AdvancedMenu)
+		$MenuListDebugTools = GUICtrlCreateMenuItem("List Debug Tools", $AdvancedMenu)
+		$MenuInstallDisk0 = GUICtrlCreateMenuItem("Auto Install To Disk 0", $AdvancedMenu)
 
 		; GUI Post Creation Setup
 		WinSetTitle($GUIMain, "", $Title)
 		GUICtrlSendMsg($PEComputerNameInput, $EM_SETCUEBANNER, False, "(Optional)")
+		GUICtrlSetLimit($PEComputerNameInput, 15)
 
 		; Generate Script List
-		_PopulateScripts($PEInstallTreeView, "Logon")
-		_PopulateScripts($PEInstallTreeView, "LogonBasics", False, 1)
-		_PopulateScripts($PEScriptTreeView, "Tools")
-		_PopulateScripts($PEScriptTreeView, "Advanced", False, 2)
+		_PopulateScripts($PEInstallTreeView, "Logon*")
+		_PopulateScripts($PEScriptTreeView, "Tools*")
 
 		Local $hSetup
 		Local $RebootPrompt = False
@@ -122,14 +136,14 @@ Switch $Command
 
 		; Hide console windows
 		_Log("Hide console window")
-		WinSetState($Title&" Log", "", @SW_HIDE)
+		WinSetState($Title & " Log", "", @SW_HIDE)
 
 		_Log("Ready", True)
 
 		; Setup statusbar prerequisites
-		$StatusBar = ""
+		$Statusbar = ""
 		Global $InternetPing = 0
-		AdlibRegister ("_InternetPing", 1000)
+		AdlibRegister("_InternetPing", 1000)
 		$MemStats = MemGetStats()
 		$StatusBar_Once = ""
 		$StatusBar_Once &= "  |  " & Round($MemStats[1] / 1024 / 1024) & "GB"
@@ -137,10 +151,16 @@ Switch $Command
 		$Serial = _WMIC("bios get serialnumber")
 		If $Serial <> "System Serial Number" Then $StatusBar_Once &= "  |  " & $Serial
 
+		; Setup double click detection for $PEScriptTreeView
+		$HUser32DLL = DllOpen(@WindowsDir & "\System32\user32.dll")
+		Global $hPEScriptTreeView = GUICtrlGetHandle($PEScriptTreeView)
+		GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
+
 		;GUI Loop
 		While 1
 			$nMsgA = GUIGetMsg(1)
 			$nMsg = $nMsgA[0]
+			If $Debug And $nMsg > 0 Then _Log("MSG $nMsg=" & $nMsg)
 			Switch $nMsg
 				Case $GUI_EVENT_CLOSE, $MenuExitButton
 					If $nMsgA[1] <> $GUIMain Then ContinueLoop
@@ -148,25 +168,49 @@ Switch $Command
 					Exit
 
 				Case $MenuShowConsole
-					WinSetState($Title&" Log", "", @SW_SHOW)
+					WinSetState($Title & " Log", "", @SW_SHOW)
+
+				Case $MenuRelistScripts
+					_GUICtrlTreeView_DeleteAll($PEInstallTreeView)
+					_GUICtrlTreeView_DeleteAll($PEScriptTreeView)
+					_PopulateScripts($PEInstallTreeView, "Logon*")
+					_PopulateScripts($PEScriptTreeView, "Tools*")
+
+				Case $MenuListDebugTools
+					_PopulateScripts($PEScriptTreeView, "Debug")
+					_PopulateScripts($PEScriptTreeView, "PEAutoRun*")
 
 				Case $MenuOpenLog
 					_Log("MenuOpenLog")
 					;_RunFile($LogFullPath) ; Not working in Win11 PE
-					ShellExecute("notepad.exe",$LogFullPath)
+					ShellExecute("notepad.exe", $LogFullPath)
+
+				Case $MenuRunMain
+					_Log("MenuRunMain")
+					_RunFile("Main.au3")
 
 				Case $PERunButton
-					_RunTreeView($GUIMain, $PEScriptTreeView)
+					$Item = GUICtrlRead(GUICtrlRead($PEScriptTreeView), 1)
+					$Parent = GUICtrlRead(_GUICtrlTreeView_GetParentParam($PEScriptTreeView, GUICtrlRead($PEScriptTreeView)), 1)
+
+					If IsString($Parent) Then
+						_RunFile(_GetTreeItemFullPath($Parent, $Item))
+					Else
+						_Log("Invalid treeitem")
+					EndIf
 
 				Case $NormalInstallButton
 					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/noreboot")
 					$CopyAutoLogonFiles = False
+					$RebootPrompt = True
 
-				Case $AutomatedInstallButton
+				Case $AutomatedInstallButton, $MenuInstallDisk0
 					If IsDeclared($hSetup) And ProcessExists($hSetup) Then
 						MsgBox(0, "Error - " & $Title, "Setup is already running, please close it first")
 						ContinueLoop
 					EndIf
+
+					If $nMsg = $MenuInstallDisk0 And MsgBox($MB_OKCANCEL, "Danger - " & $Title, "Setup will automaticly use disk 0 to install Windows") <> $IDOK Then ContinueLoop
 
 					$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
 					For $b = 0 To UBound($aAutoLogonCopy) - 1
@@ -184,9 +228,13 @@ Switch $Command
 						_Log("StringReplace @extended=" & @extended)
 					EndIf
 
-					If @OSVersion = "WIN_11" Then
-						_Log("WIN_11")
-						$sFileData = StringReplace($sFileData, "Windows 10", "Windows 11")
+					If $nMsg = $MenuInstallDisk0 Then
+						;$sFileData = StringReplace($sFileData, "", "")
+					EndIf
+
+					If @OSVersion = "WIN_10" Then
+						_Log("WIN_10")
+						$sFileData = StringReplace($sFileData, "Windows 11", "Windows 10")
 						_Log("StringReplace @extended=" & @extended)
 					EndIf
 
@@ -203,6 +251,20 @@ Switch $Command
 					$CopyAutoLogonFiles = True
 
 			EndSwitch
+
+			; If a double click is detected on the PE Tools treeview run the script
+			If $DoubleClick Then
+				$DoubleClick = False
+				$Item = GUICtrlRead(GUICtrlRead($PEScriptTreeView), 1)
+				$Parent = GUICtrlRead(_GUICtrlTreeView_GetParentParam($PEScriptTreeView, GUICtrlRead($PEScriptTreeView)), 1)
+
+				If IsString($Parent) Then
+					_RunFile(_GetTreeItemFullPath($Parent, $Item))
+				Else
+					_Log("Invalid treeitem")
+				EndIf
+
+			EndIf
 
 			If $CopyAutoLogonFiles And Not ProcessExists($hSetup) Then
 				_Log("Copy AutoLogon Files")
@@ -255,20 +317,22 @@ Switch $Command
 			EndIf
 
 			; Update status bar
+			$StatusBarTimer = TimerInit()
 			$Connected = "Offline"
-			If $InternetPing Then $Connected = "Online ("&$InternetPing&"ms)"
+			If $InternetPing Then $Connected = "Online (" & $InternetPing & "ms)"
 			$StatusBar_New = $Connected
 
 			$IPAddresses = @IPAddress1 & " " & @IPAddress2 & " " & @IPAddress3 & " " & @IPAddress4
-			$IPAddresses = StringStripWS(StringReplace($IPAddresses, "0.0.0.0", ""), 1+2+4)
+			$IPAddresses = StringStripWS(StringReplace($IPAddresses, "0.0.0.0", ""), 1 + 2 + 4)
 			$StatusBar_New &= "  |  " & StringReplace($IPAddresses, " ", "  ")
 
 			$StatusBar_New &= $StatusBar_Once
 
-			If $StatusBar <> $StatusBar_New Then
-				_Log("Updating statusbar")
-				$StatusBar = $StatusBar_New
-				_GUICtrlStatusBar_SetText($StatusBar1, $StatusBar)
+			If $Statusbar <> $StatusBar_New Then
+				$Statusbar = $StatusBar_New
+				_GUICtrlStatusBar_SetText($StatusBar1, $Statusbar)
+
+				If $Debug Then _Log("Updated statusbar: " & TimerDiff($StatusBarTimer))
 			EndIf
 
 			Sleep(1)
@@ -280,58 +344,160 @@ Switch $Command
 EndSwitch
 
 ;=========== =========== =========== =========== =========== =========== =========== ===========
+; Proccess NOTIFY mesages to handle double clicks
+Func _WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
+	$TagStruct1 = DllStructCreate($tagNMHDR, $lParam)
+	$hWndFrom = HWnd(DllStructGetData($TagStruct1, "hWndFrom"))
+	$IDFrom = DllStructGetData($TagStruct1, "IDFrom")
+	$Code = DllStructGetData($TagStruct1, "Code")
 
-Func _PopulateScripts($TreeID, $Folder, $Expand = True, $SetAll = 0)
+	If $hWndFrom = $hPEScriptTreeView And $Code = -3 Then
+		$DoubleClick = True
+	EndIf
+
+	$TagStruct1 = 0
+	Return $GUI_RUNDEFMSG
+EndFunc   ;==>_WM_NOTIFY
+
+Func _GetTreeItemFullPath($Parent, $Item)
+	Local $FullPath
+
+	_Log("$Parent=" & $Parent & " $Item=" & $Item)
+
+	; Test if path given is a full path
+	If StringInStr($Parent, ":", 0, 1, 2, 1) Then
+		$FullPath = $Parent & "\" & $Item
+	Else
+		$FullPath = @ScriptDir & "\" & $Parent & "\" & $Item
+	EndIf
+
+	;If Not FileExists($FullPath) Then Return SetError(1, 0, $FullPath)
+
+	Return $FullPath
+
+EndFunc   ;==>_GetTreeItemFullPath
+
+Func _GetSimilarPaths($Folder, $Path = Default)
+	If $Path = Default Then $Path = @ScriptDir
+
+	_Log("_GetSimilarPaths: " & $Folder & " - " & $Path)
+
+	; Get folders from the script path
+	Local $aFolders = _FileListToArrayRec($Path, $Folder & "*", $FLTAR_FOLDERS, $FLTAR_RECUR, $FLTAR_NOSORT, $FLTAR_FULLPATH)
+	If @error Then _Log("@error=" & @error & " @extended=" & @extended)
+
+	; Check other drives for similar folders and add them to the list
+	Local $aDrivesLetters = DriveGetDrive($DT_ALL)
+	For $i = 1 To $aDrivesLetters[0]
+		$aDrivesLetters[$i] = StringUpper($aDrivesLetters[$i])
+		_Log("  Drive: " & $aDrivesLetters[$i])
+		$aOtherDrives = _FileListToArrayRec($aDrivesLetters[$i] & "\Helper", $Folder & "*", $FLTAR_FOLDERS, $FLTAR_RECUR, $FLTAR_NOSORT, $FLTAR_FULLPATH)
+
+		_ArrayConcatenate($aFolders, $aOtherDrives, 1)
+	Next
+
+	; Remove duplicated and update index 0 to reflect total number of values
+	$aFolders = _ArrayUnique($aFolders, 0, 1)
+
+	Return $aFolders
+
+EndFunc   ;==>_GetSimilarPaths
+
+Func _PopulateScripts($TreeID, $Folder)
 	_Log("_PopulateScripts " & $Folder)
 
-	Local $FileArray[0]
+	Local $FolderFullPath, $CheckAll = False, $CollapseTree = False, $ResolveSimilarPaths = False
 
-	Local $sDefaults = FileRead(@ScriptDir & "\" & $Folder & "\.Defaults.txt")
-	If Not @error Then _Log("Defaults list: " & $sDefaults)
+	If StringRight($Folder, 1) = "*" Then
+		$Folder = StringTrimRight($Folder, 1)
+		$ResolveSimilarPaths = True
+	EndIf
 
-	$FileArray = _FileListToArray(@ScriptDir & "\" & $Folder & "\", "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
+	; Test if path given is a full path
+	If StringInStr($Folder, ":", 0, 1, 2, 1) And StringInStr(FileGetAttrib($Folder), "D") Then
+		$FolderFullPath = $Folder
+		If StringRight($FolderFullPath, 1) = "\" Then $FolderFullPath = StringTrimRight($FolderFullPath, 1)
+	Else
+		$FolderFullPath = @ScriptDir & "\" & $Folder
+	EndIf
+
+	_Log("  $FolderFullPath=" & $FolderFullPath)
+
+	Local $aFiles = _FileListToArray($FolderFullPath & "\", "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
 	If Not @error Then
-		_Log($Folder & " Files (no filter): " & $FileArray[0])
+		_Log("  " & $Folder & " Files (no filter): " & $aFiles[0])
+
+		; Load options file
+		Local $sOptions = FileRead($FolderFullPath & "\.Options.txt")
+		If Not @error Then _Log("  Options list: " & $sOptions)
+
+		; Create parent tree item
 		Local $FolderTreeItem = GUICtrlCreateTreeViewItem($Folder, $TreeID)
-		If $SetAll = 1 Then GUICtrlSetState($FolderTreeItem, $GUI_CHECKED)
 
-		For $i = 1 To $FileArray[0]
-			Local $FileName = StringTrimLeft($FileArray[$i], StringInStr($FileArray[$i], "\", 0, -1))
+		If StringInStr($sOptions, "CheckAll") Then _GUICtrlTreeView_SetChecked($TreeID, $FolderTreeItem)
 
-			If StringInStr($FileArray[$i], "\.") Then ContinueLoop ;Use . for hidden
-			If StringInStr(FileGetAttrib($FileArray[$i]), "D") And Not FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop ;allow folders only if they contain main.au3
+		For $i = 1 To $aFiles[0]
+			Local $FileName = StringTrimLeft($aFiles[$i], StringInStr($aFiles[$i], "\", 0, -1))
 
-			_Log("Adding: " & $FileArray[$i])
+			If StringInStr($aFiles[$i], "\.") Then ContinueLoop ;use . for hidden
+			If StringInStr(FileGetAttrib($aFiles[$i]), "D") And Not FileExists($aFiles[$i] & "\main.au3") Then ContinueLoop ;allow folders only if they contain main.au3
 
-			; Create item
-			GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
+			_Log("  Adding: " & $aFiles[$i])
 
-			; If item is in defaults file the check it
-			If $SetAll <> 2 AND (StringInStr($sDefaults, $FileName) OR $SetAll = 1) Then
-				_Log("Set state checked")
-				GUICtrlSetState(-1, $GUI_CHECKED)
+			; Create sub item
+			$ThisItem = GUICtrlCreateTreeViewItem($FileName, $FolderTreeItem)
+
+			; If item is in defaults file or $CheckAll is set then check it
+			If StringInStr($sOptions, "CheckAll") Or StringInStr($sOptions, $FileName) Then
+				_Log("  Set state checked")
+				GUICtrlSetState($ThisItem, $GUI_CHECKED)
 
 			EndIf
 
 		Next
 
-		If $Expand Then GUICtrlSetState($FolderTreeItem, $GUI_EXPAND)
+		; CollapseTree option
+		If Not StringInStr($sOptions, "CollapseTree") Then _GUICtrlTreeView_Expand($TreeID, $FolderTreeItem)
+
 
 	Else
-		_Log($Folder & " No files or missing")
+		_Log("  " & $Folder & " No files or missing")
 
 	EndIf
 
-	; If this the current folder isnt a custom folder, then try to process a custom folder
-	If StringRight($Folder, 6) <> "Custom" Then _PopulateScripts($TreeID, $Folder & "Custom")
 
-	Return $FileArray
+	If $ResolveSimilarPaths = True Then
+		_Log("  ResolveSimilarPaths")
+		;$FolderParentPath = StringLeft($FolderFullPath, StringInStr($FolderFullPath, "\", 0, -1) - 1)
+
+		$aOtherFolders = _GetSimilarPaths($Folder)
+
+		; Run _PopulateScripts on the similar folders
+		For $i = 1 To $aOtherFolders[0]
+			_Log("  " & $aOtherFolders[$i])
+
+			; The list will include the folder we just proccessed so skip it
+			If $aOtherFolders[$i] = $FolderFullPath Then ContinueLoop
+
+			; If the folder is in the script path then treat it as relative (this is handled later when running a tool)
+			$aOtherFolders[$i] = StringReplace($aOtherFolders[$i], @ScriptDir & "\", "")
+
+			_Log("  Recurse _PopulateScripts for: " & $aOtherFolders[$i])
+			_PopulateScripts($TreeID, $aOtherFolders[$i])
+		Next
+
+
+	EndIf
+
+	_Log("End _PopulateScripts for: " & $Folder)
+
+	Return $aFiles
 
 EndFunc   ;==>_PopulateScripts
 
-Func _NotAdminMsg($hwnd = "")
+Func _NotAdminMsg($hWnd = "")
 	_Log("_NotAdminMsg")
-	MsgBox($MB_OK, $Title, "Not running with admin rights.", 0, $hwnd)
+	MsgBox($MB_OK, $Title, "Not running with admin rights.", 0, $hWnd)
 
 EndFunc   ;==>_NotAdminMsg
 
@@ -364,17 +530,17 @@ Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
 
 EndFunc   ;==>_RunTreeView
 
+; Run all scripts in a folder and folders starting with the same name and on other drives
 Func _RunMulti($Folder)
 	_Log("_RunMulti " & $Folder)
 
-	$aFiles1 = _RunFolder(@ScriptDir & "\" & $Folder)
-	$aFiles2 = _RunFolder(@ScriptDir & "\" & $Folder & "Custom")
+	Local $Paths = _GetSimilarPaths($Folder)
+	For $x = 1 To $Paths[0]
+		_RunFolder($Paths[$x])
 
-	$iCount = _ArrayConcatenate($aFiles1, $aFiles2, 1)
+	Next
 
-	;$aFiles1[0] = $iCount
-
-	Return $aFiles1
+	Return $Paths
 EndFunc   ;==>_RunMulti
 
 Func _RunFolder($Path)
@@ -441,66 +607,69 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 EndFunc   ;==>_RunFile
 
 Func _InternetPing()
-	$InternetPing = Ping( "8.8.8.8", 400)
+	$InternetPing = Ping("8.8.8.8", 400)
 
-EndFunc
+EndFunc   ;==>_InternetPing
 
-Func _WMIC($Command, $Search="", $Trim="=")
+Func _WMIC($Command, $Search = "", $Trim = "=")
 	Local $CMDOut = @TempDir & "\wmic_out.txt"
 	RunWait(@ComSpec & ' /c ' & 'wmic ' & $Command & ' /value > ' & $CMDOut, "", @SW_HIDE)
 
 	Local $hFile = FileOpen($CMDOut, 0)
 	Local $Return
 
-	If $Search<>"" Then
+	If $Search <> "" Then
 		While 1
 			$Return = FileReadLine($hFile)
 			If @error Then Return
-			If StringLeft($Return,StringLen($Search)) = $Search Then
+			If StringLeft($Return, StringLen($Search)) = $Search Then
 				ExitLoop
-			Endif
+			EndIf
 
 		WEnd
 	Else
 		$Return = FileRead($hFile)
-		$Return = StringStripWS($Return, 1+2)
-	Endif
+		$Return = StringStripWS($Return, 1 + 2)
+	EndIf
 
 	If $Trim Then
 		$Return = StringTrimLeft($Return, StringInStr($Return, $Trim) + StringLen($Trim) - 1)
-		$Return = StringStripWS($Return, 1+2)
-	Endif
+		$Return = StringStripWS($Return, 1 + 2)
+	EndIf
 
 	FileClose($hFile)
 
-	Return($Return)
-EndFunc
+	Return ($Return)
+EndFunc   ;==>_WMIC
 
 Func _Log($Msg, $Statusbar = False)
 	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC & "> "
 
-	If Not IsDeclared("LogEdit") Then
-		Global $LogWindow = GUICreate($Title & " Log", 750, 450, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX))
-		Global $LogEdit = GUICtrlCreateEdit("", 0, 0, 750, 450, BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
+	If Not IsDeclared("_LogEdit") Then
+		Global $_LogWindow = GUICreate($Title & " Log", 750, 450, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX))
+		Global $_LogEdit = GUICtrlCreateEdit("", 0, 0, 750, 450, BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
 		GUICtrlSetFont(-1, 10, 400, 0, "Consolas")
 		GUICtrlSetColor(-1, 0xFFFFFF)
 		GUICtrlSetBkColor(-1, 0x000000)
 		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 		GUISetState(@SW_SHOW)
-		_GUICtrlEdit_AppendText($LogEdit, $Msg)
+		_GUICtrlEdit_AppendText($_LogEdit, $Msg)
 	Else
 
-		_GUICtrlEdit_BeginUpdate($LogEdit)
-		_GUICtrlEdit_AppendText($LogEdit, @CRLF & $Msg)
-		_GUICtrlEdit_LineScroll($LogEdit, -StringLen($Msg), _GUICtrlEdit_GetLineCount($LogEdit))
-		_GUICtrlEdit_EndUpdate($LogEdit)
+		_GUICtrlEdit_BeginUpdate($_LogEdit)
+		_GUICtrlEdit_AppendText($_LogEdit, @CRLF & $Msg)
+		_GUICtrlEdit_LineScroll($_LogEdit, -StringLen($Msg), _GUICtrlEdit_GetLineCount($_LogEdit))
+		_GUICtrlEdit_EndUpdate($_LogEdit)
 
 	EndIf
+
+
 
 	If $Statusbar Then _GUICtrlStatusBar_SetText($Statusbar, $Msg)
 	ConsoleWrite($sTime & $Msg & @CRLF)
 	If IsDeclared("LogFullPath") Then
-		FileWrite($LogFullPath, $sTime & $Msg & @CRLF)
+		If Not IsDeclared("_hLogFile") Then Global $_hLogFile = FileOpen($LogFullPath, $FO_APPEND)
+		FileWrite($_hLogFile, $sTime & $Msg & @CRLF)
 	EndIf
 
 	Return $Msg
