@@ -1,4 +1,3 @@
 Admin Desktop Shortcuts.ps1
 Power Settings.bat
-ResolveTechSupport.exe
 Dell Command Update.ps1
