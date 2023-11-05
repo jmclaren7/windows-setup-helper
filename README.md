@@ -61,6 +61,7 @@ Using DSIM is more advanced and doesn't offer a way to create a bootable ISO whe
 	* You can modify Update-Image.bat to help copy files to the mount directory
 4. Commit changes and unmount
 	* DISM /Unmount-Image /MountDir:%TEMP%\WIM-Mount /commit
+	* Or unmount without committing changes: DISM /Unmount-Image /MountDir:%TEMP%\WIM-Mount /discard
 5. Use your preferred tools to created a bootable USB or ISO
 
 ## Create Bootable USB From ISO
