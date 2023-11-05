@@ -43,10 +43,10 @@ Note that 64 bit versions of programs are required in a 64 bit WindowsPE Environ
 	* USB:\Helper\LogonMisc
 
 ## Prepare Using NTLite
-Using NTLite can be convenient way to modify Windows install media and then create an ISO
+Using NTLite can be a convenient way to modify Windows install media and then create an ISO
 1. Extract a Windows ISO to a folder and open that folder as a source in NTLite
 2. Right click on and load (mount) the boot.wim image "Microsoft Windows Setup (amd64)"
-3. Copy the "Helper" and "Windows" folders to the mount directory (%TEMP%\NLTmpMnt)
+3. Copy the "Helper" and "Windows" folders to the mount directory (could be either %TEMP%\NLTmpMnt or %TEMP%\NLTmpMnt01)
 	* You can modify Update-Image.bat to help copy files to the mount directory
 4. Apply image
 	* The Apply options allow you to "remove nonessential editions", removing all but your preferred image is recommended (Windows 11 Pro)
@@ -63,6 +63,7 @@ Using DSIM is more advanced and doesn't offer a way to create a bootable ISO whe
 	* DISM /Unmount-Image /MountDir:%TEMP%\WIM-Mount /commit
 	* Or unmount without committing changes: DISM /Unmount-Image /MountDir:%TEMP%\WIM-Mount /discard
 5. Use your preferred tools to created a bootable USB or ISO
+	* Makewinpemedia should work and is available in the Windows ADK
 
 ## Create Bootable USB From ISO
 1. Download and open Rufus (https://rufus.ie/)
