@@ -1,1 +1,1 @@
-start "" notepad x:\IT\autounattend.xml 
+start "" notepad x:\Helper\autounattend.xml 
