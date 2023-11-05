@@ -3,17 +3,20 @@ Call :Admin
 cls
 
 REM =====================================================================
-REM The location where the WIM image is mounted, NTLite uses %TEMP%\NLTmpMnt01
-set target=%TEMP%\NLTmpMnt01
+REM The location where the WIM image is mounted, NTLite generally uses either %TEMP%\NLTmpMnt or %TEMP%\NLTmpMnt01
+set target=%TEMP%\NLTmpMnt
+
+REM Delete Helper folder in target if it exists for a clean start
+rmdir /s /q "%target%\Helper"
 
 REM Copy files from repository to mount location
-REM The first copy operation uses /mir to remove any left over files from old copy operations
-robocopy "%~dp0\Helper" "%target%\Helper" /mir /NFL /NDL
+REM Copy operations use /e /xx to add files
+robocopy "%~dp0\Helper" "%target%\Helper" /e /NFL /NDL
 robocopy "%~dp0\Windows" "%target%\Windows" /e /NFL /NDL
 
-REM Copy additional files to the image (Make sure to include required files like Autoit.exe)
-robocopy "H:\Windows Images\Additions" "%target%" /e /NFL /NDL
-robocopy "H:\Windows Images\Additions-Macrium" "%target%" /e /NFL /NDL
+REM Copy additional files to the mount location (Make sure to include required files like Autoit.exe)
+robocopy "D:\Windows Images\Additions" "%target%" /e /NFL /NDL
+robocopy "D:\Windows Images\Additions-Macrium" "%target%" /e /NFL /NDL
 
 REM Remove extra files from image
 del "%target%\Auto-saved*.xml"
