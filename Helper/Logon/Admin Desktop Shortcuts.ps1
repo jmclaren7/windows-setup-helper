@@ -1,6 +1,6 @@
 $WshShell = New-Object -comObject WScript.Shell
 
-$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\Domain & Name.lnk")
+$Shortcut = $WshShell.CreateShortcut("$Home\Desktop\System Properties.lnk")
 $Shortcut.TargetPath = "SystemPropertiesComputerName.exe"
 $Shortcut.Save()
 
