@@ -1,3 +1,2 @@
-Admin Desktop Shortcuts.ps1
 Power Settings.bat
 Dell Command Update.ps1
