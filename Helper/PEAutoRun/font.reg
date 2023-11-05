@@ -1,0 +1,5 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts]
+"Segoe UI (TrueType)"="segoeui.ttf"
+"Segoe UI Italic (TrueType)"="segoeui.ttf"
