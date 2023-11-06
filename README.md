@@ -1,10 +1,12 @@
 # Work in Progress
-This project has primarily been for my own use with my clients, I can't make any promises that the instructions and code available here is complete or reliable but I'll do my best to make it work for anyone who find this project. Most of the tools I normally add aren't included here because they are either commercial products or I'm uncertain if the open source licensing allows it.
+This project has primarily been for my own use and I can't make any promises that the instructions and code available here is complete or reliable but I'll do my best to make it work for anyone who finds this project. Most of the tools I normally add aren't included here because they are either commercial products or I'm uncertain if the open source licensing allows it, I *have* included AutoIT3.exe (64 bit) which is required.
 
 # Windows Setup Helper
-This project integrates a flexible set of scripts and tools into the Windows install media to make Windows installations easier while also adding tools and features to the Windows PE environment. 
+This project provides an interface to replace the Windows Installer on a normal Windows install media. The new interface gives you access to whatever scripts and tools you choose to copy to the into the Windows install media. The interface provides options to run a normal Windows Install or one that is automated. Automated installs will use an Autounattend.xml file to skip all but partitioning steps, once the install completes any scripts you selected will automatically run.
 
-The objective is to leave the Windows install image (install.wim) unmodified so that it can be replaced or updated easily and so the option of using an unmodified install.wim is always available while still having your tools, customizations and automations available. The flexibility of have Windows installation media with these options can be most useful when you are routinely working in different environments with very different requirements.
+The objective is to leave the Windows install image (install.wim) completely unmodified and the WinPE image (boot.wim) nearly unmodified so that it can be replaced or updated easily and so the option of using an unmodified install.wim is always available while still having your tools, customizations and automatons available. This flexibility can be most useful when you routinely work in different environments with very different requirements.
+
+To use Windows Setup Helper you'll need to add the project files to a WinPE image (sources\boot.wim) along with your custom scripts and tools. It's recommended to us the "Prepare Using NTLite" instructions below.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/Screenshot1.png?raw=true">
@@ -19,15 +21,16 @@ The objective is to leave the Windows install image (install.wim) unmodified so 
 * This program is integrated into the boot.wim image, this means you can pxe boot this image and use the same tools
 * Tools and scripts are listed from folders in the main program's folder or specific folders from any available drive
 
-## Required External Components
-* AutoIT3.exe executable (64bit version)
-
-## Suggested 3rd Party Tools For The WindowsPE Boot Environment
-Note that 64 bit versions of programs are required in a 64 bit WindowsPE Environment
-* TightVNC
+## Included 3rd Party Tools For WinPE
+* TightVNC (**WiP:** starts a VNC server when WinPE starts)
+* 7-Zip
 * Explorer++
-* Password Refixer (Commercial)
-* Macrium Rescue (Commercial)
+
+## Other Useful 3rd Party Tools For WinPE That Have Been Tested  
+Note: Full 64 bit is required in a 64 bit WindowsPE Environment
+* Password Refixer (Commercial) - Copy the program files from their WinPE image
+* Macrium Reflect (Commercial) - Copy the program files from their WinPE image
+* Crystal DiskMark & DiskInfo
 * Various Sysinternals & Nirsoft Tools
 
 ## Adding Tools/Scripts/Programs
