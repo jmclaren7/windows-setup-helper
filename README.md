@@ -22,7 +22,7 @@ To use Windows Setup Helper you'll need to add the project files to a WinPE imag
 * Tools and scripts are listed from folders in the main program's folder or specific folders from any available drive
 
 ## Included 3rd Party Tools For WinPE
-* TightVNC (**WiP:** starts a VNC server when WinPE starts)
+* TightVNC (**WiP:** starts a VNC server when WinPE starts, port 5950, password "vncwatch")
 * 7-Zip
 * Explorer++
 
