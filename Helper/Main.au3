@@ -75,6 +75,9 @@ _Log("Command: " & $Command)
 Switch $Command
 	Case "winpe"
 
+		; Run automatic setup scripts
+		If $IsPE Then _RunMulti("PEAutoRun")
+
 		#Region ### START Koda GUI section ###
 		$GUIMain = GUICreate("$Title", 767, 543, -1, -1)
 		$FileMenu = GUICtrlCreateMenu("&File")
@@ -130,9 +133,6 @@ Switch $Command
 
 		; Set GUI Icon
 		GUISetIcon($BootDrive & "sources\setup.exe")
-
-		; Run automatic setup scripts
-		If $IsPE Then _RunMulti("PEAutoRun")
 
 		; Hide console windows
 		_Log("Hide console window")
