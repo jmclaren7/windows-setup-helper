@@ -1,45 +1,66 @@
 #include <WinAPIProc.au3>
 
-_ConsoleWrite("VNCServer")
+
+
+Global $Title = "PEVNCServer"
+Global $IsPE = StringInStr(@WindowsDir, "X:")
+
+_Log("VNCServer")
+
+FileChangeDir(@ScriptDir)
+_Log("@WorkingDir="&@WorkingDir)
+_Log("@ScriptDir="&@ScriptDir)
+
+; Starting the VNC server without network connectivity can cause it to fail
 For $i=1 to 6
 	Ping ("8.8.8.8", 1000)
 	If Not @error Then ExitLoop
 	Sleep(1000)
 Next
 
-FileChangeDir(@ScriptDir)
-_ConsoleWrite("@WorkingDir="&@WorkingDir)
-_ConsoleWrite("@ScriptDir="&@ScriptDir)
-
+; Disable the PE firewall
 Run(@ComSpec & " /c " & 'wpeutil.exe disablefirewall', "", @SW_HIDE)
 
+; Import VNC setting to registry
 Run(@ComSpec & " /c " & 'reg.exe import tight_settings.reg', "", @SW_HIDE)
-$VNCPid = Run(@ComSpec & " /c " & 'tvnserver.exe', "", @SW_HIDE)
 
-_ConsoleWrite($VNCPid & @CRLF)
+; Start the VNC server
+$VNCPid = Run(@ComSpec & " /c " & 'tvnserver.exe -run', "", @SW_HIDE)
+_Log("$VNCPid=" & $VNCPid)
 
-If NOT StringInStr(@ScriptFullPath, "x:\") Then
-	$Parent = _ProcessGetParent(@AutoItPID)
-	_ConsoleWrite($Parent & @CRLF)
+$ParentPid = _ProcessGetParent(@AutoItPID)
+_Log("$ParentPid=" & $ParentPid)
 
-	While ProcessExists($Parent)
+_UpdateStatusBar()
+AdlibRegister("_UpdateStatusBar", 3000)
 
-		Sleep(50)
-	Wend
+While ProcessExists($VNCPid) And ProcessExists($ParentPid)
 
-	ProcessClose($VNCPid)
-	ProcessClose("tvnserver.exe")
+	Sleep(50)
+Wend
 
-Else
-	While ProcessExists($VNCPid)
+; Close any instances of VNC server running from script path
+If Not $IsPE Then
+	$aProcList = ProcessList("tvnserver.exe")
+	For $i = 1 To Ubound($aProcList) - 1
+		If StringInStr(_WinAPI_GetProcessFileName($aProcList[$i][1]), @ScriptDir) Then ProcessClose($aProcList[$i][1])
+	Next
+EndIf
+;=========== =========== =========== =========== =========== =========== =========== ===========
+;=========== =========== =========== =========== =========== =========== =========== ===========
 
-		Sleep(50)
-	Wend
+Func _UpdateStatusBar()
+	Local $Path = @TempDir & "\Helper_Status_" & $Title & ".txt"
+	Local $Port = RegRead("HKEY_CURRENT_USER\SOFTWARE\TightVNC\Server", "rfbport")
 
-Endif
+	$hFile = FileOpen ($Path, 2)
+	FileWrite($hFile, "VNC Running" & @CRLF & "VNC Port: " & $Port)
 
-Func _ConsoleWrite($Data)
-	ConsoleWrite(@ScriptName & ": " & $Data & @CRLF)
+	FileClose($hFile)
+EndFunc
+
+Func _Log($Data)
+	ConsoleWrite($Title & ": " & $Data & @CRLF)
 EndFunc
 
 Func _ProcessGetParent($i_pid)
