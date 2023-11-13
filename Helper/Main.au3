@@ -323,6 +323,8 @@ Switch $Command
 EndSwitch
 
 ;=========== =========== =========== =========== =========== =========== =========== ===========
+;=========== =========== =========== =========== =========== =========== =========== ===========
+
 ; Proccess NOTIFY mesages to handle double clicks
 Func _WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
 	$TagStruct1 = DllStructCreate($tagNMHDR, $lParam)
