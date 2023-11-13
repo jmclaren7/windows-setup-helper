@@ -1,3 +1,29 @@
+Func _WMI($Query, $Basic = True)
+	If Not IsDeclared("_objWMIService") Then
+		Global $_objWMIService = ObjGet("winmgmts:\root\CIMV2")
+	EndIf
+
+	Local $colItems = $_objWMIService.ExecQuery($Query)
+	If IsObj($colItems) Then
+		If $Basic Then
+			Local $objItem
+
+			For $objItem in $colItems
+				Return $objItem
+			Next
+
+		Else
+			Return $colItems
+
+		EndIf
+
+	Else
+		SetError(1)
+		Return 0
+
+	Endif
+EndFunc
+
 Func _WinAPI_GetFirmwareEnvironmentVariable()
     Local $sName = ""
     Local $sGUID = "{00000000-0000-0000-0000-000000000000}"
