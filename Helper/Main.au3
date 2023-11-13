@@ -8,6 +8,7 @@
 #include "include\GuiEdit.au3"
 #include "include\GuiListView.au3"
 #include "include\GuiTab.au3"
+#include <include\GuiToolTip.au3>
 #include "include\GuiTreeView.au3"
 #include "include\GuiStatusBar.au3"
 #include "include\Inet.au3"
@@ -47,9 +48,10 @@ Global $Title = "Windows Setup Helper v" & $Version
 Global $GUIMain
 Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
 Global $StatusBar1
+Global $StatusbarTimer2
 Global $IsPE = StringInStr(@WindowsDir, "X:")
 Global $DoubleClick = False
-Global $Debug = False
+Global $Debug = Not $IsPE
 
 _Log($Title)
 _Log("$CmdLineRaw=" & $CmdLineRaw)
@@ -128,7 +130,7 @@ Switch $Command
 		Local $Reboot = False
 		Local $BootDrive = StringLeft(@SystemDir, 3)
 
-		; Start network
+		; Start PE networking
 		If $IsPE Then Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
 
 		; Set GUI Icon
@@ -138,23 +140,19 @@ Switch $Command
 		_Log("Hide console window")
 		WinSetState($Title & " Log", "", @SW_HIDE)
 
-		_Log("Ready", True)
-
-		; Setup statusbar prerequisites
-		$Statusbar = ""
-		Global $InternetPing = 0
-		AdlibRegister("_InternetPing", 1000)
-		$MemStats = MemGetStats()
-		$StatusBar_Once = ""
-		$StatusBar_Once &= "  |  " & Round($MemStats[1] / 1024 / 1024) & "GB"
-		$StatusBar_Once &= "  |  " & _WMIC("cpu get NumberOfCores") & "/" & _WMIC("cpu get NumberOfLogicalProcessors") & " Cores"
-		$Serial = _WMIC("bios get serialnumber")
-		If $Serial <> "System Serial Number" Then $StatusBar_Once &= "  |  " & $Serial
+		; Setup statusbar updates
+		Global $StatusBarToolTip = _GUIToolTip_Create(0);BitOr($TTS_ALWAYSTIP, $TTS_NOPREFIX, $TTS_BALLOON)
+		_GUIToolTip_AddTool($StatusBarToolTip, 0, " ", $StatusBar1)
+		_GUIToolTip_SetMaxTipWidth($StatusBarToolTip, 400)
+		AdlibRegister("_StatusBarUpdate", 5000)
+		_StatusBarUpdate()
 
 		; Setup double click detection for $PEScriptTreeView
 		$HUser32DLL = DllOpen(@WindowsDir & "\System32\user32.dll")
 		Global $hPEScriptTreeView = GUICtrlGetHandle($PEScriptTreeView)
 		GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
+
+		_Log("Ready", True)
 
 		;GUI Loop
 		While 1
@@ -316,26 +314,7 @@ Switch $Command
 				$RebootPrompt = False
 			EndIf
 
-			; Update status bar
-			$StatusBarTimer = TimerInit()
-			$Connected = "Offline"
-			If $InternetPing Then $Connected = "Online (" & $InternetPing & "ms)"
-			$StatusBar_New = $Connected
-
-			$IPAddresses = @IPAddress1 & " " & @IPAddress2 & " " & @IPAddress3 & " " & @IPAddress4
-			$IPAddresses = StringStripWS(StringReplace($IPAddresses, "0.0.0.0", ""), 1 + 2 + 4)
-			$StatusBar_New &= "  |  " & StringReplace($IPAddresses, " ", "  ")
-
-			$StatusBar_New &= $StatusBar_Once
-
-			If $Statusbar <> $StatusBar_New Then
-				$Statusbar = $StatusBar_New
-				_GUICtrlStatusBar_SetText($StatusBar1, $Statusbar)
-
-				If $Debug Then _Log("Updated statusbar: " & TimerDiff($StatusBarTimer))
-			EndIf
-
-			Sleep(1)
+			Sleep(10)
 		WEnd
 
 	Case Else
@@ -606,41 +585,77 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 
 EndFunc   ;==>_RunFile
 
-Func _InternetPing()
+Func _StatusBarUpdate()
+	Local $StatusbarText, $StatusbarToolTipText = "Additonal Details:"
+	Local $Delimiter = "  |  "
+
+	If $Debug Then
+		Local $StatusBarTimer1 = TimerInit()
+		Local $StatusBarTimer2Value = TimerDiff($StatusbarTimer2)
+	EndIf
+
+	; Get internet status/latency
 	$InternetPing = Ping("8.8.8.8", 400)
+	If @error Then $InternetPing = Ping("1.1.1.1", 200)
 
-EndFunc   ;==>_InternetPing
+	$InternetPing = Round($InternetPing / 5) * 5 ; Reduces updates to GUI
 
-Func _WMIC($Command, $Search = "", $Trim = "=")
-	Local $CMDOut = @TempDir & "\wmic_out.txt"
-	RunWait(@ComSpec & ' /c ' & 'wmic ' & $Command & ' /value > ' & $CMDOut, "", @SW_HIDE)
-
-	Local $hFile = FileOpen($CMDOut, 0)
-	Local $Return
-
-	If $Search <> "" Then
-		While 1
-			$Return = FileReadLine($hFile)
-			If @error Then Return
-			If StringLeft($Return, StringLen($Search)) = $Search Then
-				ExitLoop
-			EndIf
-
-		WEnd
+	If $InternetPing Then
+		$StatusbarText &= "Online (" & $InternetPing & "ms)"
 	Else
-		$Return = FileRead($hFile)
-		$Return = StringStripWS($Return, 1 + 2)
+		$StatusbarText &= "Offline"
 	EndIf
 
-	If $Trim Then
-		$Return = StringTrimLeft($Return, StringInStr($Return, $Trim) + StringLen($Trim) - 1)
-		$Return = StringStripWS($Return, 1 + 2)
+	; Get gateway
+	$StatusbarToolTipText &= @CR & "Gateway: " & _WMI("SELECT NextHop From Win32_IP4RouteTable WHERE Destination = '0.0.0.0'").NextHop
+
+	; Get IP addresses
+	$StatusbarText &= $Delimiter & _WMI("SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True and DHCPEnabled = True").IPAddress[0]
+	$StatusbarToolTipText &= @CR & "Other IPs: " & @IPAddress1 & ", " & @IPAddress2 & ", " & @IPAddress3 & ", " & @IPAddress4
+
+	; Get memory information
+	If Not IsDeclared("_MemStats") Then Global $_MemStats = MemGetStats()
+	$StatusbarText &= $Delimiter & Round($_MemStats[1] / 1024 / 1024) & "GB"
+
+	; Get CPU information
+	$objItem = _WMI("SELECT NumberOfCores,NumberOfLogicalProcessors FROM Win32_Processor")
+	$StatusbarText &= $Delimiter & $objItem.NumberOfCores & "/" & $objItem.NumberOfLogicalProcessors & " Cores"
+
+	; Get motherboard serial if set
+	$objItem = _WMI("SELECT SerialNumber FROM Win32_BIOS").SerialNumber
+	If Not @error and $objItem <> "" and $objItem <> "System Serial Number" Then $StatusbarText &= $Delimiter & $objItem
+
+	; Get additional statusbar text
+	$HelperStatusFiles = _FileListToArray(@TempDir, "Helper_Status_*.txt", $FLTA_FILES, True)
+	For $i = 1 To Ubound($HelperStatusFiles) - 1
+		If _FileModifiedAge($HelperStatusFiles[$i]) < 10 * 1000 Then
+			$FileText = FileReadLine($HelperStatusFiles[$i], 1)
+			$StatusbarText &= $Delimiter & $FileText
+		Else
+			FileDelete($HelperStatusFiles[$i])
+		EndIf
+
+	Next
+
+	; Update statusbar if the text changed
+	If _GUICtrlStatusBar_GetText($StatusBar1, 0) <> $StatusbarText Then
+		_GUICtrlStatusBar_SetText($StatusBar1, $StatusbarText)
+		If $Debug Then _Log("Statusbar Updated")
 	EndIf
 
-	FileClose($hFile)
+	; Update statusbar tool tip if the text changed
+	If _GUIToolTip_GetText($StatusBarToolTip, 0, $StatusBar1) <> $StatusBarToolTipText Then
+		_GUIToolTip_UpdateTipText($StatusBarToolTip, 0, $StatusBar1, $StatusBarToolTipText)
+		If $Debug Then _Log("Statusbar Tooltip Updated")
+	EndIf
 
-	Return ($Return)
-EndFunc   ;==>_WMIC
+	If $Debug Then
+		_Log("  _StatusBarUpdate Timers: " & Round(TimerDiff($StatusBarTimer1)) & "ms " & Round($StatusBarTimer2Value) & "ms")
+		$StatusBarTimer2 = TimerInit()
+	EndIf
+
+	Return
+EndFunc   ;==>_StatusBarUpdate
 
 Func _Log($Msg, $Statusbar = False)
 	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC & "> "
@@ -663,10 +678,10 @@ Func _Log($Msg, $Statusbar = False)
 
 	EndIf
 
-
-
 	If $Statusbar Then _GUICtrlStatusBar_SetText($Statusbar, $Msg)
+
 	ConsoleWrite($sTime & $Msg & @CRLF)
+
 	If IsDeclared("LogFullPath") Then
 		If Not IsDeclared("_hLogFile") Then Global $_hLogFile = FileOpen($LogFullPath, $FO_APPEND)
 		FileWrite($_hLogFile, $sTime & $Msg & @CRLF)
