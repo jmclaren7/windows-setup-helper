@@ -111,9 +111,9 @@ Switch $Command
 		$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $AdvancedMenu)
 		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
 		$MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
-		$MenuRelistScripts = GUICtrlCreateMenuItem("Relist Scripts", $AdvancedMenu)
-		$MenuListDebugTools = GUICtrlCreateMenuItem("List Debug Tools", $AdvancedMenu)
-		$MenuInstallDisk0 = GUICtrlCreateMenuItem("Auto Install To Disk 0", $AdvancedMenu)
+		$MenuRelistScripts = GUICtrlCreateMenuItem("Relist Tools && Scripts", $AdvancedMenu)
+		$MenuListDebugTools = GUICtrlCreateMenuItem("List Debug && AutoRun Tools", $AdvancedMenu)
+		$MenuInstallDisk0 = -1;GUICtrlCreateMenuItem("Auto Install To Disk 0", $AdvancedMenu)
 
 		; GUI Post Creation Setup
 		WinSetTitle($GUIMain, "", $Title)
@@ -623,16 +623,23 @@ Func _StatusBarUpdate()
 	$objItem = _WMI("SELECT NumberOfCores,NumberOfLogicalProcessors FROM Win32_Processor")
 	$StatusbarText &= $Delimiter & $objItem.NumberOfCores & "/" & $objItem.NumberOfLogicalProcessors & " Cores"
 
-	; Get motherboard serial if set
-	$objItem = _WMI("SELECT SerialNumber FROM Win32_BIOS").SerialNumber
-	If Not @error and $objItem <> "" and $objItem <> "System Serial Number" Then $StatusbarText &= $Delimiter & $objItem
+	; Get motherboard bios information
+	$objItem = _WMI("SELECT * FROM Win32_BIOS")
+	If Not @error and $objItem.SerialNumber <> "" and $objItem.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & $objItem.SerialNumber
+	$StatusbarText &= $Delimiter & "FW: " & $objItem.SMBIOSBIOSVersion & " (" & StringLeft($objItem.ReleaseDate, 8) & ")"
 
-	; Get additional statusbar text
+	; Get additional statusbar and tool tip text
 	$HelperStatusFiles = _FileListToArray(@TempDir, "Helper_Status_*.txt", $FLTA_FILES, True)
 	For $i = 1 To Ubound($HelperStatusFiles) - 1
 		If _FileModifiedAge($HelperStatusFiles[$i]) < 10 * 1000 Then
 			$FileText = FileReadLine($HelperStatusFiles[$i], 1)
-			$StatusbarText &= $Delimiter & $FileText
+			_Log("$FileText=" & $FileText)
+			If Not @error Then $StatusbarText &= $Delimiter & $FileText
+
+			$FileText = FileReadLine($HelperStatusFiles[$i], 2)
+			_Log("$FileText=" & $FileText)
+			If Not @error Then $StatusBarToolTipText &= @CRLF & $FileText
+
 		Else
 			FileDelete($HelperStatusFiles[$i])
 		EndIf
