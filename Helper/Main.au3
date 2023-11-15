@@ -8,7 +8,7 @@
 #include "include\GuiEdit.au3"
 #include "include\GuiListView.au3"
 #include "include\GuiTab.au3"
-#include <include\GuiToolTip.au3>
+#include "include\GuiToolTip.au3"
 #include "include\GuiTreeView.au3"
 #include "include\GuiStatusBar.au3"
 #include "include\Inet.au3"
@@ -144,7 +144,7 @@ Switch $Command
 		Global $StatusBarToolTip = _GUIToolTip_Create(0);BitOr($TTS_ALWAYSTIP, $TTS_NOPREFIX, $TTS_BALLOON)
 		_GUIToolTip_AddTool($StatusBarToolTip, 0, " ", $StatusBar1)
 		_GUIToolTip_SetMaxTipWidth($StatusBarToolTip, 400)
-		AdlibRegister("_StatusBarUpdate", 5000)
+		AdlibRegister("_StatusBarUpdate", 4000)
 		_StatusBarUpdate()
 
 		; Setup double click detection for $PEScriptTreeView
@@ -588,7 +588,7 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 EndFunc   ;==>_RunFile
 
 Func _StatusBarUpdate()
-	Local $StatusbarText, $StatusbarToolTipText = "Additonal Details:"
+	Local $StatusbarText, $StatusbarToolTipText
 	Local $Delimiter = "  |  "
 
 	If $Debug Then
