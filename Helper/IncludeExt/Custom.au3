@@ -1,6 +1,12 @@
 Func _WMI($Query, $Basic = True)
 	If Not IsDeclared("_objWMIService") Then
-		Global $_objWMIService = ObjGet("winmgmts:\root\CIMV2")
+		Local $Temp = ObjGet("winmgmts:\root\CIMV2")
+		If @error Then
+			SetError(1)
+			Return 0
+		EndIf
+		Global $_objWMIService = $Temp
+
 	EndIf
 
 	Local $colItems = $_objWMIService.ExecQuery($Query)
