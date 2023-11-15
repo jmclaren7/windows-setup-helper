@@ -608,11 +608,14 @@ Func _StatusBarUpdate()
 		$StatusbarText &= "Offline"
 	EndIf
 
+
 	; Get gateway
-	$StatusbarToolTipText &= @CR & "Gateway: " & _WMI("SELECT NextHop From Win32_IP4RouteTable WHERE Destination = '0.0.0.0'").NextHop
+	$Win32_IP4RouteTable = _WMI("SELECT * From Win32_IP4RouteTable WHERE Destination = '0.0.0.0'")
+	If Not @error Then $StatusbarToolTipText &= "Gateway: " & $Win32_IP4RouteTable.NextHop
 
 	; Get IP addresses
-	$StatusbarText &= $Delimiter & _WMI("SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True and DHCPEnabled = True").IPAddress[0]
+	$Win32_NetworkAdapterConfiguration = _WMI("SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True and DHCPEnabled = True")
+	If Not @error Then $StatusbarText &= $Delimiter & $Win32_NetworkAdapterConfiguration.IPAddress[0]
 	$StatusbarToolTipText &= @CR & "Other IPs: " & @IPAddress1 & ", " & @IPAddress2 & ", " & @IPAddress3 & ", " & @IPAddress4
 
 	; Get memory information
@@ -620,13 +623,15 @@ Func _StatusBarUpdate()
 	$StatusbarText &= $Delimiter & Round($_MemStats[1] / 1024 / 1024) & "GB"
 
 	; Get CPU information
-	$objItem = _WMI("SELECT NumberOfCores,NumberOfLogicalProcessors FROM Win32_Processor")
-	$StatusbarText &= $Delimiter & $objItem.NumberOfCores & "/" & $objItem.NumberOfLogicalProcessors & " Cores"
+	$Win32_Processor = _WMI("SELECT * FROM Win32_Processor")
+	If Not @error Then $StatusbarText &= $Delimiter & $Win32_Processor.NumberOfCores & "/" & $Win32_Processor.NumberOfLogicalProcessors & " Cores"
 
 	; Get motherboard bios information
-	$objItem = _WMI("SELECT * FROM Win32_BIOS")
-	If Not @error and $objItem.SerialNumber <> "" and $objItem.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & $objItem.SerialNumber
-	$StatusbarText &= $Delimiter & "FW: " & $objItem.SMBIOSBIOSVersion & " (" & StringLeft($objItem.ReleaseDate, 8) & ")"
+	$Win32_BIOS = _WMI("SELECT * FROM Win32_BIOS")
+	If Not @error Then
+		If $Win32_BIOS.SerialNumber <> "" and $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 25)
+		$StatusbarText &= $Delimiter & "FW: " & $Win32_BIOS.SMBIOSBIOSVersion & " (" & StringLeft($Win32_BIOS.ReleaseDate, 8) & ")"
+	EndIf
 
 	; Get additional statusbar and tool tip text
 	$HelperStatusFiles = _FileListToArray(@TempDir, "Helper_Status_*.txt", $FLTA_FILES, True)
