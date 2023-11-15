@@ -1,15 +1,18 @@
 #include <WinAPIProc.au3>
 
-
-
 Global $Title = "PEVNCServer"
+Global $Settings = @ScriptDir & "\Settings.ini"
+Global $VNCRegPath = "HKEY_CURRENT_USER\SOFTWARE\TightVNC\Server"
+Global $VNCExe = "tvnserver.exe"
 Global $IsPE = StringInStr(@WindowsDir, "X:")
 
-_Log("VNCServer")
-
 FileChangeDir(@ScriptDir)
+
+_Log($Title)
 _Log("@WorkingDir="&@WorkingDir)
 _Log("@ScriptDir="&@ScriptDir)
+
+OnAutoItExitRegister("_Exit")
 
 ; Starting the VNC server without network connectivity can cause it to fail
 For $i=1 to 6
@@ -19,42 +22,76 @@ For $i=1 to 6
 Next
 
 ; Disable the PE firewall
-Run(@ComSpec & " /c " & 'wpeutil.exe disablefirewall', "", @SW_HIDE)
+If $IsPE Then Run(@ComSpec & " /c " & 'wpeutil.exe disablefirewall', "", @SW_HIDE)
 
-; Import VNC setting to registry
-Run(@ComSpec & " /c " & 'reg.exe import tight_settings.reg', "", @SW_HIDE)
+; Import VNC settings to registry
+Run(@ComSpec & " /c " & 'reg.exe import vnc_settings.reg', "", @SW_HIDE)
+
+; Get Settings from INI
+$SetPort = IniRead($Settings, "Settings", "port", "5900" )
+Global $SetPass = IniRead($Settings, "Settings", "password", "vncwatch" )
+
+; Convert password to VNC hex and write to registry
+$Run = Run(@ComSpec & " /c " & 'vncpassword.exe ' & $SetPass, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+_Log("Run: " & $Run & " " & @error)
+
+Local $Read
+While 1
+    $Read &= StdoutRead($Run)
+    If @error Then ExitLoop
+Wend
+$Read = StringStripWS($Read, 1 + 2)
+If StringLen($Read) <> 18 Or StringLeft($Read, 2) <> "0x" Then
+	_Log("Error: Expected hex")
+	Exit
+EndIf
+
+RegWrite($VNCRegPath, "Password", "REG_BINARY", $Read)
 
 ; Start the VNC server
-$VNCPid = Run(@ComSpec & " /c " & 'tvnserver.exe -run', "", @SW_HIDE)
+$VNCPid = Run(@ComSpec & " /c " & $VNCExe & ' -run', "", @SW_HIDE)
 _Log("$VNCPid=" & $VNCPid)
 
-$ParentPid = _ProcessGetParent(@AutoItPID)
-_Log("$ParentPid=" & $ParentPid)
-
+; Setup statusbar updates
 _UpdateStatusBar()
 AdlibRegister("_UpdateStatusBar", 3000)
 
-While ProcessExists($VNCPid) And ProcessExists($ParentPid)
+; Get PID of parent process
+$ParentPid = _ProcessGetParent(@AutoItPID)
+_Log("$ParentPid=" & $ParentPid)
+
+; Loop until vnc process closes
+While ProcessExists($VNCPid)
+	; Exit if not in PE and parent process exits
+	If Not $IsPE And Not ProcessExists($ParentPid) Then
+		_Log("Parent closed")
+		Exit
+	EndIf
 
 	Sleep(50)
 Wend
 
+Exit
+
+;=========== =========== =========== =========== =========== =========== =========== ===========
+;=========== =========== =========== =========== =========== =========== =========== ===========
+
 ; Close any instances of VNC server running from script path
-If Not $IsPE Then
-	$aProcList = ProcessList("tvnserver.exe")
-	For $i = 1 To Ubound($aProcList) - 1
-		If StringInStr(_WinAPI_GetProcessFileName($aProcList[$i][1]), @ScriptDir) Then ProcessClose($aProcList[$i][1])
-	Next
-EndIf
-;=========== =========== =========== =========== =========== =========== =========== ===========
-;=========== =========== =========== =========== =========== =========== =========== ===========
+Func _Exit()
+	If Not $IsPE Then
+		$aProcList = ProcessList($VNCExe)
+		For $i = 1 To Ubound($aProcList) - 1
+			If StringInStr(_WinAPI_GetProcessFileName($aProcList[$i][1]), @ScriptDir) Then ProcessClose($aProcList[$i][1])
+		Next
+	EndIf
+EndFunc
 
 Func _UpdateStatusBar()
 	Local $Path = @TempDir & "\Helper_Status_" & $Title & ".txt"
-	Local $Port = RegRead("HKEY_CURRENT_USER\SOFTWARE\TightVNC\Server", "rfbport")
+	Local $Port = RegRead($VNCRegPath, "rfbport")
 
 	$hFile = FileOpen ($Path, 2)
-	FileWrite($hFile, "VNC Running" & @CRLF & "VNC Port: " & $Port)
+	FileWrite($hFile, "VNC Running" & @CRLF & "VNC Port: " & $Port & " VNC Password: " & $SetPass)
 
 	FileClose($hFile)
 EndFunc
