@@ -1,6 +1,8 @@
+#include "include\AutoItConstants.au3"
 #include "include\ButtonConstants.au3"
 #include "include\ComboConstants.au3"
 #include "include\Crypt.au3"
+#include "include\Date.au3"
 #include "include\EditConstants.au3"
 #include "include\File.au3"
 #include "include\FileConstants.au3"
@@ -16,19 +18,16 @@
 #include "include\ListViewConstants.au3"
 #include "include\Process.au3"
 #include "include\StaticConstants.au3"
+#include "include\String.au3"
 #include "include\TabConstants.au3"
 #include "include\TreeViewConstants.au3"
 #include "include\WindowsConstants.au3"
 #include "include\WinAPI.au3"
 #include "include\WinAPISys.au3"
 #include "include\WinAPIFiles.au3"
-#include "include\Date.au3"
 
-#include "includeExt\Json.au3"
-#include "includeExt\WinHttp.au3"
-#include "includeExt\ActivationStatus.au3"
-#include "includeExt\Custom.au3"
-#include "includeExt\_Zip.au3"
+; https://github.com/jmclaren7/autoit-scripts/blob/master/CommonFunctions.au3
+#include "includeExt\CommonFunctions.au3"
 
 ; Register a function to run whenever the script exits
 OnAutoItExitRegister("_Exit")
