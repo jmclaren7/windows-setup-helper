@@ -607,23 +607,13 @@ Func _StatusBarUpdate()
 		$StatusbarText &= "Offline"
 	EndIf
 
-	; Get gateway
-	$Win32_IP4RouteTable = _WMI("SELECT NextHop From Win32_IP4RouteTable WHERE Destination = '0.0.0.0'")
+	; Get information for the first network adapter WMI provies (usually correct)
+	$Win32_NetworkAdapterConfiguration = _WMI("SELECT IPAddress,DefaultIPGateway,DNSServerSearchOrder FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True and DHCPEnabled = True")
 	If Not @error Then
-		$StatusbarToolTipText &= "Gateway: " & $Win32_IP4RouteTable.NextHop
-	Else
-		_Log("$Win32_IP4RouteTable @ERROR="&@error)
-	EndIF
-
-	; Get the first IP address WMI provies (usually correct)
-	$Win32_NetworkAdapterConfiguration = _WMI("SELECT IPAddress FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True and DHCPEnabled = True")
-	If Not @error Then
-		; If an IP hasn't been aquired IPAddress wont be an array, this might also be the case if the NIC doesn't have IPv6
-		If IsArray($Win32_NetworkAdapterConfiguration.IPAddress) Then
-			$StatusbarText &= $Delimiter & $Win32_NetworkAdapterConfiguration.IPAddress[0]
-		Else
-			$StatusbarText &= $Delimiter & $Win32_NetworkAdapterConfiguration.IPAddress
-		EndIf
+		; If an IP hasn't been aquired it wont be an array
+		If IsArray($Win32_NetworkAdapterConfiguration.IPAddress) Then $StatusbarText &= $Delimiter & $Win32_NetworkAdapterConfiguration.IPAddress[0]
+		If IsArray($Win32_NetworkAdapterConfiguration.DefaultIPGateway) Then $StatusbarToolTipText &= "Gateway: " & $Win32_NetworkAdapterConfiguration.DefaultIPGateway[0] & "  "
+		If IsArray($Win32_NetworkAdapterConfiguration.DNSServerSearchOrder) Then $StatusbarToolTipText &= "DNS: " & $Win32_NetworkAdapterConfiguration.DNSServerSearchOrder[0]
 	EndIf
 	$StatusbarToolTipText &= @CR & "Other IPs: " & @IPAddress1 & ", " & @IPAddress2 & ", " & @IPAddress3 & ", " & @IPAddress4
 
