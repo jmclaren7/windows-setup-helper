@@ -607,14 +607,24 @@ Func _StatusBarUpdate()
 		$StatusbarText &= "Offline"
 	EndIf
 
-
 	; Get gateway
-	$Win32_IP4RouteTable = _WMI("SELECT * From Win32_IP4RouteTable WHERE Destination = '0.0.0.0'")
-	If Not @error Then $StatusbarToolTipText &= "Gateway: " & $Win32_IP4RouteTable.NextHop
+	$Win32_IP4RouteTable = _WMI("SELECT NextHop From Win32_IP4RouteTable WHERE Destination = '0.0.0.0'")
+	If Not @error Then
+		$StatusbarToolTipText &= "Gateway: " & $Win32_IP4RouteTable.NextHop
+	Else
+		_Log("$Win32_IP4RouteTable @ERROR="&@error)
+	EndIF
 
-	; Get IP addresses
-	$Win32_NetworkAdapterConfiguration = _WMI("SELECT * FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True and DHCPEnabled = True")
-	If Not @error Then $StatusbarText &= $Delimiter & $Win32_NetworkAdapterConfiguration.IPAddress[0]
+	; Get the first IP address WMI provies (usually correct)
+	$Win32_NetworkAdapterConfiguration = _WMI("SELECT IPAddress FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True and DHCPEnabled = True")
+	If Not @error Then
+		; If an IP hasn't been aquired IPAddress wont be an array, this might also be the case if the NIC doesn't have IPv6
+		If IsArray($Win32_NetworkAdapterConfiguration.IPAddress) Then
+			$StatusbarText &= $Delimiter & $Win32_NetworkAdapterConfiguration.IPAddress[0]
+		Else
+			$StatusbarText &= $Delimiter & $Win32_NetworkAdapterConfiguration.IPAddress
+		EndIf
+	EndIf
 	$StatusbarToolTipText &= @CR & "Other IPs: " & @IPAddress1 & ", " & @IPAddress2 & ", " & @IPAddress3 & ", " & @IPAddress4
 
 	; Get memory information
@@ -622,11 +632,11 @@ Func _StatusBarUpdate()
 	$StatusbarText &= $Delimiter & Round($_MemStats[1] / 1024 / 1024) & "GB"
 
 	; Get CPU information
-	$Win32_Processor = _WMI("SELECT * FROM Win32_Processor")
+	$Win32_Processor = _WMI("SELECT NumberOfCores,NumberOfLogicalProcessors FROM Win32_Processor")
 	If Not @error Then $StatusbarText &= $Delimiter & $Win32_Processor.NumberOfCores & "/" & $Win32_Processor.NumberOfLogicalProcessors & " Cores"
 
 	; Get motherboard bios information
-	$Win32_BIOS = _WMI("SELECT * FROM Win32_BIOS")
+	$Win32_BIOS = _WMI("SELECT SerialNumber,SMBIOSBIOSVersion,ReleaseDate FROM Win32_BIOS")
 	If Not @error Then
 		If $Win32_BIOS.SerialNumber <> "" and $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 25)
 		$StatusbarText &= $Delimiter & "FW: " & $Win32_BIOS.SMBIOSBIOSVersion & " (" & StringLeft($Win32_BIOS.ReleaseDate, 8) & ")"
