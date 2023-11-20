@@ -45,7 +45,7 @@ $Run | ForEach-Object {
         try {
             $Mutex = [System.Threading.Mutex]::OpenExisting("Global\_MSIExecute")
             $Mutex.Dispose()
-            "Windows Installer is busy, waiting..."
+            _Log("Windows Installer is busy, waiting...")
         }
         catch {
             Start-Sleep 2
@@ -69,12 +69,12 @@ $Run | ForEach-Object {
 
         $Proc | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue
         if ($Proc.HasExited -eq $False) {
-            "Process still running, continuing anyway..."
+            _Log("Process still running, continuing anyway...")
         }
     }
 }
 
-"Complete, displaying prompt..."
+_Log("Complete, displaying prompt...")
 
 Start-Sleep 2
 
@@ -84,7 +84,7 @@ $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
 $MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 2 minutes, press 'ok' to remove now or 'cancel' to stop automatic removal.", 120, "Setup Helper", 1 + 32 + 4096)
 
 if ($MsgBox -eq 1 -or $MsgBox -eq -1) { 
-    "Deleting script folder"
+    _Log("Deleting script folder")
 
     # Change working directory so the folder can be deleted
     Set-Location ..
