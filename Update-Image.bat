@@ -113,6 +113,7 @@ if exist "%extrafiles2%\" ( robocopy "%extrafiles2%" "%mountpath%" /e /NFL /NDL 
 REM Remove extra files from image
 del "%mountpath%\Auto-saved*.xml"
 del "%mountpath%\NTLite.log"
+del "%mountpath%\Helper\Logon\_Log.log"
 
 if %pauseafter%==true ( pause ) else ( exit /B ) 
 goto mainmenu
