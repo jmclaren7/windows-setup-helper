@@ -1,13 +1,24 @@
 $MyInvocation.MyCommand.Path | Split-Path | Push-Location
 
-"Processing logon scripts..."
+# Log function
+Function _Log {
+    Param ([string]$LogString)
+    $Message = "$((Get-Date).toString("yyyy-MM-dd HH:mm:ss"))> $LogString"
+    $Message
+    Add-content "$($MyInvocation.MyCommand.Name).log" -value $Message
+}
 
+_Log("Processing logon scripts...")
 Start-Sleep 2
 
 # Safety check to make sure we're running on a new OS install, if not don't run anything or make changes
 $os = Get-WmiObject -Class Win32_OperatingSystem
 $installAge = [DateTime]::Now - $os.ConvertToDateTime($os.InstallDate)
-if ($installAge.Days -gt 1) { $Execute = $false } else { $Execute = $true }
+$Execute = $true 
+if ($installAge.Days -gt 1) { 
+    $Execute = $false
+    _Log("System is not new, skipping execution...")
+}
 
 # Set the file types to run
 $FileTypes = ('*.bat', '*.ps1', '*.exe', '*.reg', '*.cmd')
@@ -25,8 +36,8 @@ else {
 
 # Run each file in the list
 $Run | ForEach-Object {
-    $_.Name
-
+    _Log($_.Name)
+    
     Start-Sleep 2
 
     # Wait for Windows Installer to be available
@@ -67,15 +78,24 @@ $Run | ForEach-Object {
 
 Start-Sleep 2
 
+# Display a message box, if the user doesn't click 'cancel' the scripts will be removed automatically in 2 minutes
 # 1=Ok/Cancel 32=Question Mark 4096=Always on top (Undocumented?)
 $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
 $MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 2 minutes, press 'ok' to remove now or 'cancel' to stop automatic removal.", 120, "Setup Helper", 1 + 32 + 4096)
 
-if ($MsgBox -eq 1 ) { 
+if ($MsgBox -eq 1 -or $MsgBox -eq -1) { 
     "Deleting script folder"
-    Set-Location ..
-    If ($Execute) { Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force -ErrorAction SilentlyContinue }
 
+    # Change working directory so the folder can be deleted
+    Set-Location ..
+
+    If ($Execute) { 
+        Remove-Item -LiteralPath $(Split-Path -Parent $MyInvocation.MyCommand.Definition) -Recurse -Force -ErrorAction SilentlyContinue 
+
+        # Drop to powershell prompt
+        Powershell.exe -NoLogo
+    }
+
+   
 }
 
-Powershell.exe -NoLogo
