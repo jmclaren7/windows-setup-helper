@@ -35,23 +35,26 @@ OnAutoItExitRegister("_Exit")
 ; Fix for issues working in a 64-bit only environment
 _WinAPI_Wow64EnableWow64FsRedirection(False)
 
+; AutoIT options
 Opt("WinTitleMatchMode", -2)
 Opt("TrayIconHide", 1)
 
+; Make sure the working directory is the script directory
 FileChangeDir(@ScriptDir)
 
+; Miscellaneous global variables
 Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
 Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 2)
 Global $Version = "5.2.0." & $Date
 Global $Title = "Windows Setup Helper v" & $Version
-Global $GUIMain
 Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
-Global $StatusBar1
-Global $StatusbarTimer2
-Global $IsPE = StringInStr(@WindowsDir, "X:")
 Global $DoubleClick = False
+Global $SystemDrive = StringLeft(@SystemDir, 3)
+Global $IsPE = StringInStr(@SystemDir, "X:")
 Global $Debug = Not $IsPE
 
+_Log(@HomeDrive)
+; Some diagnostic information
 _Log($Title)
 _Log("$CmdLineRaw=" & $CmdLineRaw)
 _Log("@UserName=" & @UserName)
@@ -64,262 +67,252 @@ _Log("@TempDir=" & @TempDir)
 _Log("@WorkingDir=" & @WorkingDir)
 _Log("PATH=" & EnvGet("PATH"))
 
-; Check for command line parameters
-If $CmdLine[0] >= 1 Then
-	$Command = $CmdLine[1]
-Else
-	$Command = "winpe"
-EndIf
+; Run automatic setup scripts
+If $IsPE Then _RunMulti("PEAutoRun")
 
-_Log("Command: " & $Command)
+; Globals used by GUI
+Global $GUIMain
+Global $StatusBar1
+Global $StatusbarTimer2
 
-Switch $Command
-	Case "winpe"
+; Create main GUI
+#Region ### START Koda GUI section ###
+$GUIMain = GUICreate("$Title", 767, 543, -1, -1)
+$FileMenu = GUICtrlCreateMenu("&File")
+$AdvancedMenu = GUICtrlCreateMenu("&Advanced")
+$Tab1 = GUICtrlCreateTab(7, 4, 753, 495)
+$BootTabSheet = GUICtrlCreateTabItem("&")
+$Group5 = GUICtrlCreateGroup("WinPE Tools", 19, 37, 360, 452)
+$PERunButton = GUICtrlCreateButton("Run", 257, 454, 107, 25)
+$PEScriptTreeView = GUICtrlCreateTreeView(35, 61, 330, 385)
+GUICtrlCreateGroup("", -99, -99, 1, 1)
+$Group6 = GUICtrlCreateGroup("First Logon Scripts", 387, 37, 360, 452)
+$NormalInstallButton = GUICtrlCreateButton("Normal Install", 403, 454, 131, 25)
+$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 563, 454, 163, 25, $BS_DEFPUSHBUTTON)
+$PEInstallTreeView = GUICtrlCreateTreeView(404, 61, 330, 345, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
+$PEComputerNameInput = GUICtrlCreateInput("", 556, 422, 169, 21)
+$Label4 = GUICtrlCreateLabel("Computer Name", 476, 425, 80, 17)
+GUICtrlCreateGroup("", -99, -99, 1, 1)
+GUICtrlCreateTabItem("")
+$StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
+_GUICtrlStatusBar_SetSimple($StatusBar1)
+_GUICtrlStatusBar_SetText($StatusBar1, "")
+GUISetState(@SW_SHOW)
+#EndRegion ### END Koda GUI section ###
 
-		; Run automatic setup scripts
-		If $IsPE Then _RunMulti("PEAutoRun")
+; File Menu Items
+$MenuExitButton = GUICtrlCreateMenuItem("Exit", $FileMenu)
 
-		#Region ### START Koda GUI section ###
-		$GUIMain = GUICreate("$Title", 767, 543, -1, -1)
-		$FileMenu = GUICtrlCreateMenu("&File")
-		$AdvancedMenu = GUICtrlCreateMenu("&Advanced")
-		$Tab1 = GUICtrlCreateTab(7, 4, 753, 495)
-		$BootTabSheet = GUICtrlCreateTabItem("&")
-		$Group5 = GUICtrlCreateGroup("WinPE Tools", 19, 37, 360, 452)
-		$PERunButton = GUICtrlCreateButton("Run", 257, 454, 107, 25)
-		$PEScriptTreeView = GUICtrlCreateTreeView(35, 61, 330, 385)
-		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		$Group6 = GUICtrlCreateGroup("First Logon Scripts", 387, 37, 360, 452)
-		$NormalInstallButton = GUICtrlCreateButton("Normal Install", 403, 454, 131, 25)
-		$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 563, 454, 163, 25, $BS_DEFPUSHBUTTON)
-		$PEInstallTreeView = GUICtrlCreateTreeView(404, 61, 330, 345, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
-		$PEComputerNameInput = GUICtrlCreateInput("", 556, 422, 169, 21)
-		$Label4 = GUICtrlCreateLabel("Computer Name", 476, 425, 80, 17)
-		GUICtrlCreateGroup("", -99, -99, 1, 1)
-		GUICtrlCreateTabItem("")
-		$StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
-		_GUICtrlStatusBar_SetSimple($StatusBar1)
-		_GUICtrlStatusBar_SetText($StatusBar1, "")
-		GUISetState(@SW_SHOW)
-		#EndRegion ### END Koda GUI section ###
+; Advanced Menu Items
+$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $AdvancedMenu)
+$MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
+$MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
+$MenuRelistScripts = GUICtrlCreateMenuItem("Relist Tools && Scripts", $AdvancedMenu)
+$MenuListDebugTools = GUICtrlCreateMenuItem("List Debug && AutoRun Tools", $AdvancedMenu)
+$MenuInstallDisk0 = -1;GUICtrlCreateMenuItem("Auto Install To Disk 0", $AdvancedMenu)
 
-		; File Menu Items
-		$MenuExitButton = GUICtrlCreateMenuItem("Exit", $FileMenu)
+; GUI Post Creation Setup
+WinSetTitle($GUIMain, "", $Title)
+GUICtrlSendMsg($PEComputerNameInput, $EM_SETCUEBANNER, False, "(Optional)")
+GUICtrlSetLimit($PEComputerNameInput, 15)
 
-		; Advanced Menu Items
-		$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $AdvancedMenu)
-		$MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
-		$MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
-		$MenuRelistScripts = GUICtrlCreateMenuItem("Relist Tools && Scripts", $AdvancedMenu)
-		$MenuListDebugTools = GUICtrlCreateMenuItem("List Debug && AutoRun Tools", $AdvancedMenu)
-		$MenuInstallDisk0 = -1;GUICtrlCreateMenuItem("Auto Install To Disk 0", $AdvancedMenu)
+; Generate Script List
+_PopulateScripts($PEInstallTreeView, "Logon*")
+_PopulateScripts($PEScriptTreeView, "Tools*")
 
-		; GUI Post Creation Setup
-		WinSetTitle($GUIMain, "", $Title)
-		GUICtrlSendMsg($PEComputerNameInput, $EM_SETCUEBANNER, False, "(Optional)")
-		GUICtrlSetLimit($PEComputerNameInput, 15)
+; Variables used in GUI loop
+Local $hSetup
+Local $RebootPrompt = False
+Local $CopyAutoLogonFiles = False
+Local $Reboot = False
 
-		; Generate Script List
-		_PopulateScripts($PEInstallTreeView, "Logon*")
-		_PopulateScripts($PEScriptTreeView, "Tools*")
+; Start PE networking
+If $IsPE Then Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
 
-		Local $hSetup
-		Local $RebootPrompt = False
-		Local $CopyAutoLogonFiles = False
-		Local $Reboot = False
-		Local $BootDrive = StringLeft(@SystemDir, 3)
+; Set GUI Icon
+GUISetIcon($SystemDrive & "sources\setup.exe")
 
-		; Start PE networking
-		If $IsPE Then Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
+; Hide console windows
+_Log("Hide console window")
+WinSetState($Title & " Log", "", @SW_HIDE)
 
-		; Set GUI Icon
-		GUISetIcon($BootDrive & "sources\setup.exe")
+; Setup statusbar updates
+Global $StatusBarToolTip = _GUIToolTip_Create(0);BitOr($TTS_ALWAYSTIP, $TTS_NOPREFIX, $TTS_BALLOON)
+_GUIToolTip_AddTool($StatusBarToolTip, 0, " ", $StatusBar1)
+_GUIToolTip_SetMaxTipWidth($StatusBarToolTip, 400)
+AdlibRegister("_StatusBarUpdate", 4000)
+_StatusBarUpdate()
 
-		; Hide console windows
-		_Log("Hide console window")
-		WinSetState($Title & " Log", "", @SW_HIDE)
+; Setup double click detection for $PEScriptTreeView
+$HUser32DLL = DllOpen(@WindowsDir & "\System32\user32.dll")
+Global $hPEScriptTreeView = GUICtrlGetHandle($PEScriptTreeView)
+GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
 
-		; Setup statusbar updates
-		Global $StatusBarToolTip = _GUIToolTip_Create(0);BitOr($TTS_ALWAYSTIP, $TTS_NOPREFIX, $TTS_BALLOON)
-		_GUIToolTip_AddTool($StatusBarToolTip, 0, " ", $StatusBar1)
-		_GUIToolTip_SetMaxTipWidth($StatusBarToolTip, 400)
-		AdlibRegister("_StatusBarUpdate", 4000)
-		_StatusBarUpdate()
+_Log("Ready", True)
 
-		; Setup double click detection for $PEScriptTreeView
-		$HUser32DLL = DllOpen(@WindowsDir & "\System32\user32.dll")
-		Global $hPEScriptTreeView = GUICtrlGetHandle($PEScriptTreeView)
-		GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
+;GUI Loop
+While 1
+	$nMsgA = GUIGetMsg(1)
+	$nMsg = $nMsgA[0]
+	If $Debug And $nMsg > 0 Then _Log("MSG $nMsg=" & $nMsg)
+	Switch $nMsg
+		Case $GUI_EVENT_CLOSE, $MenuExitButton
+			If $nMsgA[1] <> $GUIMain Then ContinueLoop
+			If $IsPE And MsgBox(1, $Title, "Closing the program will reboot the system while in WinPE.") <> 1 Then ContinueLoop
+			Exit
 
-		_Log("Ready", True)
+		Case $MenuShowConsole
+			WinSetState($Title & " Log", "", @SW_SHOW)
 
-		;GUI Loop
-		While 1
-			$nMsgA = GUIGetMsg(1)
-			$nMsg = $nMsgA[0]
-			If $Debug And $nMsg > 0 Then _Log("MSG $nMsg=" & $nMsg)
-			Switch $nMsg
-				Case $GUI_EVENT_CLOSE, $MenuExitButton
-					If $nMsgA[1] <> $GUIMain Then ContinueLoop
-					If $IsPE And MsgBox(1, $Title, "Closing the program will reboot the system while in WinPE.") <> 1 Then ContinueLoop
-					Exit
+		Case $MenuRelistScripts
+			_GUICtrlTreeView_DeleteAll($PEInstallTreeView)
+			_GUICtrlTreeView_DeleteAll($PEScriptTreeView)
+			_PopulateScripts($PEInstallTreeView, "Logon*")
+			_PopulateScripts($PEScriptTreeView, "Tools*")
 
-				Case $MenuShowConsole
-					WinSetState($Title & " Log", "", @SW_SHOW)
+		Case $MenuListDebugTools
+			_PopulateScripts($PEScriptTreeView, "Debug")
+			_PopulateScripts($PEScriptTreeView, "PEAutoRun*")
 
-				Case $MenuRelistScripts
-					_GUICtrlTreeView_DeleteAll($PEInstallTreeView)
-					_GUICtrlTreeView_DeleteAll($PEScriptTreeView)
-					_PopulateScripts($PEInstallTreeView, "Logon*")
-					_PopulateScripts($PEScriptTreeView, "Tools*")
+		Case $MenuOpenLog
+			_Log("MenuOpenLog")
+			;_RunFile($LogFullPath) ; Not working in Win11 PE
+			ShellExecute("notepad.exe", $LogFullPath)
 
-				Case $MenuListDebugTools
-					_PopulateScripts($PEScriptTreeView, "Debug")
-					_PopulateScripts($PEScriptTreeView, "PEAutoRun*")
+		Case $MenuRunMain
+			_Log("MenuRunMain")
+			_RunFile("Main.au3")
 
-				Case $MenuOpenLog
-					_Log("MenuOpenLog")
-					;_RunFile($LogFullPath) ; Not working in Win11 PE
-					ShellExecute("notepad.exe", $LogFullPath)
+		Case $PERunButton
+			$Item = GUICtrlRead(GUICtrlRead($PEScriptTreeView), 1)
+			$Parent = GUICtrlRead(_GUICtrlTreeView_GetParentParam($PEScriptTreeView, GUICtrlRead($PEScriptTreeView)), 1)
 
-				Case $MenuRunMain
-					_Log("MenuRunMain")
-					_RunFile("Main.au3")
-
-				Case $PERunButton
-					$Item = GUICtrlRead(GUICtrlRead($PEScriptTreeView), 1)
-					$Parent = GUICtrlRead(_GUICtrlTreeView_GetParentParam($PEScriptTreeView, GUICtrlRead($PEScriptTreeView)), 1)
-
-					If IsString($Parent) Then
-						_RunFile(_GetTreeItemFullPath($Parent, $Item))
-					Else
-						_Log("Invalid treeitem")
-					EndIf
-
-				Case $NormalInstallButton
-					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/noreboot")
-					$CopyAutoLogonFiles = False
-					$RebootPrompt = True
-
-				Case $AutomatedInstallButton, $MenuInstallDisk0
-					If IsDeclared($hSetup) And ProcessExists($hSetup) Then
-						MsgBox(0, "Error - " & $Title, "Setup is already running, please close it first")
-						ContinueLoop
-					EndIf
-
-					If $nMsg = $MenuInstallDisk0 And MsgBox($MB_OKCANCEL, "Danger - " & $Title, "Setup will automaticly use disk 0 to install Windows") <> $IDOK Then ContinueLoop
-
-					$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
-					For $b = 0 To UBound($aAutoLogonCopy) - 1
-						_Log("TreeItem: " & $aAutoLogonCopy[$b])
-					Next
-
-					; Read the autounattend.xml file to memory
-					$sFileData = FileRead(@ScriptDir & "\autounattend.xml")
-
-					; Make modifications to autounattend.xml
-					$ComputerName = GUICtrlRead($PEComputerNameInput)
-					If $ComputerName <> "" Then
-						_Log("$ComputerName=" & $ComputerName)
-						$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>" & $ComputerName & "</ComputerName>")
-						_Log("StringReplace @extended=" & @extended)
-					EndIf
-
-					If $nMsg = $MenuInstallDisk0 Then
-						;$sFileData = StringReplace($sFileData, "", "")
-					EndIf
-
-					If @OSVersion = "WIN_10" Then
-						_Log("WIN_10")
-						$sFileData = StringReplace($sFileData, "Windows 11", "Windows 10")
-						_Log("StringReplace @extended=" & @extended)
-					EndIf
-
-					; Save modifications to autounattend.xml in new location
-					$AutounattendPath = @TempDir & "\autounattend.xml"
-					_Log("$AutounattendPath=" & $AutounattendPath)
-					$hAutounattend = FileOpen($AutounattendPath, $FO_OVERWRITE)
-					FileWrite($hAutounattend, $sFileData)
-					_Log("FileWrite @error=" & @error)
-					FileClose($hAutounattend)
-
-					$hSetup = _RunFile($BootDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
-
-					$CopyAutoLogonFiles = True
-
-			EndSwitch
-
-			; If a double click is detected on the PE Tools treeview run the script
-			If $DoubleClick Then
-				$DoubleClick = False
-				$Item = GUICtrlRead(GUICtrlRead($PEScriptTreeView), 1)
-				$Parent = GUICtrlRead(_GUICtrlTreeView_GetParentParam($PEScriptTreeView, GUICtrlRead($PEScriptTreeView)), 1)
-
-				If IsString($Parent) Then
-					_RunFile(_GetTreeItemFullPath($Parent, $Item))
-				Else
-					_Log("Invalid treeitem")
-				EndIf
-
+			If IsString($Parent) Then
+				_RunFile(_GetTreeItemFullPath($Parent, $Item))
+			Else
+				_Log("Invalid treeitem")
 			EndIf
 
-			If $CopyAutoLogonFiles And Not ProcessExists($hSetup) Then
-				_Log("Copy AutoLogon Files")
-				For $i = 65 To 91
-					$Drive = Chr($i) & ":"
-					$TestFile = $Drive & "\Windows\System32\Config\SYSTEM"
-					$Target = $Drive & "\Temp\Helper\"
+		Case $NormalInstallButton
+			$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot")
+			$CopyAutoLogonFiles = False
+			$RebootPrompt = True
 
-					If FileExists($TestFile) And _FileModifiedAge($TestFile) < 600000 Then
-						_Log("Found: " & $TestFile)
+		Case $AutomatedInstallButton, $MenuInstallDisk0
+			If IsDeclared($hSetup) And ProcessExists($hSetup) Then
+				MsgBox(0, "Error - " & $Title, "Setup is already running, please close it first")
+				ContinueLoop
+			EndIf
 
-						; Copy the answers file so it can be used with registry key method during oobe
-						; This is to deal with WDS overriding our answers file
-						; Doing this also requieres a registry value set in the install image
-						$Return = FileCopy($AutounattendPath, $Target, 1 + 8)
-						_Log("FileCopy: " & $AutounattendPath & " (" & $Return & ")")
+			If $nMsg = $MenuInstallDisk0 And MsgBox($MB_OKCANCEL, "Danger - " & $Title, "Setup will automaticly use disk 0 to install Windows") <> $IDOK Then ContinueLoop
 
-						; Copy the script that is run at Logon and runs the other scripts we copy
-						If UBound($aAutoLogonCopy) Then
-							$AutoLogonSource = @ScriptDir & "\Logon\.Autorun.ps1"
-							$Return = FileCopy($AutoLogonSource, $Target, 1 + 8)
-							_Log("FileCopy: " & $AutoLogonSource & " (" & $Return & ")")
-						EndIf
+			$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
+			For $b = 0 To UBound($aAutoLogonCopy) - 1
+				_Log("TreeItem: " & $aAutoLogonCopy[$b])
+			Next
 
-						; Copy selected files from the install list
-						For $iFile = 0 To UBound($aAutoLogonCopy) - 1
-							$Return = FileCopy($aAutoLogonCopy[$iFile], $Target, 1 + 8)
-							_Log("FileCopy: " & $aAutoLogonCopy[$iFile] & " (" & $Return & ")")
-						Next
+			; Read the autounattend.xml file to memory
+			$sFileData = FileRead(@ScriptDir & "\autounattend.xml")
 
-						FileCopy($LogFullPath, $Target & "pe.log")
+			; Make modifications to autounattend.xml
+			$ComputerName = GUICtrlRead($PEComputerNameInput)
+			If $ComputerName <> "" Then
+				_Log("$ComputerName=" & $ComputerName)
+				$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>" & $ComputerName & "</ComputerName>")
+				_Log("StringReplace @extended=" & @extended)
+			EndIf
 
-					EndIf
+			If $nMsg = $MenuInstallDisk0 Then
+				;$sFileData = StringReplace($sFileData, "", "")
+			EndIf
+
+			If @OSVersion = "WIN_10" Then
+				_Log("WIN_10")
+				$sFileData = StringReplace($sFileData, "Windows 11", "Windows 10")
+				_Log("StringReplace @extended=" & @extended)
+			EndIf
+
+			; Save modifications to autounattend.xml in new location
+			$AutounattendPath = @TempDir & "\autounattend.xml"
+			_Log("$AutounattendPath=" & $AutounattendPath)
+			$hAutounattend = FileOpen($AutounattendPath, $FO_OVERWRITE)
+			FileWrite($hAutounattend, $sFileData)
+			_Log("FileWrite @error=" & @error)
+			FileClose($hAutounattend)
+
+			$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
+
+			$CopyAutoLogonFiles = True
+
+	EndSwitch
+
+	; If a double click is detected on the PE Tools treeview run the script
+	If $DoubleClick Then
+		$DoubleClick = False
+		$Item = GUICtrlRead(GUICtrlRead($PEScriptTreeView), 1)
+		$Parent = GUICtrlRead(_GUICtrlTreeView_GetParentParam($PEScriptTreeView, GUICtrlRead($PEScriptTreeView)), 1)
+
+		If IsString($Parent) Then
+			_RunFile(_GetTreeItemFullPath($Parent, $Item))
+		Else
+			_Log("Invalid treeitem")
+		EndIf
+
+	EndIf
+
+	If $CopyAutoLogonFiles And Not ProcessExists($hSetup) Then
+		_Log("Copy AutoLogon Files")
+		For $i = 65 To 91
+			$Drive = Chr($i) & ":"
+			$TestFile = $Drive & "\Windows\System32\Config\SYSTEM"
+			$Target = $Drive & "\Temp\Helper\"
+
+			If FileExists($TestFile) And _FileModifiedAge($TestFile) < 600000 Then
+				_Log("Found: " & $TestFile)
+
+				; Copy the answers file so it can be used with registry key method during oobe
+				; This is to deal with WDS overriding our answers file
+				; Doing this also requieres a registry value set in the install image
+				$Return = FileCopy($AutounattendPath, $Target, 1 + 8)
+				_Log("FileCopy: " & $AutounattendPath & " (" & $Return & ")")
+
+				; Copy the script that is run at Logon and runs the other scripts we copy
+				If UBound($aAutoLogonCopy) Then
+					$AutoLogonSource = @ScriptDir & "\Logon\.Autorun.ps1"
+					$Return = FileCopy($AutoLogonSource, $Target, 1 + 8)
+					_Log("FileCopy: " & $AutoLogonSource & " (" & $Return & ")")
+				EndIf
+
+				; Copy selected files from the install list
+				For $iFile = 0 To UBound($aAutoLogonCopy) - 1
+					$Return = FileCopy($aAutoLogonCopy[$iFile], $Target, 1 + 8)
+					_Log("FileCopy: " & $aAutoLogonCopy[$iFile] & " (" & $Return & ")")
 				Next
-				If $i = 91 Then
-					_Log("Could not find windows install")
-					ContinueLoop
-				EndIf
 
-				$RebootPrompt = True
-				$CopyAutoLogonFiles = False
+				FileCopy($LogFullPath, $Target & "pe.log")
+
 			EndIf
+		Next
+		If $i = 91 Then
+			_Log("Could not find windows install")
+			ContinueLoop
+		EndIf
 
-			If $RebootPrompt Then
-				_Log("Reboot")
-				Beep(500, 1000)
-				$Return = MsgBox(1 + 48 + 262144, $Title, "Rebooting in 15 seconds", 15)
-				If $Return = $IDTIMEOUT Or $Return = $IDOK Then Exit
-				$RebootPrompt = False
-			EndIf
+		$RebootPrompt = True
+		$CopyAutoLogonFiles = False
+	EndIf
 
-			Sleep(10)
-		WEnd
+	If $RebootPrompt Then
+		_Log("Reboot")
+		Beep(500, 1000)
+		$Return = MsgBox(1 + 48 + 262144, $Title, "Rebooting in 15 seconds", 15)
+		If $Return = $IDTIMEOUT Or $Return = $IDOK Then Exit
+		$RebootPrompt = False
+	EndIf
 
-	Case Else
-		_Log("Command unknown")
+	Sleep(10)
+WEnd
 
-EndSwitch
 
 ;=========== =========== =========== =========== =========== =========== =========== ===========
 ;=========== =========== =========== =========== =========== =========== =========== ===========
@@ -339,6 +332,7 @@ Func _WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_WM_NOTIFY
 
+; Calculate the full path of a item from the GUI tree view
 Func _GetTreeItemFullPath($Parent, $Item)
 	Local $FullPath
 
@@ -357,6 +351,7 @@ Func _GetTreeItemFullPath($Parent, $Item)
 
 EndFunc   ;==>_GetTreeItemFullPath
 
+; Check to see if the same folder exists on other drives or if other folder start with the same name
 Func _GetSimilarPaths($Folder, $Path = Default)
 	If $Path = Default Then $Path = @ScriptDir
 
@@ -383,6 +378,7 @@ Func _GetSimilarPaths($Folder, $Path = Default)
 
 EndFunc   ;==>_GetSimilarPaths
 
+; List files from a folder and add them to a GUI tree view
 Func _PopulateScripts($TreeID, $Folder)
 	_Log("_PopulateScripts " & $Folder)
 
@@ -475,12 +471,7 @@ Func _PopulateScripts($TreeID, $Folder)
 
 EndFunc   ;==>_PopulateScripts
 
-Func _NotAdminMsg($hWnd = "")
-	_Log("_NotAdminMsg")
-	MsgBox($MB_OK, $Title, "Not running with admin rights.", 0, $hWnd)
-
-EndFunc   ;==>_NotAdminMsg
-
+; Run the slected items from a tree view or return a list of the selected items
 Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
 	_Log("_RunTreeView")
 
@@ -523,6 +514,7 @@ Func _RunMulti($Folder)
 	Return $Paths
 EndFunc   ;==>_RunMulti
 
+; Run all the files in a folder
 Func _RunFolder($Path)
 	_Log("_RunFolder " & $Path)
 	$FileArray = _FileListToArray($Path, "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
@@ -541,6 +533,7 @@ Func _RunFolder($Path)
 
 EndFunc   ;==>_RunFolder
 
+; Runs a file, automaticly handling file type and sub folders
 Func _RunFile($File, $Params = "", $WorkingDir = "")
 	_Log("_RunFile " & $File & " " & $Params)
 
@@ -586,6 +579,7 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 
 EndFunc   ;==>_RunFile
 
+; Update the status bar with new infromation
 Func _StatusBarUpdate()
 	Local $StatusbarText, $StatusbarToolTipText
 	Local $Delimiter = "  |  "
@@ -670,6 +664,7 @@ Func _StatusBarUpdate()
 	Return
 EndFunc   ;==>_StatusBarUpdate
 
+; Write to the log, prepend a timestamp, create a custom log GUI
 Func _Log($Msg, $Statusbar = False)
 	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC & "> "
 
@@ -703,6 +698,7 @@ Func _Log($Msg, $Statusbar = False)
 	Return $Msg
 EndFunc   ;==>_Log
 
+; Custom error handling, probably only good for running compiled
 Func _CommError()
 	Local $HexNumber
 	Local $strMsg
@@ -716,6 +712,7 @@ Func _CommError()
 
 EndFunc   ;==>_CommError
 
+; Custom exit function, called whenever a normal exit operation takes place
 Func _Exit()
 	_Log("End script " & $CmdLineRaw)
 
