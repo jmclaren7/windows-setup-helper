@@ -31,10 +31,10 @@ REM == Menu ========================================================
 set pauseafter=true
 cls
 echo.
-echo     Media folder = %mediapath%
-echo     Mount folder = %mountpath%
-echo     Helper files = %helperrepo%
-echo     Output ISO = %outputiso%
+echo       Media folder = %mediapath%
+echo       Mount folder = %mountpath%
+echo       Helper files = %helperrepo%
+echo       Output ISO = %outputiso%
 echo.
 echo  1. Mount boot.wim (Windows Image) from media folder
 echo  2. Open mounted image in explorer
@@ -46,6 +46,7 @@ echo  7. Make ISO from media folder (requires ADK)
 echo.
 echo  F. Automaticly run steps 1,4,5,7 (requires ADK)
 echo.  
+echo  Enter a selection...
 choice /C 1234567F /N
 goto mainmenu%errorlevel%
 
