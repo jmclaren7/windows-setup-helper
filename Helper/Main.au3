@@ -137,7 +137,7 @@ _Log("Hide console window")
 WinSetState($Title & " Log", "", @SW_HIDE)
 
 ; Setup statusbar updates
-Global $StatusBarToolTip = _GUIToolTip_Create(0);BitOr($TTS_ALWAYSTIP, $TTS_NOPREFIX, $TTS_BALLOON)
+Global $StatusBarToolTip = _GUIToolTip_Create(0)
 _GUIToolTip_AddTool($StatusBarToolTip, 0, " ", $StatusBar1)
 _GUIToolTip_SetMaxTipWidth($StatusBarToolTip, 400)
 AdlibRegister("_StatusBarUpdate", 4000)
@@ -551,7 +551,7 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 
 		Case "ps1"
 			_Log("  ps1")
-			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Unrestricted -File """ & $File & """ " & $Params
+			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Bypass -File """ & $File & """ " & $Params
 			_Log("$RunLine=" & $RunLine)
 			Return Run($RunLine, $WorkingDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 
