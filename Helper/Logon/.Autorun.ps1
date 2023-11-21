@@ -86,6 +86,7 @@ If ($args[0] -ne 'system') {
     # 1=Ok/Cancel 32=Question Mark 4096=Always on top (Undocumented?)
     $Wscript_Shell = New-Object -ComObject "Wscript.Shell"
     $MsgBox = $Wscript_Shell.Popup("Logon scripts finished, removing scripts in 2 minutes, press 'ok' to remove now or 'cancel' to stop automatic removal.", 120, "Setup Helper", 1 + 32 + 4096)
+    if ($MsgBox -eq -1) { _Log("Timeout") }
 
     if ($MsgBox -eq 1 -or $MsgBox -eq -1) { 
         _Log("Deleting script folder")
