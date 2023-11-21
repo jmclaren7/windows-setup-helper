@@ -1,4 +1,4 @@
-REM this is to help with programs that open an explorer dialog which navigates to a specific folder
+REM This is to prevent errors with programs that navigate to a profile folder automatically
 mkdir "%USERPROFILE%\Downloads"
 mkdir "%USERPROFILE%\Documents"
 mkdir "%USERPROFILE%\Desktop"
