@@ -104,7 +104,7 @@ GUISetState(@SW_SHOW)
 $MenuExitButton = GUICtrlCreateMenuItem("Exit", $FileMenu)
 
 ; Advanced Menu Items
-$MenuShowConsole = GUICtrlCreateMenuItem("Show Console", $AdvancedMenu)
+$MenuShowConsole = GUICtrlCreateMenuItem("Show Log Window", $AdvancedMenu)
 $MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
 $MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
 $MenuRelistScripts = GUICtrlCreateMenuItem("Relist Tools && Scripts", $AdvancedMenu)
