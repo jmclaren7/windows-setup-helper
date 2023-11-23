@@ -54,7 +54,7 @@ Global $Debug = Not $IsPE
 
 ; Globals used by _Log function
 Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
-Global $LogTitle = $Title
+Global $LogTitle = $Title & " Log"
 Global $LogFlushAlways = False
 Global $LogLevel = 1
 If $Debug Then $LogLevel = 3
@@ -139,7 +139,7 @@ GUISetIcon($SystemDrive & "sources\setup.exe")
 
 ; Hide console windows
 _Log("Hide console window")
-WinSetState($Title & " Log", "", @SW_HIDE)
+WinSetState($LogTitle, "", @SW_HIDE)
 
 ; Setup statusbar updates
 Global $StatusBarToolTip = _GUIToolTip_Create(0)
@@ -159,7 +159,7 @@ _Log("Ready")
 While 1
 	$nMsgA = GUIGetMsg(1)
 	$nMsg = $nMsgA[0]
-	If $Debug And $nMsg > 0 Then _Log("MSG $nMsg=" & $nMsg)
+	If $nMsg > 0 Then _Log("MSG $nMsg=" & $nMsg, 3)
 	Switch $nMsg
 		Case $GUI_EVENT_CLOSE, $MenuExitButton
 			If $nMsgA[1] <> $GUIMain Then ContinueLoop
@@ -636,11 +636,11 @@ Func _StatusBarUpdate()
 	For $i = 1 To Ubound($HelperStatusFiles) - 1
 		If _FileModifiedAge($HelperStatusFiles[$i]) < 10 * 1000 Then
 			$FileText = FileReadLine($HelperStatusFiles[$i], 1)
-			_Log("$FileText=" & $FileText)
+			_Log("$FileText=" & $FileText, 3)
 			If Not @error Then $StatusbarText &= $Delimiter & $FileText
 
 			$FileText = FileReadLine($HelperStatusFiles[$i], 2)
-			_Log("$FileText=" & $FileText)
+			_Log("$FileText=" & $FileText, 3)
 			If Not @error Then $StatusBarToolTipText &= @CRLF & $FileText
 
 		Else
@@ -652,18 +652,20 @@ Func _StatusBarUpdate()
 	; Update statusbar if the text changed
 	If _GUICtrlStatusBar_GetText($StatusBar1, 0) <> $StatusbarText Then
 		_GUICtrlStatusBar_SetText($StatusBar1, $StatusbarText)
-		If $Debug Then _Log("Statusbar Updated")
+		_Log("Statusbar Updated", 3)
 	EndIf
 
 	; Update statusbar tool tip if the text changed
 	If _GUIToolTip_GetText($StatusBarToolTip, 0, $StatusBar1) <> $StatusBarToolTipText Then
 		_GUIToolTip_UpdateTipText($StatusBarToolTip, 0, $StatusBar1, $StatusBarToolTipText)
-		If $Debug Then _Log("Statusbar Tooltip Updated")
+		_Log("Statusbar Tooltip Updated", 3)
 	EndIf
 
+
+
 	If $Debug Then
-		_Log("_StatusBarUpdate Timer: " & Round(TimerDiff($StatusBarTimer1)) & "ms " & Round($StatusBarTimer2Value) & "ms")
 		$StatusBarTimer2 = TimerInit()
+		_Log("_StatusBarUpdate Timer: " & Round(TimerDiff($StatusBarTimer1)) & "ms " & Round($StatusBarTimer2Value) & "ms")
 	EndIf
 
 	Return
