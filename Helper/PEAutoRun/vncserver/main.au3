@@ -32,7 +32,7 @@ $SetPort = IniRead($Settings, "Settings", "port", "5900" )
 Global $SetPass = IniRead($Settings, "Settings", "password", "vncwatch" )
 
 ; Convert password to VNC hex and write to registry
-$Run = Run(@ComSpec & " /c " & 'vncpassword.exe ' & $SetPass, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+$Run = Run(@ComSpec & " /c " & 'vncpassword\vncpassword.exe ' & $SetPass, "", @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 _Log("Run: " & $Run & " " & @error)
 
 Local $Read
