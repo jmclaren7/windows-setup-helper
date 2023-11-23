@@ -43,7 +43,6 @@ Opt("TrayIconHide", 1)
 FileChangeDir(@ScriptDir)
 
 ; Miscellaneous global variables
-Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
 Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 2)
 Global $Version = "5.2.0." & $Date
 Global $Title = "Windows Setup Helper v" & $Version
@@ -53,7 +52,13 @@ Global $SystemDrive = StringLeft(@SystemDir, 3)
 Global $IsPE = StringInStr(@SystemDir, "X:")
 Global $Debug = Not $IsPE
 
-_Log(@HomeDrive)
+; Globals used by _Log function
+Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
+Global $LogTitle = $Title
+Global $LogFlushAlways = False
+Global $LogLevel = 1
+If $Debug Then $LogLevel = 3
+
 ; Some diagnostic information
 _Log($Title)
 _Log("$CmdLineRaw=" & $CmdLineRaw)
@@ -148,7 +153,7 @@ $HUser32DLL = DllOpen(@WindowsDir & "\System32\user32.dll")
 Global $hPEScriptTreeView = GUICtrlGetHandle($PEScriptTreeView)
 GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
 
-_Log("Ready", True)
+_Log("Ready")
 
 ;GUI Loop
 While 1
@@ -657,46 +662,12 @@ Func _StatusBarUpdate()
 	EndIf
 
 	If $Debug Then
-		_Log("  _StatusBarUpdate Timers: " & Round(TimerDiff($StatusBarTimer1)) & "ms " & Round($StatusBarTimer2Value) & "ms")
+		_Log("_StatusBarUpdate Timer: " & Round(TimerDiff($StatusBarTimer1)) & "ms " & Round($StatusBarTimer2Value) & "ms")
 		$StatusBarTimer2 = TimerInit()
 	EndIf
 
 	Return
 EndFunc   ;==>_StatusBarUpdate
-
-; Write to the log, prepend a timestamp, create a custom log GUI
-Func _Log($Msg, $Statusbar = False)
-	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC & "> "
-
-	If Not IsDeclared("_LogEdit") Then
-		Global $_LogWindow = GUICreate($Title & " Log", 750, 450, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX))
-		Global $_LogEdit = GUICtrlCreateEdit("", 0, 0, 750, 450, BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
-		GUICtrlSetFont(-1, 10, 400, 0, "Consolas")
-		GUICtrlSetColor(-1, 0xFFFFFF)
-		GUICtrlSetBkColor(-1, 0x000000)
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
-		GUISetState(@SW_SHOW)
-		_GUICtrlEdit_AppendText($_LogEdit, $Msg)
-	Else
-
-		_GUICtrlEdit_BeginUpdate($_LogEdit)
-		_GUICtrlEdit_AppendText($_LogEdit, @CRLF & $Msg)
-		_GUICtrlEdit_LineScroll($_LogEdit, -StringLen($Msg), _GUICtrlEdit_GetLineCount($_LogEdit))
-		_GUICtrlEdit_EndUpdate($_LogEdit)
-
-	EndIf
-
-	If $Statusbar Then _GUICtrlStatusBar_SetText($Statusbar, $Msg)
-
-	ConsoleWrite($sTime & $Msg & @CRLF)
-
-	If IsDeclared("LogFullPath") Then
-		If Not IsDeclared("_hLogFile") Then Global $_hLogFile = FileOpen($LogFullPath, $FO_APPEND)
-		FileWrite($_hLogFile, $sTime & $Msg & @CRLF)
-	EndIf
-
-	Return $Msg
-EndFunc   ;==>_Log
 
 ; Custom error handling, probably only good for running compiled
 Func _CommError()
