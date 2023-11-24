@@ -8,7 +8,7 @@ The objective is to leave the Windows install image (install.wim) completely unm
 
 While many other solutions for custom WindowsPE exist, very few integrate the Windows installer, all of them use tools and GUIs that are closed source and difficult to trust.
 
-To use Windows Setup Helper you'll need to add the project files to a WinPE image (sources\boot.wim) along with your custom scripts and tools. It's recommended to us the "Prepare Using NTLite" instructions below.
+To use Windows Setup Helper you'll need to add the project files to a WinPE image (sources\boot.wim) along with your custom scripts and tools.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/Screenshot1.png?raw=true">
@@ -78,7 +78,7 @@ Using NTLite can be a convenient way to modify Windows install media and then cr
 
 ## Prepare Using DSIM
 
-Using DSIM is more advanced but can be faster for repeatedly creating the ISO by using the I've created (Update-Image.bat)
+Using DSIM is more advanced but can be faster for repeatedly creating the ISO by using the script I've created (Update-Image.bat)
 
 ### Prerequisites
 
