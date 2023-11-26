@@ -3,7 +3,7 @@ Call :Admin
 cls
 
 REM == Settings You Need To Change =================================
-REM The location of the extraced install media (no trailing slash)
+REM The location of the extracted install media (no trailing slash)
 set mediapath=D:\Windows Images\11-23H2
 
 REM Extra files that you want to add to the image (no trailing slash)
@@ -44,7 +44,7 @@ echo  5. Unmount and commit changes to WIM
 echo  6. Unmount, discard changes and cleanup (use if mounted image is stuck)
 echo  7. Make ISO from media folder (requires ADK)
 echo.
-echo  F. Automaticly run steps 1,4,5,7 (requires ADK)
+echo  F. Automatically run steps 1,4,5,7 (requires ADK)
 echo.  
 echo  Enter a selection...
 choice /C 1234567F /N
