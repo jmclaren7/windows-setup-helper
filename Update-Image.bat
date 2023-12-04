@@ -39,15 +39,16 @@ echo.
 echo  1. Mount boot.wim (Windows Image) from media folder
 echo  2. Open mounted image in explorer
 echo  3. Add packages to mounted image (requires ADK)
-echo  4. Copy files to mounted image
+echo  4. Copy Helper files to mounted image
 echo  5. Unmount and commit changes to WIM
 echo  6. Unmount, discard changes and cleanup (use if mounted image is stuck)
 echo  7. Make ISO from media folder (requires ADK)
+echo  8. Get image information
 echo.
 echo  F. Automatically run steps 1,4,5,7 (requires ADK)
 echo.  
 echo  Enter a selection...
-choice /C 1234567F /N
+choice /C 1234567F8 /N
 goto mainmenu%errorlevel%
 
 
@@ -184,6 +185,17 @@ call :mainmenu7
 
 pause
 goto mainmenu
+
+REM == Get Information =============================================
+:mainmenu9
+
+Dism /Get-MountedImageInfo 
+Dism /Get-ImageInfo /imagefile:"%sourcewim%"
+
+pause 
+goto mainmenu
+
+
 
 REM == Check For Admin =============================================
 :Admin
