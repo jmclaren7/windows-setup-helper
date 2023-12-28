@@ -84,7 +84,7 @@ Using DSIM is more advanced but can be faster for repeatedly creating the ISO by
 
 - Download and extract a Windows installer ISO (https://www.microsoft.com/software-download/windows11)
 - Download and install Windows ADK and the PE add-on (https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install)
-- Configure Update-Image.bat with the correct directory path to the extracted files and choose a ISO output path
+- Configure Update-Image.bat with the correct directory path to the extracted files and choose an ISO output path
 
 ### Running the script
 
