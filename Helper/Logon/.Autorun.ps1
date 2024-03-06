@@ -5,7 +5,7 @@ Function _Log {
     Param ([string]$LogString)
     $Message = "$((Get-Date).toString("yyyy-MM-dd HH:mm:ss"))> $LogString"
     $Message
-    Add-content "$($MyInvocation.MyCommand.Name).log" -value $Message
+    Add-content "$(Split-Path -Path $PSCommandPath -Leaf).log" -value $Message
 }
 
 _Log("Processing logon scripts...")
@@ -68,14 +68,20 @@ $Run | ForEach-Object {
             $Proc = Start-Process $_.FullName -PassThru
         }
 
-        Start-Sleep 2
 
         # If the file name noes not have [background] in it, wait for it to finish for 20 seconds
         if ($_.Name -notlike '*`[background`]*') { 
-            _Log("Waiting for process to finish...")
-            $Proc | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue
+
+            Start-Sleep 2
+
             if ($Proc.HasExited -eq $False) {
-                _Log("Process still running, continuing anyway...")
+                _Log("Waiting for process to finish...")
+
+                $Proc | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue
+
+                if ($Proc.HasExited -eq $False) {
+                    _Log("Process still running, continuing anyway...")
+                }
             }
         }
 
