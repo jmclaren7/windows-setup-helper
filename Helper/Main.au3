@@ -267,7 +267,7 @@ While 1
 
 	If $CopyAutoLogonFiles And Not ProcessExists($hSetup) Then
 		_Log("Copy AutoLogon Files")
-		For $i = 65 To 91
+		For $i = 65 To 90 ; 65=A 90=Z
 			$Drive = Chr($i) & ":"
 			$TestFile = $Drive & "\Windows\System32\Config\SYSTEM"
 			$Target = $Drive & "\Temp\Helper\"
@@ -298,7 +298,7 @@ While 1
 
 			EndIf
 		Next
-		If $i = 91 Then
+		If $i = 90 Then
 			_Log("Could not find windows install")
 			ContinueLoop
 		EndIf
@@ -638,7 +638,7 @@ Func _StatusBarUpdate()
 	$Win32_BIOS = _WMI("SELECT SerialNumber,SMBIOSBIOSVersion,ReleaseDate FROM Win32_BIOS")
 	If Not @error Then
 		If $Win32_BIOS.SerialNumber <> "" and $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 25)
-		$StatusbarText &= $Delimiter & "FW: " & $Win32_BIOS.SMBIOSBIOSVersion & " (" & StringLeft($Win32_BIOS.ReleaseDate, 8) & ")"
+		$StatusbarText &= $Delimiter & "FW: " & StringLeft($Win32_BIOS.SMBIOSBIOSVersion, 25) & " (" & StringLeft($Win32_BIOS.ReleaseDate, 8) & ")"
 	EndIf
 
 	; Get additional statusbar and tool tip text
