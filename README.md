@@ -64,6 +64,25 @@ Note: Full 64 bit is required in a 64 bit WindowsPE Environment
   - USB:\Helper\ToolsAV
   - USB:\Helper\LogonMisc
 
+## Prepare Using DSIM
+
+Using DSIM is the recommended way to update Windows images (wim), it's more advanced but can be faster for repeatedly creating the ISO. I've created a script (Update-Image.bat) to help automate the process.
+
+### Prerequisites
+
+- Download and extract a Windows installer ISO (https://www.microsoft.com/software-download/windows11) 
+- Download and install Windows ADK and the PE add-on (https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install)
+- Configure Update-Image.bat with the correct path to the directory containing the extracted files, choose an ISO output path and review the additional options noted in the script
+
+### Running the script
+
+1. Run Update-Image.bat with administrator privileges
+2. Either select the individual step you want or select F to go through the entire process
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/update-image1.png?raw=true">
+</p>
+
 ## Prepare Using NTLite
 
 Using NTLite can be a convenient way to modify Windows install media and then create an ISO
@@ -75,25 +94,6 @@ Using NTLite can be a convenient way to modify Windows install media and then cr
 4. Apply image
    - The Apply options allow you to "remove nonessential editions", removing all but your preferred image is recommended (Windows 11 Pro)
 5. Create ISO
-
-## Prepare Using DSIM
-
-Using DSIM is more advanced but can be faster for repeatedly creating the ISO by using the script I've created (Update-Image.bat)
-
-### Prerequisites
-
-- Download and extract a Windows installer ISO (https://www.microsoft.com/software-download/windows11)
-- Download and install Windows ADK and the PE add-on (https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install)
-- Configure Update-Image.bat with the correct directory path to the extracted files and choose an ISO output path
-
-### Running the script
-
-1. Run Update-Image.bat with administrator privileges
-2. Either select the individual step you want or select F to go through the entire process
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/update-image1.png?raw=true">
-</p>
 
 ## Create Bootable USB From ISO
 
