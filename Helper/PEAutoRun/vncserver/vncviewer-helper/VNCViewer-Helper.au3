@@ -7,145 +7,124 @@
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #include <Array.au3>
-#include <GuiListView.au3>
-
-
 #include <ButtonConstants.au3>
 #include <EditConstants.au3>
 #include <GUIConstantsEx.au3>
+#include <GuiListView.au3>
 #include <GuiStatusBar.au3>
 #include <ListViewConstants.au3>
 #include <StaticConstants.au3>
 #include <WindowsConstants.au3>
 
+Global $Title = "VNCViewer Helper"
+Global $ViewerFullPath = @TempDir & "\tvnviewer.exe"
+
 ConsoleWrite(@CRLF&"Start"&@CRLF)
 
 
-If $CmdLine[0] >= 1 Then
-	$Command = $CmdLine[1]
-Else
-	$Command = ""
-EndIf
-
-_Log("Command: " & $Command)
-
-Switch $Command
-	Case "worker"
-		Opt("TCPTimeout", 50)
-		TCPStartup()
-		;$iSocket = TCPConnect($IP, GUICtrlRead ($PortInput))
+Opt("GUIOnEventMode", 1)
+Opt("TCPTimeout", 60)
 
 
-	Case Else
-		Opt("GUIOnEventMode", 1)
-		Opt("TCPTimeout", 60)
+TCPStartup()
 
-		Global $ViewerFullPath = @TempDir & "\tvnviewer.exe"
-		FileInstall("tvnviewer.exe", $ViewerFullPath)
+Global $PortInput, $PasswordInput, $HostListView
+$IPDefault = _DefaultIPRange()
 
-		TCPStartup()
+ConsoleWrite("GUI"&@CRLF)
 
-		Global $Title = "VNCWatch"
-		Global $PortInput, $PasswordInput, $HostListView
+#Region ### START Koda GUI section
+$MainGUI = GUICreate("VNCWatch", 371, 204, -1, -1)
+$Button1 = GUICtrlCreateButton("Connect", 184, 153, 179, 25)
+$PortInput = GUICtrlCreateInput("5950", 8, 21, 153, 21)
+$PasswordInput = GUICtrlCreateInput("vncwatch", 8, 64, 153, 21, $ES_PASSWORD)
+$Label2 = GUICtrlCreateLabel("Port", 8, 4, 23, 17)
+GUICtrlCreateLabel("Password", 8, 47, 50, 17)
+$AutoConnectCheckbox = GUICtrlCreateCheckbox("Automatically Connect", 8, 134, 153, 17)
+GUICtrlSetState(-1, $GUI_UNCHECKED)
+$HostListView = GUICtrlCreateListView("", 184, 8, 178, 142, BitOR($GUI_SS_DEFAULT_LISTVIEW,$LVS_SMALLICON,$LVS_NOCOLUMNHEADER,$LVS_NOLABELWRAP,$LVS_AUTOARRANGE,$WS_VSCROLL))
+GUICtrlSendMsg(-1, $LVM_SETCOLUMNWIDTH, 0, 178)
+$Input1 = GUICtrlCreateInput($IPDefault, 8, 106, 153, 21)
+GUICtrlCreateLabel("IP Range (CIDR)", 9, 89, 84, 17)
+$StatusBar1 = _GUICtrlStatusBar_Create($MainGUI)
+GUISetState(@SW_SHOW)
+#EndRegion ### END Koda GUI section ###
 
-		$IPDefault = _DefaultIPRange()
-		$IPDefault = "10.7.55.*"
+GUISetOnEvent($GUI_EVENT_CLOSE, "_Exit")
+GUICtrlSetOnEvent($Button1, "_Connect" )
 
-		ConsoleWrite("GUI"&@CRLF)
+Global $aListViewItems[0]
 
-		#Region ### START Koda GUI section
-		$MainGUI = GUICreate("VNCWatch", 371, 204, -1, -1)
-		$Button1 = GUICtrlCreateButton("Connect", 184, 153, 179, 25)
-		$PortInput = GUICtrlCreateInput("5950", 8, 21, 153, 21)
-		$PasswordInput = GUICtrlCreateInput("vncwatch", 8, 64, 153, 21, $ES_PASSWORD)
-		$Label2 = GUICtrlCreateLabel("Port", 8, 4, 23, 17)
-		GUICtrlCreateLabel("Password", 8, 47, 50, 17)
-		$AutoConnectCheckbox = GUICtrlCreateCheckbox("Automatically Connect", 8, 134, 153, 17)
-		GUICtrlSetState(-1, $GUI_UNCHECKED)
-		$HostListView = GUICtrlCreateListView("", 184, 8, 178, 142, BitOR($GUI_SS_DEFAULT_LISTVIEW,$LVS_SMALLICON,$LVS_NOCOLUMNHEADER,$LVS_NOLABELWRAP,$LVS_AUTOARRANGE,$WS_VSCROLL))
-		GUICtrlSendMsg(-1, $LVM_SETCOLUMNWIDTH, 0, 178)
-		$Input1 = GUICtrlCreateInput($IPDefault, 8, 106, 153, 21)
-		GUICtrlCreateLabel("IP Range (CIDR)", 9, 89, 84, 17)
-		$StatusBar1 = _GUICtrlStatusBar_Create($MainGUI)
-		GUISetState(@SW_SHOW)
-		#EndRegion ### END Koda GUI section ###
+ConsoleWrite("Ready"&@CRLF)
 
-		GUISetOnEvent($GUI_EVENT_CLOSE, "_Exit")
-		GUICtrlSetOnEvent($Button1, "_Connect" )
+While 1
+	$IPInput = GUICtrlRead ($Input1)
+	$aIPList = _GetIpAddressList($IPInput)
+	_GUICtrlStatusBar_SetText($StatusBar1, "Scanning... " & Ubound($aIPList))
 
-		Global $aListViewItems[0]
+	For $i = 0 To Ubound($aIPList)-1
+		$IP = $aIPList[$i]
+		;ConsoleWrite("$IP="&$IP&@CRLF)
+		_GUICtrlStatusBar_SetText($StatusBar1, "Scanning: "&$IP)
+		If $IPInput <> GUICtrlRead ($Input1) Then ExitLoop
 
-		ConsoleWrite("Ready"&@CRLF)
+		$iSocket = TCPConnect($IP, GUICtrlRead ($PortInput))
+		ConsoleWrite("TCPConnect: "&@error&@CRLF)
 
-		While 1
-			$IPInput = GUICtrlRead ($Input1)
-			$aIPList = _GetIpAddressList($IPInput)
-			_GUICtrlStatusBar_SetText($StatusBar1, "Scanning... " & Ubound($aIPList))
+		If $iSocket > 0 Then
+			$MarkedForRemoval = False
 
-			For $i = 0 To Ubound($aIPList)-1
-				$IP = $aIPList[$i]
-				;ConsoleWrite("$IP="&$IP&@CRLF)
-				_GUICtrlStatusBar_SetText($StatusBar1, "Scanning: "&$IP)
-				If $IPInput <> GUICtrlRead ($Input1) Then ExitLoop
+			ConsoleWrite("Success: " & $IP & @CRLF)
+			If _GUICtrlListView_FindText($HostListView, $IP, -1, False) = -1 Then
+				$ListViewItem = GUICtrlCreateListViewItem($IP, $HostListView)
+				ConsoleWrite("Added " & $IP & @CRLF)
 
-				$iSocket = TCPConnect($IP, GUICtrlRead ($PortInput))
-				ConsoleWrite("TCPConnect: "&@error&@CRLF)
+				If GUICtrlRead($AutoconnectCheckbox) = $GUI_CHECKED Then
+					$Index = _GUICtrlListView_FindText($HostListView, $IP, -1, False)
+					ConsoleWrite("Index: "&$Index&@CRLF)
+					$Return = _GUICtrlListView_SetItemSelected($HostListView, $Index, True, True)
+					ConsoleWrite("Return: "&$Return&@CRLF)
 
-				If $iSocket > 0 Then
+					_Connect()
+				Endif
+
+				$iLV_Width = 0
+				For $b = 0 To 2
+					GUICtrlSendMsg($HostListView, $LVM_SETCOLUMNWIDTH, $b, $LVSCW_AUTOSIZE)
+					;$iLV_Width += GUICtrlSendMsg($List1, $LVM_GETCOLUMNWIDTH, $b, 0)
+				Next
+			EndIf
+
+		Else
+			;ConsoleWrite("Failed: " & $IP & @CRLF)
+			$ListItemIndex = _GUICtrlListView_FindText($HostListView, $IP, -1, False, True)
+			If $ListItemIndex <> -1 Then
+				ConsoleWrite("$ListItemIndex=" & $ListItemIndex & @CRLF)
+				If $MarkedForRemoval = True Then
+					_GUICtrlListView_DeleteItem($HostListView, $ListItemIndex)
+					ConsoleWrite("Removed " & $IP & @CRLF)
 					$MarkedForRemoval = False
-
-					ConsoleWrite("Success: " & $IP & @CRLF)
-					If _GUICtrlListView_FindText($HostListView, $IP, -1, False) = -1 Then
-						$ListViewItem = GUICtrlCreateListViewItem($IP, $HostListView)
-						ConsoleWrite("Added " & $IP & @CRLF)
-
-						If GUICtrlRead($AutoconnectCheckbox) = $GUI_CHECKED Then
-							$Index = _GUICtrlListView_FindText($HostListView, $IP, -1, False)
-							ConsoleWrite("Index: "&$Index&@CRLF)
-							$Return = _GUICtrlListView_SetItemSelected($HostListView, $Index, True, True)
-							ConsoleWrite("Return: "&$Return&@CRLF)
-
-							_Connect()
-						Endif
-
-						$iLV_Width = 0
-						For $b = 0 To 2
-							GUICtrlSendMsg($HostListView, $LVM_SETCOLUMNWIDTH, $b, $LVSCW_AUTOSIZE)
-							;$iLV_Width += GUICtrlSendMsg($List1, $LVM_GETCOLUMNWIDTH, $b, 0)
-						Next
-					EndIf
-
 				Else
-					;ConsoleWrite("Failed: " & $IP & @CRLF)
-					$ListItemIndex = _GUICtrlListView_FindText($HostListView, $IP, -1, False, True)
-					If $ListItemIndex <> -1 Then
-						ConsoleWrite("$ListItemIndex=" & $ListItemIndex & @CRLF)
-						If $MarkedForRemoval = True Then
-							_GUICtrlListView_DeleteItem($HostListView, $ListItemIndex)
-							ConsoleWrite("Removed " & $IP & @CRLF)
-							$MarkedForRemoval = False
-						Else
-							$MarkedForRemoval = True
-							TCPCloseSocket($iSocket)
-							Sleep(200)
-							$i = $i - 1
-						EndIf
-
-
-					Endif
-
-
+					$MarkedForRemoval = True
+					TCPCloseSocket($iSocket)
+					Sleep(200)
+					$i = $i - 1
 				EndIf
 
-				TCPCloseSocket($iSocket)
-			Next
 
-			Sleep(10)
-		WEnd
+			Endif
 
-		TCPShutdown()
 
-EndSwitch
+		EndIf
+
+		TCPCloseSocket($iSocket)
+	Next
+
+	Sleep(10)
+WEnd
+
+TCPShutdown()
+
 ;=========== =========== =========== =========== =========== =========== =========== ===========
 
 Func _DefaultIPRange()
@@ -181,6 +160,7 @@ Func _Connect()
 		Local $IP = _GUICtrlListView_GetItemText($HostListView, $Selected)
 		$Execute = $ViewerFullPath & " " & $IP & "::" & GUICtrlRead ($PortInput) & " -password=" & GUICtrlRead ($PasswordInput)
 		ConsoleWrite("$Execute=" & $Execute & @CRLF)
+		FileInstall("tvnviewer.exe", $ViewerFullPath)
 		If $IP <> "" Then Run(@ComSpec & " /c " & $Execute, "", @SW_HIDE)
 	Endif
 
