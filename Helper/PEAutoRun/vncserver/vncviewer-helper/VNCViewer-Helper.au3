@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=icon.ico
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.46
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.48
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=y
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -50,6 +50,7 @@ $StatusBar1 = _GUICtrlStatusBar_Create($MainGUI)
 GUISetState(@SW_SHOW)
 #EndRegion ### END Koda GUI section ###
 
+WinSetTitle($MainGUI, "", $Title)
 GUISetOnEvent($GUI_EVENT_CLOSE, "_Exit")
 GUICtrlSetOnEvent($Button1, "_Connect" )
 
