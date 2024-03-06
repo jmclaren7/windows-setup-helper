@@ -43,9 +43,9 @@ Opt("TrayIconHide", 1)
 FileChangeDir(@ScriptDir)
 
 ; Miscellaneous global variables
-Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 2)
-Global $Version = "5.2.0." & $Date
-Global $Title = "Windows Setup Helper v" & $Version
+Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 6)
+Global $Version = "5.3"
+Global $Title = "Windows Setup Helper v" & $Version & " (" & $Date & ")"
 Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
 Global $DoubleClick = False
 Global $SystemDrive = StringLeft(@SystemDir, 3)
