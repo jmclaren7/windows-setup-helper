@@ -13,6 +13,8 @@ set extrafiles2=D:\Windows Images\Additions-Macrium
 REM The path where you want to save an ISO file
 set outputiso=D:\Windows Images\Windows.iso
 
+REM The index of the boot.wim image you want to modify, usually 2 for an unmodified Windows 10/11 boot.wim
+set wimindex=2
 
 REM == Other Paths =================================================
 set helperrepo=%~dp0
@@ -56,7 +58,7 @@ REM == Mount =======================================================
 :mainmenu1
 
 mkdir %mountpath%
-Dism /Mount-image /imagefile:"%sourcewim%" /Index:1 /MountDir:"%mountpath%" /optimize
+Dism /Mount-image /imagefile:"%sourcewim%" /Index:%wimindex% /MountDir:"%mountpath%" /optimize
 
 if %pauseafter%==true ( pause ) else ( exit /B ) 
 goto mainmenu
