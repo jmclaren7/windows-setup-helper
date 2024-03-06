@@ -33,6 +33,7 @@ Many of the tools I normally add aren't included here because I'm uncertain if t
 - Explorer++
 - Nirsoft's SearchMyFiles, DevManView, FullEventLogView
 - Sysinternal's disk2vhd64
+- Seamonkey (Open source web browser based on Firefox)
 
 ## Other Useful Tools
 
