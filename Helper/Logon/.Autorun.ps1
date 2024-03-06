@@ -29,10 +29,10 @@ $Run = Get-ChildItem -Include $FileTypes -Exclude '.*' -Recurse -Depth 0
 
 # Filter out system files unless specified
 if ($args[0] -eq 'system') {
-    $Run = $Run | Where-Object { $_.Name.Substring($_.Name.Length - 9) -like '*.sys.*' }
+    $Run = $Run | Where-Object { $_.Name -like '*`[system`]*' }
 }
 else {
-    $Run = $Run | Where-Object { $_.Name.Substring($_.Name.Length - 9) -notlike '*.sys.*' }
+    $Run = $Run | Where-Object { $_.Name -notlike '*`[system`]*' }
 }
 
 # Run each file in the list
@@ -68,10 +68,17 @@ $Run | ForEach-Object {
             $Proc = Start-Process $_.FullName -PassThru
         }
 
-        $Proc | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue
-        if ($Proc.HasExited -eq $False) {
-            _Log("Process still running, continuing anyway...")
+        Start-Sleep 2
+
+        # If the file name noes not have [background] in it, wait for it to finish for 20 seconds
+        if ($_.Name -notlike '*`[background`]*') { 
+            _Log("Waiting for process to finish...")
+            $Proc | Wait-Process -Timeout 20 -ErrorAction SilentlyContinue
+            if ($Proc.HasExited -eq $False) {
+                _Log("Process still running, continuing anyway...")
+            }
         }
+
     }
 }
 
