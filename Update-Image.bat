@@ -57,9 +57,14 @@ goto mainmenu%errorlevel%
 REM == Mount =======================================================
 :mainmenu1
 
+echo.
+echo Mounting image to: %mountpath%
+echo.
+
 mkdir %mountpath%
 Dism /Mount-image /imagefile:"%sourcewim%" /Index:%wimindex% /MountDir:"%mountpath%" /optimize
 
+echo.
 if %pauseafter%==true ( pause ) else ( exit /B ) 
 goto mainmenu
 
@@ -74,6 +79,10 @@ goto mainmenu
 
 REM == Packages ====================================================
 :mainmenu3
+
+echo.
+echo Adding packages to image
+echo.
 
 set adkpackages=%adk%\Windows Preinstallation Environment\amd64\WinPE_OCs
 
@@ -95,12 +104,17 @@ Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\en-us\WinPE-S
 Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\WinPE-DismCmdlets.cab"
 Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\en-us\WinPE-DismCmdlets_en-us.cab"
 
+echo.
 pause
 goto mainmenu
 
 
 REM == Copy Files ==================================================
 :mainmenu4
+
+echo.
+echo Copying files to image
+echo.
 
 REM Delete Helper folder in mount path if it exists
 rmdir /s /q "%mountpath%\Helper"
@@ -115,9 +129,10 @@ if exist "%extrafiles2%\" ( robocopy "%extrafiles2%" "%mountpath%" /e /NFL /NDL 
 
 REM Remove extra files from image
 del "%mountpath%\Auto-saved*.xml"
-del "%mountpath%\NTLite.log"
-del "%mountpath%\Helper\Logon\_Log.log"
+del "%mountpath%\*.log"
+del "%mountpath%\Helper\Logon\*.log"
 
+echo.
 if %pauseafter%==true ( pause ) else ( exit /B ) 
 goto mainmenu
 
@@ -125,6 +140,7 @@ goto mainmenu
 REM == Unmount Commit ==============================================
 :mainmenu5
 
+echo.
 echo Save and close any open files that are in the mount path
 echo Close any open file explorer windows that are accessing the mount path
 echo Continuing will commit any changes to the WIM and attempt to umount the image
@@ -133,6 +149,7 @@ if %pauseafter%==true ( pause )
 
 DISM /Unmount-Image /MountDir:"%mountpath%" /commit
 
+echo.
 if %pauseafter%==true ( pause ) else ( exit /B ) 
 goto mainmenu
 
@@ -143,6 +160,7 @@ REM == Unmount Discard =============================================
 DISM /Unmount-Image /MountDir:"%mountpath%" /discard
 DISM /Cleanup-WIM
 
+echo.
 pause
 goto mainmenu
 
@@ -150,10 +168,13 @@ goto mainmenu
 REM == Make ISO ====================================================
 :mainmenu7
 
-set oscdimg=%adk%\Deployment Tools\amd64\Oscdimg
+echo.
+echo Making ISO
+echo Input: "%mediapath%" 
+echo Output: "%outputiso%"
+echo.
 
-echo in: "%mediapath%" 
-echo out: "%outputiso%"
+set oscdimg=%adk%\Deployment Tools\amd64\Oscdimg
 
 set BOOTDATA=1#pEF,e,b"%mediapath%\efi\microsoft\boot\efisys.bin"
 if exist "%mediapath%\boot\etfsboot.com" (
@@ -172,6 +193,7 @@ if errorlevel 1 (
   echo ERROR: Failed to create file.
 )
 
+echo.
 pause
 goto mainmenu
 
@@ -185,15 +207,18 @@ call :mainmenu4
 call :mainmenu5
 call :mainmenu7
 
+echo.
 pause
 goto mainmenu
 
 REM == Get Information =============================================
 :mainmenu9
 
+echo.
 Dism /Get-MountedImageInfo 
 Dism /Get-ImageInfo /imagefile:"%sourcewim%"
 
+echo.
 pause 
 goto mainmenu
 
