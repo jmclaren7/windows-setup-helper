@@ -527,7 +527,8 @@ Func _RunFolder($Path)
 		_Log("Files: " & $FileArray[0])
 		For $i = 1 To $FileArray[0]
 			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
-			If StringInStr(FileGetAttrib($FileArray[$i]), "D") And Not FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop
+			;We probably don't care if the folder is valid to run at this point, deal with it in the _RunFile function
+			;If StringInStr(FileGetAttrib($FileArray[$i]), "D") And Not FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop
 			_Log($FileArray[$i])
 			_RunFile($FileArray[$i])
 		Next
@@ -542,8 +543,17 @@ EndFunc   ;==>_RunFolder
 Func _RunFile($File, $Params = "", $WorkingDir = "")
 	_Log("_RunFile " & $File & " " & $Params)
 
-	If StringInStr(FileGetAttrib($File), "D") And FileExists($File & "\main.au3") Then
-		$File = $File & "\main.au3"
+	If StringInStr(FileGetAttrib($File), "D") Then
+		If FileExists($File & "\main.au3") Then
+			$File = $File & "\main.au3"
+		ElseIf FileExists($File & "\main.bat") Then
+			$File = $File & "\main.bat"
+		ElseIf FileExists($File & "\a.bat") Then
+			$File = $File & "\a.bat"
+		Else
+			; Return error because this is a directory without a valid file to run
+			Return SetError(2, 0, 0)
+		EndIf
 	EndIf
 
 	$Extension = StringTrimLeft($File, StringInStr($File, ".", 0, -1))
