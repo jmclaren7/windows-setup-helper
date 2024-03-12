@@ -6,20 +6,21 @@ REM == Settings You Need To Change =================================
 REM The location of the extracted install media (no trailing slash)
 set mediapath=D:\Windows Images\11-23H2
 
-REM Extra files that you want to add to the image (no trailing slash)
-set extrafiles1=D:\Windows Images\Additions
-set extrafiles2=D:\Windows Images\Additions-Macrium
+REM Extra files that you want to add to the image (no trailing slash, wildcard is added to the end)
+set extrafiles=D:\Windows Images\Additions
 
 REM The path where you want to save an ISO file
 set outputiso=D:\Windows Images\Windows.iso
 
-REM The index of the boot.wim image you want to modify, usually 2 for an unmodified Windows 10/11 boot.wim
-set wimindex=2
+REM The index of the boot.wim image you want to modify
+REM Usually /Index:2 for an unmodified Windows 10/11 boot.wim
+REM Can also be /Name:"Microsoft Windows Setup (amd64)" if you want to use the name
+set wimindex=/Name:"Microsoft Windows Setup (amd64)"
 
 REM == Other Paths =================================================
 set helperrepo=%~dp0
 set sourcewim=%mediapath%\sources\boot.wim
-set mountpath=%temp%\WIMPath
+set mountpath=%temp%\WIMMount
 set adk=%ProgramFiles(x86)%\Windows Kits\10\Assessment and Deployment Kit
 
 
@@ -27,10 +28,14 @@ REM == Basic Checks ================================================
 if not exist "%mediapath%\" ( echo Media path not found, reconfigure batch file & pause & exit)
 if not exist "%sourcewim%" ( echo Boot.wim not found & pause & exit)
 
+REM == Default for toggle options ===================================
+set automaticpackages=No
+set automaticexport=No
 
 REM == Menu ========================================================
 :mainmenu
 set pauseafter=true
+set returnafter=false
 cls
 echo.
 echo       Media folder = %mediapath%
@@ -39,81 +44,123 @@ echo       Helper files = %helperrepo%
 echo       Output ISO = %outputiso%
 echo.
 echo  1. Mount boot.wim (Windows Image) from media folder
-echo  2. Open mounted image in explorer
-echo  3. Add packages to mounted image (requires ADK)
-echo  4. Copy Helper files to mounted image
-echo  5. Unmount and commit changes to WIM
-echo  6. Unmount, discard changes and cleanup (use if mounted image is stuck)
-echo  7. Make ISO from media folder (requires ADK)
-echo  8. Get image information
+echo  2. Copy Helper files to mounted image
+echo  3. Unmount and commit changes to WIM
+echo  4. Make ISO from media folder (requires ADK)
 echo.
-echo  F. Automatically run steps 1,4,5,7 (requires ADK)
+echo  F. Automatically run steps 1,2,3,4 (requires ADK)
+echo       (G) Add Packages: %automaticpackages%
+echo       (H) Export Overwrite: %automaticexport%
+echo.
+echo  B. Browse mounted image folder
+echo  A. Add packages to mounted image (requires ADK)
+echo  X. Unmount, discard changes and cleanup (use if mounted image is stuck)
+echo  I. Get image information
+echo.
+echo  E. Convert install.esd to install.wim
+echo  R. Mount and browse install.wim
+echo  S. Export and overwrite boot.wim
+echo.
 echo.  
 echo  Enter a selection...
-choice /C 1234567F8 /N
-goto mainmenu%errorlevel%
+choice /C 1234FGHBAXIERST /N
+goto option%errorlevel%
+
+:option1
+goto mount
+:option2
+goto copyfiles
+:option3
+goto unmountcommit
+:option4
+goto makeiso
+:option5
+goto automatic
+:option6
+goto togglepackages
+:option7
+goto toggleexport
+:option8
+goto browsemount
+:option9
+goto addpackages
+:option10
+goto unmountdiscard
+:option11
+goto getinfo
+:option12
+goto convertinstallesd
+:option13
+goto mountinstallwim
+:option14
+goto exportimage
+:option15
+goto testing
 
 
 REM == Mount =======================================================
-:mainmenu1
+:mount
 
 echo.
-echo Mounting image to: %mountpath%
+echo [96mMounting image to: %mountpath%[0m
 echo.
 
 mkdir %mountpath%
-Dism /Mount-image /imagefile:"%sourcewim%" /Index:%wimindex% /MountDir:"%mountpath%" /optimize
+Dism /Mount-image /ImageFile:"%sourcewim%" %wimindex% /MountDir:"%mountpath%" /Optimize
+
+if %errorlevel% NEQ 0 ( echo [91mError mounting image, aborting[0m && pause && goto mainmenu )
 
 echo.
-if %pauseafter%==true ( pause ) else ( exit /B ) 
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
-REM == Explore =====================================================
-:mainmenu2
+REM == Browse Mount ===============================================
+:browsemount
 
 start explorer "%mountpath%"
 
+echo.
+if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
-REM == Packages ====================================================
-:mainmenu3
+REM == Add Packages ================================================
+:addpackages
 
 echo.
-echo Adding packages to image
+echo [96mAdding packages to mounted image[0m
 echo.
 
 set adkpackages=%adk%\Windows Preinstallation Environment\amd64\WinPE_OCs
 
-Dism /Image:"%mountpath%" /Add-Package /PackagePath:"%adkpackages%\WinPE-WMI.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\en-us\WinPE-WMI_en-us.cab"
-Dism /Image:"%mountpath%" /Add-Package /PackagePath:"%adkpackages%\WinPE-NetFx.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\en-us\WinPE-NetFx_en-us.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\WinPE-EnhancedStorage.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\en-us\WinPE-EnhancedStorage_en-us.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\WinPE-Scripting.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\en-us\WinPE-Scripting_en-us.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\WinPE-FMAPI.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\WinPE-SecureStartup.cab"
-Dism /Image:"%mountpath%" /add-package /packagepath:"%adkpackages%\en-us\WinPE-SecureStartup_en-us.cab"
-Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\WinPE-PowerShell.cab"
-Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\en-us\WinPE-PowerShell_en-us.cab"
-Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\WinPE-StorageWMI.cab"
-Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\en-us\WinPE-StorageWMI_en-us.cab"
-Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\WinPE-DismCmdlets.cab"
-Dism /Image:"%mountpath%" /add-package /PackagePath:"%adkpackages%\en-us\WinPE-DismCmdlets_en-us.cab"
+Dism /Image:"%mountpath%" /Add-Package ^
+/PackagePath:"%adkpackages%\WinPE-WMI.cab" /PackagePath:"%adkpackages%\en-us\WinPE-WMI_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-NetFx.cab" /PackagePath:"%adkpackages%\en-us\WinPE-NetFx_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-EnhancedStorage.cab" /PackagePath:"%adkpackages%\en-us\WinPE-EnhancedStorage_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-Scripting.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Scripting_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-FMAPI.cab" ^
+/PackagePath:"%adkpackages%\WinPE-SecureStartup.cab" /PackagePath:"%adkpackages%\en-us\WinPE-SecureStartup_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-PowerShell.cab" /PackagePath:"%adkpackages%\en-us\WinPE-PowerShell_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-StorageWMI.cab" /PackagePath:"%adkpackages%\en-us\WinPE-StorageWMI_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-DismCmdlets.cab" /PackagePath:"%adkpackages%\en-us\WinPE-DismCmdlets_en-us.cab"
+REM /PackagePath:"%adkpackages%\WinPE-Setup.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Setup_en-us.cab" ^
+REM /PackagePath:"%adkpackages%\WinPE-Setup-Client.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Setup-Client_en-us.cab"
+
+if %errorlevel% NEQ 0 ( echo [91mError adding packages, aborting[0m && pause && goto mainmenu )
 
 echo.
-pause
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
 REM == Copy Files ==================================================
-:mainmenu4
+:copyfiles
 
 echo.
-echo Copying files to image
+echo [96mCopying files to mounted image[0m  
 echo.
 
 REM Delete Helper folder in mount path if it exists
@@ -124,8 +171,9 @@ robocopy "%helperrepo%\Helper" "%mountpath%\Helper" /e /NFL /NDL
 robocopy "%helperrepo%\Windows" "%mountpath%\Windows" /e /NFL /NDL
 
 REM Copy extra files to the mounted image
-if exist "%extrafiles1%\" ( robocopy "%extrafiles1%" "%mountpath%" /e /NFL /NDL )
-if exist "%extrafiles2%\" ( robocopy "%extrafiles2%" "%mountpath%" /e /NFL /NDL )
+for /D %%A in ("%extrafiles%*") do (
+   robocopy "%%~fA" "%mountpath%" /E /NFL /NDL
+)
 
 REM Remove extra files from image
 del "%mountpath%\Auto-saved*.xml"
@@ -133,43 +181,55 @@ del "%mountpath%\*.log"
 del "%mountpath%\Helper\Logon\*.log"
 
 echo.
-if %pauseafter%==true ( pause ) else ( exit /B ) 
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
 REM == Unmount Commit ==============================================
-:mainmenu5
+:unmountcommit
 
 echo.
-echo Save and close any open files that are in the mount path
-echo Close any open file explorer windows that are accessing the mount path
+echo [96mUnmounting and committing changes[0m
+echo [93mSave and close any open files that are in the mount path[0m
+echo [93mClose any open file explorer windows that are accessing the mount path[0m
 echo Continuing will commit any changes to the WIM and attempt to umount the image
 echo.
 if %pauseafter%==true ( pause ) 
 
-DISM /Unmount-Image /MountDir:"%mountpath%" /commit
+Dism /Unmount-Image /MountDir:"%mountpath%" /commit
+if %errorlevel% NEQ 0 ( echo [91mUnmount error, aborting[0m && pause && goto mainmenu )
+
+
 
 echo.
-if %pauseafter%==true ( pause ) else ( exit /B ) 
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
 REM == Unmount Discard =============================================
-:mainmenu6
-
-DISM /Unmount-Image /MountDir:"%mountpath%" /discard
-DISM /Cleanup-WIM
+:unmountdiscard
 
 echo.
-pause
+echo [96mUnmounting and discarding changes[0m
+echo.
+
+Dism /Unmount-Image /MountDir:"%mountpath%" /Discard
+Dism /Cleanup-Mountpoints 
+rmdir /s /q "%mountpath%"
+
+echo.
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
 REM == Make ISO ====================================================
-:mainmenu7
+:makeiso
 
 echo.
-echo Making ISO
+echo [96mCreating ISO[0m
 echo Input: "%mediapath%" 
 echo Output: "%outputiso%"
 echo.
@@ -182,39 +242,43 @@ if exist "%mediapath%\boot\etfsboot.com" (
 )
 
 del /F /Q "%outputiso%"
-if errorlevel 1 (
-  echo ERROR: Failed to delete "%DEST%".
-  pause
-  goto mainmenu
-)
+if %errorlevel% NEQ 0 ( echo [91mFailed to delete "%DEST%".[0m && pause && goto mainmenu )
 
 "%oscdimg%\oscdimg" -bootdata:%BOOTDATA% -u1 -udfver102 "%mediapath%" "%outputiso%"
-if errorlevel 1 (
-  echo ERROR: Failed to create file.
-)
+if %errorlevel% NEQ 0 ( echo [91mFailed to create ISO.[0m && pause && goto mainmenu )
 
 echo.
-pause
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
 REM == Automatic ===================================================
-:mainmenu8
+:automatic
+
+echo.
+echo [96mRunning steps automatically[0m
+echo.
 
 set pauseafter=false
-call :mainmenu1
-call :mainmenu4
-call :mainmenu5
-call :mainmenu7
+set returnafter=true
+call :mount
+call :copyfiles
+if %automaticpackages%==Yes ( call :addpackages )
+call :unmountcommit
+if %automaticexport%==Yes ( call :exportimage )
+call :makeiso
 
 echo.
 pause
 goto mainmenu
 
+
 REM == Get Information =============================================
-:mainmenu9
+:getinfo
 
 echo.
+
 Dism /Get-MountedImageInfo 
 Dism /Get-ImageInfo /imagefile:"%sourcewim%"
 
@@ -223,12 +287,91 @@ pause
 goto mainmenu
 
 
+REM == Convert Install.esd to WIM ====================================
+:convertinstallesd
+
+echo.
+echo [96mConverting ESD to WIM[0m
+echo.
+
+Dism /Export-Image /SourceImageFile:"%mediapath%\sources\install.esd" /SourceIndex:1 /DestinationImageFile:"%mediapath%\sources\install.wim" /Compress:Max
+if %errorlevel% NEQ 0 ( echo [91mError converting install.esd, aborting[0m && pause && goto mainmenu )
+
+echo.
+pause 
+goto mainmenu
+
+
+REM == Mount Install.wim =============================================
+:mountinstallwim
+
+echo.
+echo [96mExtracting WinRE[0m
+echo.
+
+mkdir %mountpath%
+Dism /Mount-image /ReadOnly /imagefile:"%mediapath%\sources\install.wim" /Index:1 /MountDir:"%mountpath%" /Optimize /ReadOnly
+if %errorlevel% NEQ 0 ( echo [91mError mounting install.wim, aborting[0m && pause && goto mainmenu )
+
+start explorer "%mediapath%\sources"
+
+echo.
+pause
+goto mainmenu
+
+
+REM == Export Image ================================================
+:exportimage
+
+set "sourcewimindex=%wimindex:/=/Source%"
+
+echo.
+echo [96mExporting boot.wim image using  %sourcewimindex%[0m
+echo.
+
+Dism /Export-Image /SourceImageFile:"%sourcewim%" %sourcewimindex% /DestinationImageFile:"%mediapath%\sources\boot2.wim" /Compress:Max
+if %errorlevel% NEQ 0 ( echo [91mError exporting, aborting[0m && pause && goto mainmenu )
+
+move /Y "%mediapath%\sources\boot2.wim" "%sourcewim%"
+if %errorlevel% NEQ 0 ( echo [91mError overwriting boot.wim, aborting[0m && pause && goto mainmenu )
+
+echo.
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
+goto mainmenu
+
+
+REM == Testing======================================================
+:testing
+REM Dism /Delete-Image /ImageFile:boot.wim /Name:"Microsoft Windows Setup (amd64)"
+Dism /Image:"%mountpath%" /Cleanup-Image /StartComponentCleanup /ResetBase
+
+echo.
+pause
+goto mainmenu
+
+
+REM == Toggle Packages =============================================
+:togglepackages
+
+if %automaticpackages%==Yes ( set automaticpackages=No ) else ( set automaticpackages=Yes )
+
+goto mainmenu
+
+
+REM == Toggle Export ===============================================
+:toggleexport
+
+if %automaticexport%==Yes ( set automaticexport=No ) else ( set automaticexport=Yes )
+
+goto mainmenu
+
 
 REM == Check For Admin =============================================
 :Admin
 echo Administrative permissions required. Detecting permissions...
 net session >nul 2>&1
-if %errorLevel% == 0 (
+if %errorlevel% == 0 (
   echo Success: Elevated permissions confirmed, continuing.
   exit /B
 ) else (
