@@ -138,13 +138,20 @@ set adkpackages=%adk%\Windows Preinstallation Environment\amd64\WinPE_OCs
 Dism /Image:"%mountpath%" /Add-Package ^
 /PackagePath:"%adkpackages%\WinPE-WMI.cab" /PackagePath:"%adkpackages%\en-us\WinPE-WMI_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-NetFx.cab" /PackagePath:"%adkpackages%\en-us\WinPE-NetFx_en-us.cab" ^
-/PackagePath:"%adkpackages%\WinPE-EnhancedStorage.cab" /PackagePath:"%adkpackages%\en-us\WinPE-EnhancedStorage_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-Scripting.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Scripting_en-us.cab" ^
-/PackagePath:"%adkpackages%\WinPE-FMAPI.cab" ^
-/PackagePath:"%adkpackages%\WinPE-SecureStartup.cab" /PackagePath:"%adkpackages%\en-us\WinPE-SecureStartup_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-PowerShell.cab" /PackagePath:"%adkpackages%\en-us\WinPE-PowerShell_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-StorageWMI.cab" /PackagePath:"%adkpackages%\en-us\WinPE-StorageWMI_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-SecureBootCmdlets.cab" ^
+/PackagePath:"%adkpackages%\WinPE-SecureStartup.cab" /PackagePath:"%adkpackages%\en-us\WinPE-SecureStartup_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-DismCmdlets.cab" /PackagePath:"%adkpackages%\en-us\WinPE-DismCmdlets_en-us.cab"
+/PackagePath:"%adkpackages%\WinPE-EnhancedStorage.cab" /PackagePath:"%adkpackages%\en-us\WinPE-EnhancedStorage_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-Dot3Svc.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Dot3Svc_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-FMAPI.cab" ^
+/PackagePath:"%adkpackages%\WinPE-FontSupport-WinRE.cab ^
+/PackagePath:"%adkpackages%\WinPE-PlatformId.cab" ^
+/PackagePath:"%adkpackages%\WinPE-WDS-Tools.cab" /PackagePath:"%adkpackages%\en-us\WinPE-WDS-Tools_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-HTA.cab" /PackagePath:"%adkpackages%\en-us\WinPE-HTA_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-WinReCfg.cab" /PackagePath:"%adkpackages%\en-us\WinPE-WinReCfg_en-us.cab" ^
 REM /PackagePath:"%adkpackages%\WinPE-Setup.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Setup_en-us.cab" ^
 REM /PackagePath:"%adkpackages%\WinPE-Setup-Client.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Setup-Client_en-us.cab"
 
