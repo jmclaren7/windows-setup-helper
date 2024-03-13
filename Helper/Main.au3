@@ -637,8 +637,8 @@ Func _StatusBarUpdate()
 	; Get motherboard bios information
 	$Win32_BIOS = _WMI("SELECT SerialNumber,SMBIOSBIOSVersion,ReleaseDate FROM Win32_BIOS")
 	If Not @error Then
-		If $Win32_BIOS.SerialNumber <> "" and $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 25)
-		$StatusbarText &= $Delimiter & "FW: " & StringLeft($Win32_BIOS.SMBIOSBIOSVersion, 25) & " (" & StringLeft($Win32_BIOS.ReleaseDate, 8) & ")"
+		If $Win32_BIOS.SerialNumber <> "" and $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 20)
+		$StatusbarText &= $Delimiter & "FW: " & StringLeft($Win32_BIOS.SMBIOSBIOSVersion, 20) & " (" & StringLeft($Win32_BIOS.ReleaseDate, 8) & ")"
 	EndIf
 
 	; Get additional statusbar and tool tip text
