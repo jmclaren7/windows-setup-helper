@@ -1,5 +1,5 @@
 usoclient StartInteractiveScan ScanInstallWait
-
+explorer.exe ms-settings:windowsupdate
 
 REM Other related commands, not working or not needed
 REM explorer.exe ms-settings:windowsupdate-action
