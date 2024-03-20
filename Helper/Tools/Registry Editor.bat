@@ -1,1 +1,0 @@
-start regedit.exe

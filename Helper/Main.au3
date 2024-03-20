@@ -51,6 +51,7 @@ Global $DoubleClick = False
 Global $SystemDrive = StringLeft(@SystemDir, 3)
 Global $IsPE = StringInStr(@SystemDir, "X:")
 Global $Debug = Not $IsPE
+Global $FolderExecFiles = StringSplit("main.au3,main.bat,a.bat",",") ; Used by _RunFile & _PopulateScripts
 
 ; Globals used by _Log function
 Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
@@ -82,28 +83,55 @@ Global $StatusbarTimer2
 
 ; Create main GUI
 #Region ### START Koda GUI section ###
-$GUIMain = GUICreate("$Title", 767, 543, -1, -1)
+$GUIMain = GUICreate("Title", 753, 513, -1, -1, BitOR($GUI_SS_DEFAULT_GUI,$WS_MAXIMIZEBOX,$WS_SIZEBOX,$WS_THICKFRAME,$WS_TABSTOP))
 $FileMenu = GUICtrlCreateMenu("&File")
 $AdvancedMenu = GUICtrlCreateMenu("&Advanced")
-$Tab1 = GUICtrlCreateTab(7, 4, 753, 495)
-$BootTabSheet = GUICtrlCreateTabItem("&")
-$Group5 = GUICtrlCreateGroup("WinPE Tools", 19, 37, 360, 452)
-$PERunButton = GUICtrlCreateButton("Run", 257, 454, 107, 25)
-$PEScriptTreeView = GUICtrlCreateTreeView(35, 61, 330, 385)
+GUISetBkColor(0xF9F9F9)
+$Group5 = GUICtrlCreateGroup("WinPE Tools", 12, 7, 354, 452)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+$PEScriptTreeView = GUICtrlCreateTreeView(24, 31, 330, 385)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+$PERunButton = GUICtrlCreateButton("Run", 237, 424, 107, 25)
+GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlCreateGroup("", -99, -99, 1, 1)
-$Group6 = GUICtrlCreateGroup("First Logon Scripts", 387, 37, 360, 452)
-$NormalInstallButton = GUICtrlCreateButton("Normal Install", 403, 454, 131, 25)
-$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 563, 454, 163, 25, $BS_DEFPUSHBUTTON)
-$PEInstallTreeView = GUICtrlCreateTreeView(404, 61, 330, 345, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
-$PEComputerNameInput = GUICtrlCreateInput("", 556, 422, 169, 21)
-$Label4 = GUICtrlCreateLabel("Computer Name", 476, 425, 80, 17)
+$Group6 = GUICtrlCreateGroup("First Logon Scripts", 384, 7, 354, 452)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+$NormalInstallButton = GUICtrlCreateButton("Normal Install", 400, 424, 131, 25)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 560, 424, 163, 25, $BS_DEFPUSHBUTTON)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+$Label4 = GUICtrlCreateLabel("Computer Name", 471, 396, 80, 17)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+$PEInstallTreeView = GUICtrlCreateTreeView(396, 31, 330, 350, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+$PEComputerNameInput = GUICtrlCreateInput("", 553, 392, 169, 21)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlCreateGroup("", -99, -99, 1, 1)
-GUICtrlCreateTabItem("")
 $StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
 _GUICtrlStatusBar_SetSimple($StatusBar1)
 _GUICtrlStatusBar_SetText($StatusBar1, "")
 GUISetState(@SW_SHOW)
 #EndRegion ### END Koda GUI section ###
+
+$TaskMgrButton = GUICtrlCreateButton("", 32, 424, 29, 25, $BS_ICON)
+GUICtrlSetImage(-1, @WindowsDir & "\System32\taskmgr.exe", 1, 0)
+GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "Task Manager")
+
+$RegeditButton = GUICtrlCreateButton("", 72, 424, 29, 25, $BS_ICON)
+GUICtrlSetImage(-1, @WindowsDir & "\regedit.exe", 1, 0)
+GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "Registry Editor")
+
+$NotepadButton = GUICtrlCreateButton("", 112, 424, 29, 25, $BS_ICON)
+GUICtrlSetImage(-1, @WindowsDir & "\System32\notepad.exe", 1, 0)
+GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "Notepad")
+
+$CMDButton = GUICtrlCreateButton("", 152, 424, 29, 25, $BS_ICON)
+GUICtrlSetImage(-1, @WindowsDir & "\System32\cmd.exe", 1, 0)
+GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "Command Prompt")
 
 ; File Menu Items
 $MenuExitButton = GUICtrlCreateMenuItem("Exit", $FileMenu)
@@ -153,6 +181,10 @@ $HUser32DLL = DllOpen(@WindowsDir & "\System32\user32.dll")
 Global $hPEScriptTreeView = GUICtrlGetHandle($PEScriptTreeView)
 GUIRegisterMsg($WM_NOTIFY, "_WM_NOTIFY")
 
+; Setup window resize detection for status bar resize
+GUIRegisterMsg($WM_SIZE, "_WM_SIZE")
+;WinMove($GUIMain, "", Default, Default, 900, 700) ; Size the window as desired here
+
 _Log("Ready")
 
 ;GUI Loop
@@ -165,6 +197,9 @@ While 1
 			If $nMsgA[1] <> $GUIMain Then ContinueLoop
 			If $IsPE And MsgBox(1, $Title, "Closing the program will reboot the system while in WinPE.") <> 1 Then ContinueLoop
 			Exit
+
+		Case $WM_SIZE
+
 
 		Case $MenuShowConsole
 			WinSetState($Title & " Log", "", @SW_SHOW)
@@ -248,6 +283,18 @@ While 1
 			$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
 
 			$CopyAutoLogonFiles = True
+
+		Case $TaskMgrButton
+			_RunFile("taskmgr.exe")
+
+		Case $RegeditButton
+			_RunFile("regedit.exe")
+
+		Case $NotepadButton
+			_RunFile("notepad.exe")
+
+		Case $CMDButton
+			_RunFile("cmd.exe")
 
 	EndSwitch
 
@@ -337,6 +384,12 @@ Func _WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_WM_NOTIFY
 
+; Proccess NOTIFY mesages to handle window resize for status bar
+Func _WM_SIZE($hWnd, $iMsg, $iwParam, $ilParam)
+    _GUICtrlStatusBar_Resize($StatusBar1)
+    Return $GUI_RUNDEFMSG
+EndFunc   ;==>MY_WM_SIZE
+
 ; Calculate the full path of a item from the GUI tree view
 Func _GetTreeItemFullPath($Parent, $Item)
 	Local $FullPath
@@ -405,6 +458,7 @@ Func _PopulateScripts($TreeID, $Folder)
 	_Log("  $FolderFullPath=" & $FolderFullPath)
 
 	Local $aFiles = _FileListToArray($FolderFullPath & "\", "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
+	_ArraySort($aFiles, 0, 1)
 	If Not @error Then
 		_Log("  " & $Folder & " Files (no filter): " & $aFiles[0])
 
@@ -420,9 +474,19 @@ Func _PopulateScripts($TreeID, $Folder)
 		For $i = 1 To $aFiles[0]
 			Local $FileName = StringTrimLeft($aFiles[$i], StringInStr($aFiles[$i], "\", 0, -1))
 
-			If StringInStr($aFiles[$i], "\.") Then ContinueLoop ;use . for hidden
-			If StringInStr(FileGetAttrib($aFiles[$i]), "D") And Not FileExists($aFiles[$i] & "\main.au3") Then ContinueLoop ;allow folders only if they contain main.au3
+			; Skip files starting with "." (treat them as hidden)
+			If StringInStr($aFiles[$i], "\.") Then ContinueLoop
 
+			; Folders that contain specific files can be added as a script
+			If StringInStr(FileGetAttrib($aFiles[$i]), "D") Then
+				Local $FileExists = 0
+				For $b = 1 To $FolderExecFiles[0]
+					$FileExists += FileExists($aFiles[$i] & "\" & $FolderExecFiles[$b])
+				Next
+
+				; If this folder does not have a reqiured file do not add it to the scripts
+				If Not $FileExists Then ContinueLoop
+			EndIf
 			_Log("  Adding: " & $aFiles[$i])
 
 			; Create sub item
@@ -544,16 +608,17 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 	_Log("_RunFile " & $File & " " & $Params)
 
 	If StringInStr(FileGetAttrib($File), "D") Then
-		If FileExists($File & "\main.au3") Then
-			$File = $File & "\main.au3"
-		ElseIf FileExists($File & "\main.bat") Then
-			$File = $File & "\main.bat"
-		ElseIf FileExists($File & "\a.bat") Then
-			$File = $File & "\a.bat"
-		Else
-			; Return error because this is a directory without a valid file to run
-			Return SetError(2, 0, 0)
-		EndIf
+		; Folders that contain specific files can be executed
+		Local $FileExists = 0
+		For $b = 1 To $FolderExecFiles[0]
+			If FileExists($File & "\" & $FolderExecFiles[$b]) Then
+				$FileExists = 1
+				$File = $File & "\" & $FolderExecFiles[$b]
+				ExitLoop
+			EndIf
+		Next
+		; Return error because this is a directory without a valid file to run
+		If Not $FileExists Then Return SetError(2, 0, 0)
 	EndIf
 
 	$Extension = StringTrimLeft($File, StringInStr($File, ".", 0, -1))

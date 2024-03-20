@@ -172,17 +172,26 @@ echo.
 
 REM Delete Helper folder in mount path if it exists
 rmdir /s /q "%mountpath%\Helper"
+mkdir %mountpath%\Helper
 
 REM Copy files from repository to mounted image
-robocopy "%helperrepo%\Helper" "%mountpath%\Helper" /e /NFL /NDL
-robocopy "%helperrepo%\Windows" "%mountpath%\Windows" /e /NFL /NDL
+echo Copying "%helperrepo%\Helper"
+xcopy /y /e /q "%helperrepo%\Helper" "%mountpath%\Helper"
+echo.
+
+echo Copying "%helperrepo%\Windows"
+xcopy /y /e /q "%helperrepo%\Windows" "%mountpath%\Windows"
+echo.
 
 REM Copy extra files to the mounted image
 for /D %%A in ("%extrafiles%*") do (
-   robocopy "%%~fA" "%mountpath%" /E /NFL /NDL
+   echo Copying "%%~fA"
+   xcopy /y /e /q "%%~fA" "%mountpath%"
+   echo.
 )
 
 REM Remove extra files from image
+echo Removing logs and extra files
 del "%mountpath%\Auto-saved*.xml"
 del "%mountpath%\*.log"
 del "%mountpath%\Helper\Logon\*.log"
@@ -207,7 +216,7 @@ if %pauseafter%==true ( pause )
 Dism /Unmount-Image /MountDir:"%mountpath%" /commit
 if %errorlevel% NEQ 0 ( echo [91mUnmount error, aborting[0m && pause && goto mainmenu )
 
-
+rmdir /s /q "%mountpath%"
 
 echo.
 if %pauseafter%==true ( pause )
