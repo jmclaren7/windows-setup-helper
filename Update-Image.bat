@@ -15,6 +15,7 @@ set outputiso=D:\Windows Images\Windows.iso
 REM The index of the boot.wim image you want to modify
 REM Usually /Index:2 for an unmodified Windows 10/11 boot.wim
 REM Can also be /Name:"Microsoft Windows Setup (amd64)" if you want to use the name
+REM Some versions of Windows use "Microsoft Windows Setup (x64)" instead
 set wimindex=/Name:"Microsoft Windows Setup (amd64)"
 
 REM == Other Paths =================================================
@@ -33,6 +34,7 @@ if not exist "%helperrepo%\Helper\Main.au3" ( echo Main.au3 not found & pause & 
 REM == Default for toggle options ===================================
 set automaticpackages=No
 set automaticexport=No
+set automaticresolution=Yes
 
 REM == Menu ========================================================
 :mainmenu
@@ -51,8 +53,9 @@ echo  3. Unmount and commit changes to WIM
 echo  4. Make ISO from media folder (requires ADK)
 echo.
 echo  F. Automatically run steps 1,2,3,4 (requires ADK)
-echo       (G) Add Packages: %automaticpackages%
-echo       (H) Export Overwrite: %automaticexport%
+echo       G. Add Packages to Boot.wim: %automaticpackages%
+echo       H. Trim Boot.wim: %automaticexport%
+echo       T. Set Boot Resolution to 1024x768: %automaticresolution%
 echo.
 echo  B. Browse mounted image folder
 echo  A. Add packages to mounted image (requires ADK)
@@ -61,11 +64,12 @@ echo  I. Get image information
 echo.
 echo  E. Convert install.esd to install.wim
 echo  R. Mount and browse install.wim
-echo  S. Export and overwrite boot.wim
+echo  S. Trim boot.wim (Trims other indexes and removes unused files)
+echo  L. Use Bcdedit to set media boot resolution to 1024x768
 echo.
 echo.  
-echo  Enter a selection...
-choice /C 1234FGHBAXIERST /N
+echo  Enter a selection or Q to quit...
+choice /C 1234FGHBAXIERSTLQ /N
 goto option%errorlevel%
 
 :option1
@@ -81,7 +85,7 @@ goto automatic
 :option6
 goto togglepackages
 :option7
-goto toggleexport
+goto toggletrim
 :option8
 goto browsemount
 :option9
@@ -95,10 +99,13 @@ goto convertinstallesd
 :option13
 goto mountinstallwim
 :option14
-goto exportimage
+goto trimimage
 :option15
-goto testing
-
+goto toggleresolution
+:option16
+goto setresolution
+:option17
+exit
 
 REM == Mount =======================================================
 :mount
@@ -284,7 +291,7 @@ call :mount
 call :copyfiles
 if %automaticpackages%==Yes ( call :addpackages )
 call :unmountcommit
-if %automaticexport%==Yes ( call :exportimage )
+if %automaticexport%==Yes ( call :trimimage )
 call :makeiso
 
 echo.
@@ -339,7 +346,7 @@ goto mainmenu
 
 
 REM == Export Image ================================================
-:exportimage
+:trimimage
 
 set "sourcewimindex=%wimindex:/=/Source%"
 
@@ -359,29 +366,30 @@ if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
-REM == Testing======================================================
-:testing
-REM Dism /Delete-Image /ImageFile:boot.wim /Name:"Microsoft Windows Setup (amd64)"
-Dism /Image:"%mountpath%" /Cleanup-Image /StartComponentCleanup /ResetBase
+REM == Set Resolution================================================
+:setresolution
+bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} graphicsresolution 1024x768
 
 echo.
-pause
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
 REM == Toggle Packages =============================================
 :togglepackages
-
 if %automaticpackages%==Yes ( set automaticpackages=No ) else ( set automaticpackages=Yes )
-
 goto mainmenu
 
 
-REM == Toggle Export ===============================================
-:toggleexport
-
+REM == Toggle Trim ==================================================
+:toggletrim
 if %automaticexport%==Yes ( set automaticexport=No ) else ( set automaticexport=Yes )
+goto mainmenu
 
+REM == Toggle Resolution ===========================================
+:toggleresolution
+if %automaticresolution%==Yes ( set automaticresolution=No ) else ( set automaticresolution=Yes )
 goto mainmenu
 
 
