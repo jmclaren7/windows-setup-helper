@@ -27,6 +27,8 @@ set adk=%ProgramFiles(x86)%\Windows Kits\10\Assessment and Deployment Kit
 REM == Basic Checks ================================================
 if not exist "%mediapath%\" ( echo Media path not found, reconfigure batch file & pause & exit)
 if not exist "%sourcewim%" ( echo Boot.wim not found & pause & exit)
+if "%helperrepo:~-1%"=="\" SET helperrepo=%helperrepo:~0,-1%
+if not exist "%helperrepo%\Helper\Main.au3" ( echo Main.au3 not found & pause & exit)
 
 REM == Default for toggle options ===================================
 set automaticpackages=No
@@ -172,7 +174,7 @@ echo.
 
 REM Delete Helper folder in mount path if it exists
 rmdir /s /q "%mountpath%\Helper"
-mkdir %mountpath%\Helper
+mkdir "%mountpath%\Helper"
 
 REM Copy files from repository to mounted image
 echo Copying "%helperrepo%\Helper"
@@ -391,7 +393,8 @@ if %errorlevel% == 0 (
   echo Success: Elevated permissions confirmed, continuing.
   exit /B
 ) else (
-  echo Failure: Not running with elevated permissions, please restart script.
+  echo.
+  echo Error: Not running with elevated permissions, please restart script.
   pause >nul
   exit
 )
