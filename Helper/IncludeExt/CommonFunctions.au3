@@ -4,14 +4,320 @@
 ; https://github.com/jmclaren7/autoit-scripts/blob/master/CommonFunctions.au3
 ;===============================================================================
 ; If these files have already been included using a custom path, you may need to remove them here
-;~ #include <Array.au3>
-;~ #include <Security.au3>
-;~ #include <String.au3>
-;~ #include <AutoItConstants.au3>
-;~ #include <File.au3>
-;~ #include <GUIConstantsEx.au3>
+#include <Array.au3>
+#include <AutoItConstants.au3>
+#include <Date.au3>
+#include <EditConstants.au3>
+#include <File.au3>
+#include <GUIConstantsEx.au3>
+#include <GuiEdit.au3>
+#include <APIFilesConstants.au3>
+#include <Security.au3>
+#include <String.au3>
+#include <WinAPIFiles.au3>
+#include <WinAPIProc.au3>
+#include <WinAPIShPath.au3>
+#include <WinAPISysWin.au3>
+#include <WindowsConstants.au3>
 ;===============================================================================
 
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _Timer
+; Description ...: Creates a quick to use timer
+; Syntax ........: _Timer([$Reset = True])
+; Parameters ....: $Reset               - [optional] If True, time will reset
+; Return values .: The time in miliseconds since last reset or init
+; Author ........: JohnMC - JohnsCS.com
+; Modified ......: 03/14/2024  --  v1.0
+; ===============================================================================================================================
+Func _Timer($Reset = True)
+	If Not IsDeclared("_Timer_Handle") Then
+		Global $_Timer_Handle
+		$_Timer_Handle = TimerInit()
+		Return True
+	EndIf
+	Local $Return = Round(TimerDiff($_Timer_Handle), 1)
+	If $Reset Then $_Timer_Handle = TimerInit()
+	Return $Return
+EndFunc   ;==>_Timer
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _GetVisibleWindows
+; Description ...: Get an array of information for visible windows
+; Syntax ........: _GetVisibleWindows([$Options = 1])
+; Parameters ....: $GetText             - [optional] True/False - Get window text (slow)
+; Return values .: 2D Array of windows and window information
+;				   [0][0] contains the number of windows
+; Author ........: JohnMC - JohnsCS.com, based on AdamUL's _GetVisibleWindows
+; Modified ......: 03/14/2024  --  v2.0
+; ===============================================================================================================================
+Func _GetVisibleWindows($GetText = False)
+	Local $NewCol, $LastCol, $TotalTime, $Timer
+
+	Local $TotalTime = TimerInit()
+
+	; Retrieve a list of windows
+	Local $aWinList = WinList()
+	If Not IsArray($aWinList) Then Return SetError(0, 0, 0)
+	$aWinList[0][1] = "WinHandle"
+
+	; Add window states
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "State"
+	For $i = 1 To $aWinList[0][0]
+		$aWinList[$i][$NewCol] = WinGetState($aWinList[$i][1])
+	Next
+
+	; Add state descriptions
+	$LastCol = $NewCol
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "StateDesc"
+	For $i = 1 To $aWinList[0][0]
+		Local $Desc = ""
+		If BitAND($aWinList[$i][$LastCol], $WIN_STATE_EXISTS) Then $Desc &= "Exists"
+		If BitAND($aWinList[$i][$LastCol], $WIN_STATE_VISIBLE) Then $Desc &= "Visible"
+		If BitAND($aWinList[$i][$LastCol], $WIN_STATE_ENABLED) Then $Desc &= "Enabled"
+		If BitAND($aWinList[$i][$LastCol], $WIN_STATE_ACTIVE) Then $Desc &= "Active"
+		If BitAND($aWinList[$i][$LastCol], $WIN_STATE_MINIMIZED) Then $Desc &= "Minimized"
+		If BitAND($aWinList[$i][$LastCol], $WIN_STATE_MAXIMIZED) Then $Desc &= "Maximized"
+
+		$aWinList[$i][$NewCol] = $Desc
+	Next
+
+	; Delete undesirable windows
+	Local $aNewWinList[0][UBound($aWinList, 2)]
+	Local $NewIndex = 0
+	For $i = 0 To $aWinList[0][0]
+		If $i <> 0 And ($aWinList[$i][0] = "" Or Not BitAND($aWinList[$i][2], $WIN_STATE_VISIBLE)) Then ContinueLoop
+		ReDim $aNewWinList[$NewIndex + 1][UBound($aWinList, 2)]
+		For $b = 0 To UBound($aWinList, 2) - 1
+			$aNewWinList[$NewIndex][$b] = $aWinList[$i][$b]
+		Next
+		$NewIndex += 1
+	Next
+	$aNewWinList[0][0] = UBound($aNewWinList) - 1
+	$aWinList = $aNewWinList
+
+	;Get Process ID (PID) and add to the array.
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "PID"
+	For $i = 1 To $aWinList[0][0]
+		$aWinList[$i][$NewCol] = WinGetProcess($aWinList[$i][1])
+	Next
+
+	; Add process name
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "Name"
+	Local $aProcessList = ProcessList()
+	For $i = 1 To $aWinList[0][0]
+		For $b = 1 To UBound($aProcessList) - 1
+			If $aProcessList[$b][1] = $aWinList[$i][4] Then
+				$aWinList[$i][$NewCol] = $aProcessList[$b][0]
+			EndIf
+		Next
+	Next
+
+	; Add path using winapi method
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "Path"
+	For $i = 1 To $aWinList[0][0]
+		Local $Path = _WinAPI_GetProcessFileName($aWinList[$i][4])
+		; No path might mean the process is elevated so let's try some other things...
+		If $Path = "" Then
+			; Might only help if the stars align
+			Local $aEnum = _WinAPI_EnumProcessModules($aWinList[$i][4])
+			If Not @error Then
+				$TestPath = $aEnum[1]
+				; The exe might be in the system folder (elevated cmd or task manager)
+			Else
+				$TestPath = @SystemDir & "\" & $aWinList[$i][5]
+			EndIf
+
+			$TestFileAttrib = FileGetAttrib($TestPath)
+			If Not @error And Not StringInStr($TestFileAttrib, "D") Then $Path = $TestPath
+		EndIf
+		$aWinList[$i][$NewCol] = $Path
+
+	Next
+
+	; Add command line string
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "Command"
+	For $i = 1 To $aWinList[0][0]
+		$aWinList[$i][$NewCol] = _WinAPI_GetProcessCommandLine($aWinList[$i][4])
+	Next
+
+	; Add window position and size
+	;   -3200,-3200 is minimized window
+	;   -8,-8 is maximized window on 1st display, and x,-8 is maximized window on the nth display were x is the nth display width plus -8 (W + -8).
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol) ; Position (X,Y,W,H)
+	$aWinList[0][$NewCol] = "Position"
+	For $i = 1 To $aWinList[0][0]
+		Local $aWinPosSize = WinGetPos($aWinList[$i][1])
+		If Not @error Then
+			$aWinList[$i][$NewCol] = $aWinPosSize[0] & "," & $aWinPosSize[1] & "," & $aWinPosSize[2] & "," & $aWinPosSize[3]
+		EndIf
+	Next
+
+	; Add window style
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "Style"
+	For $i = 1 To $aWinList[0][0]
+		Local $tWINDOWINFO = _WinAPI_GetWindowInfo($aWinList[$i][1])
+		$aWinList[$i][$NewCol] = DllStructGetData($tWINDOWINFO, 'Style', 1)
+	Next
+
+	; Add style descriptions
+	$LastCol = $NewCol
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "StyleDesc"
+	For $i = 1 To $aWinList[0][0]
+		Local $Desc = ""
+		If BitAND($aWinList[$i][$LastCol], $WS_BORDER) Then $Desc &= "Border"
+		If BitAND($aWinList[$i][$LastCol], $WS_POPUP) Then $Desc &= "Popup"
+		If BitAND($aWinList[$i][$LastCol], $WS_SYSMENU) Then $Desc &= "Sysmenu"
+		If BitAND($aWinList[$i][$LastCol], $WS_GROUP) Then $Desc &= "Group"
+		If BitAND($aWinList[$i][$LastCol], $WS_SIZEBOX) Then $Desc &= "Sizebox"
+		If BitAND($aWinList[$i][$LastCol], $WS_CHILD) Then $Desc &= "Child"
+		If BitAND($aWinList[$i][$LastCol], $WS_DLGFRAME) Then $Desc &= "Dialog"
+		If BitAND($aWinList[$i][$LastCol], $WS_MINIMIZEBOX) Then $Desc &= "Minbox"
+		If BitAND($aWinList[$i][$LastCol], $WS_MAXIMIZEBOX) Then $Desc &= "Maxbox"
+
+		$aWinList[$i][$NewCol] = $Desc
+	Next
+
+	; Add window ExStyle
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "ExStyle"
+	For $i = 1 To $aWinList[0][0]
+		Local $tWINDOWINFO = _WinAPI_GetWindowInfo($aWinList[$i][1])
+		$aWinList[$i][$NewCol] = DllStructGetData($tWINDOWINFO, 'ExStyle', 1)
+	Next
+
+
+	; Add ExStyle descriptions
+	$LastCol = $NewCol
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "ExStyleDesc"
+	For $i = 1 To $aWinList[0][0]
+		Local $Desc = ""
+		If BitAND($aWinList[$i][$LastCol], $WS_EX_TOOLWINDOW) Then $Desc &= "Tool"
+		If BitAND($aWinList[$i][$LastCol], $WS_EX_TOPMOST) Then $Desc &= "Top"
+		If BitAND($aWinList[$i][$LastCol], $WS_EX_CONTROLPARENT) Then $Desc &= "Parent"
+		If BitAND($aWinList[$i][$LastCol], $WS_EX_APPWINDOW) Then $Desc &= "App"
+		If BitAND($aWinList[$i][$LastCol], $WS_EX_MDICHILD) Then $Desc &= "Child"
+		If BitAND($aWinList[$i][$LastCol], $WS_EX_DLGMODALFRAME) Then $Desc &= "Dialog"
+
+		$aWinList[$i][$NewCol] = $Desc
+	Next
+
+	; Get Arch
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "Arch"
+	For $i = 1 To $aWinList[0][0]
+		Local $sArch
+		If _WinAPI_GetBinaryType($aWinList[$i][6]) = 1 Then
+			Switch @extended
+				Case $SCS_32BIT_BINARY
+					$sArch = "32-bit"
+				Case $SCS_64BIT_BINARY
+					$sArch = "64-bit"
+				Case $SCS_DOS_BINARY
+					$sArch = "DOS"
+				Case $SCS_WOW_BINARY
+					$sArch = "16-bit"
+			EndSwitch
+		EndIf
+		$aWinList[$i][$NewCol] = $sArch
+	Next
+
+	; Get Window's text and add to the array.
+	$NewCol = UBound($aWinList, 2)
+	_ArrayColInsert($aWinList, $NewCol)
+	$aWinList[0][$NewCol] = "Text"
+	If $GetText Then
+		Local $WinDetectHiddenText = Opt("WinDetectHiddenText")
+		Opt("WinDetectHiddenText", 1)
+		For $i = 1 To $aWinList[0][0]
+			$aWinList[$i][$NewCol] = WinGetText($aWinList[$i][1])
+		Next
+		Opt("WinDetectHiddenText", $WinDetectHiddenText)
+	EndIf
+
+
+	Return SetError(0, TimerDiff($TotalTime), $aWinList)
+EndFunc   ;==>_GetVisibleWindows
+; #FUNCTION# ====================================================================================================================
+; Name ..........: IsActivated
+; Description ...: Check Windows activation status
+; Syntax ........: IsActivated()
+; Parameters ....: None
+; Return values .: A string with the activation status
+;					@error will be true if activation status could not be retrieved
+;					@extended will be 0 for activated and >0 for not activated
+; Author ........: AutoIT Forum, modified by JohnMC - JohnsCS.com
+; Date/Version ..: 03/02/2024  --  v1.1
+; ===============================================================================================================================
+Func IsActivated()
+	$oWMIService = ObjGet("winmgmts:\\.\root\cimv2")
+	If Not IsObj($oWMIService) Then Return SetError(1, 0, "WMI Object Error")
+
+	$oCollection = $oWMIService.ExecQuery("SELECT Description, LicenseStatus, GracePeriodRemaining FROM SoftwareLicensingProduct WHERE PartialProductKey <> null")
+	If Not IsObj($oCollection) Then Return SetError(2, 0, "WMI Query Error")
+
+	For $oItem In $oCollection
+		Switch $oItem.LicenseStatus
+			Case 0
+				Return SetError(0, 1, "Unlicensed")
+
+			Case 1
+				If $oItem.GracePeriodRemaining Then
+					If StringInStr($oItem.Description, "TIMEBASED_") Then
+						Return SetError(0, 0, "Timebased activation will expire in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
+
+					Else
+						Return SetError(0, 0, "Volume activation will expire in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
+
+					EndIf
+				Else
+					Return SetError(0, 0, "The machine is permanently activated.")
+
+				EndIf
+
+			Case 2
+				Return SetError(0, 2, "Initial grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
+
+			Case 3
+				Return SetError(0, 3, "Additional grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
+
+			Case 4
+				Return SetError(0, 4, "Non-genuine grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
+
+			Case 5
+				Return SetError(0, 5, "Windows is in Notification mode")
+
+			Case 6
+				Return SetError(0, 6, "Extended grace period ends in " & Round($oItem.GracePeriodRemaining / 60 / 24, 1) & " days")
+
+			Case Else
+				Return SetError(4, 7, "Unknown Status Code")
+
+		EndSwitch
+	Next
+
+	Return SetError(3, 0, "Unknown Error")
+EndFunc   ;==>IsActivated
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _FileModifiedAge
 ; Description ...:
@@ -502,12 +808,12 @@ EndFunc   ;==>_ProcessWaitClose
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		06/02/2011  --  v1.0
 ;===============================================================================
-Func _TreeList($path, $mode = 1)
-	Local $FileList_Original = _FileListToArray($path, "*", 0)
+Func _TreeList($Path, $mode = 1)
+	Local $FileList_Original = _FileListToArray($Path, "*", 0)
 	Local $FileList[1]
 
 	For $i = 1 To UBound($FileList_Original) - 1
-		Local $file_path = $path & "\" & $FileList_Original[$i]
+		Local $file_path = $Path & "\" & $FileList_Original[$i]
 		If StringInStr(FileGetAttrib($file_path), "D") Then
 			$new_array = _TreeList($file_path, $mode)
 			_ArrayConcatenate($FileList, $new_array, 1)
@@ -780,6 +1086,8 @@ Func _Log($sMessage, $iLevel = 1)
 	; Global options
 	If Not IsDeclared("LogLevel") Then Global $LogLevel = 1 ; Only show messages this level or below
 	If Not IsDeclared("LogTitle") Then Global $LogTitle = "" ; Title to use for log GUI, no title will skip the GUI
+	If Not IsDeclared("LogWindowStart") Then Global $LogWindowStart = -1 ; -1 for center
+	If Not IsDeclared("LogWindowSize") Then Global $LogWindowSize = 750 ; Starting width, height will be .6 of this value
 	If Not IsDeclared("LogFullPath") Then Global $LogFullPath = "" ; The path of the log file, empty value will not log to file
 	If Not IsDeclared("LogFileMaxSize") Then Global $LogFileMaxSize = 1024 ; Size limit for log in KB
 	If Not IsDeclared("LogFlushAlways") Then Global $LogFlushAlways = False
@@ -798,8 +1106,8 @@ Func _Log($sMessage, $iLevel = 1)
 	If $LogTitle <> "" Then
 		If Not IsDeclared("_hLogEdit") Then
 			; The GUI doesn't exist, create it
-			Global $_hLogWindow = GUICreate($LogTitle, 750, 450, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX))
-			Global $_hLogEdit = GUICtrlCreateEdit("", 0, 0, 750, 450, BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
+			Global $_hLogWindow = GUICreate($LogTitle, $LogWindowSize, Round($LogWindowSize * 0.6), $LogWindowStart, $LogWindowStart, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX))
+			Global $_hLogEdit = GUICtrlCreateEdit("", 0, 0, $LogWindowSize, Round($LogWindowSize * 0.6), BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
 			GUICtrlSetFont(-1, 10, 400, 0, "Consolas")
 			GUICtrlSetColor(-1, 0xFFFFFF)
 			GUICtrlSetBkColor(-1, 0x000000)
@@ -1116,12 +1424,12 @@ EndFunc   ;==>_IsInternet
 ; Date/Version:		10/15/2014  --  v1.1
 ;===============================================================================
 Func _ImageWait($FindImage, $hWnd = Default, $iTolerance = Default, $iTimeout = Default, $x1 = Default, $y1 = Default, $x2 = Default, $y2 = Default)
-	$timer = TimerInit()
+	$Timer = TimerInit()
 	While 1
 		$Return = _ImageSearch($FindImage, $hWnd, $iTolerance, Default, $x1, $y1, $x2, $y2)
 		If Not @error Then Return $Return
 
-		If $iTimeout > 0 And TimerDiff($timer) > $iTimeout Then
+		If $iTimeout > 0 And TimerDiff($Timer) > $iTimeout Then
 			SetError(1)
 			Return 0
 		EndIf
@@ -1526,68 +1834,88 @@ Func _IsIP($sIP, $P_strict = 0)
 	Return 1 ;;string is a ip
 EndFunc   ;==>_IsIP
 ;==============================================================================================
-; Description:		FileRegister($ext, $cmd, $verb[, $def[, $icon = ""[, $desc = ""]]])
+; Description:		_FileRegister($FileExt, $Command, $Verb[, $Default = Default[, $Icon = Default[, $Description = Default]]])
 ;					Registers a file type in Explorer
-; Parameter(s):		$ext - 	File Extension without period eg. "zip"
-;					$cmd - 	Program path with arguments eg. '"C:\test\testprog.exe" "%1"'
-;							(%1 is 1st argument, %2 is 2nd, etc.)
-;					$verb - Name of action to perform on file
-;							eg. "Open with ProgramName" or "Extract Files"
-;					$def - 	Action is the default action for this filetype
-;							(1 for true 0 for false)
-;							If the file is not already associated, this will be the default.
-;					$icon - Default icon for filetype including resource # if needed
-;							eg. "C:\test\testprog.exe,0" or "C:\test\filetype.ico"
-;					$desc - File Description eg. "Zip File" or "ProgramName Document"
+; Parameter(s):		$FileExt - 	File Extension without period eg. "zip"
+;					$Command - 	Program path with arguments eg. '"C:\test\testprog.exe" "%1"'
+;								(%1 is 1st argument, %2 is 2nd, etc.)
+;								Setting $Command to an empty string "" will skip setting that key and return the value of an existing key
+;					$Verb 	- 	Name of action to perform on file
+;								eg. "Open with ProgramName" or "Extract Files"
+;					$Default - 	(True/False) The verb will be the default for this filetype
+;								If the file is not already associated, this will be the default.
+;								Setting default to False will return the current default verb
+;					$Icon - 	Default icon for filetype including resource # if needed
+;								eg. "C:\test\testprog.exe,0" or "C:\test\filetype.ico"
+;					$Description - File Description eg. "Zip File" or "ProgramName Document"
+; Returns:  		Returns the new verb is setting that key was a success, the old verb if it was not
+;					Sets @extended to the new command if setting that key was a success or the old command if not
+; Notes:
+; Author:
+; Date/Version:   	10/15/2014  --  v2.0.4
 ;===============================================================================================
-Func _FileRegister($ext, $cmd, $verb, $def = 0, $icon = "", $desc = "")
-	$loc = RegRead("HKCR\." & $ext, "")
-	If @error Then
-		RegWrite("HKCR\." & $ext, "", "REG_SZ", $ext & "file")
-		$loc = $ext & "file"
+Func _FileRegister($FileExt, $Command, $Verb = Default, $Default = Default, $Icon = Default, $Description = Default)
+	; FileExt is a key representing the file extention and specifying which FileType to use for that extention
+	; FileType is a key containing various properties and actions (verbs) that can be used for files of this type
+
+	If $Default = Default Then $Default = False ; Do not make the new verb the default
+	If $Command = Default Or $Command = "" Then $Command = "" ; Allow use of Default to be treated as ""
+
+	; Remove the "." if it was included
+	If StringLeft($FileExt, 1) = "." Then $FileExt = StringTrimLeft($FileExt, 1)
+
+	; Get the current FileType for the extention
+	Local $FileType = RegRead("HKCR\." & $FileExt, "")
+	If @error And $Verb = Default Then
+		; If FileExt doesn't exist but a verb wasn't specified then we have nothing to do.
+		Return SetError(1, 0, "")
+	ElseIf @error Then ; The extention doesn't exist so create it
+		RegWrite("HKCR\." & $FileExt, "", "REG_SZ", $FileExt & "file") ; Create a new FileType to use with it
+		$FileType = $FileExt & "file" ; Make the new Verb default since it doesn't have one
+		$Default = True
 	EndIf
-	$curdesc = RegRead("HKCR\" & $loc, "")
-	If @error Then
-		If $desc <> "" Then
-			RegWrite("HKCR\" & $loc, "", "REG_SZ", $desc)
-		EndIf
-	Else
-		If $desc <> "" And $curdesc <> $desc Then
-			RegWrite("HKCR\" & $loc, "", "REG_SZ", $desc)
-			RegWrite("HKCR\" & $loc, "olddesc", "REG_SZ", $curdesc)
-		EndIf
-		If $curdesc = "" And $desc <> "" Then
-			RegWrite("HKCR\" & $loc, "", "REG_SZ", $desc)
-		EndIf
+
+	; Verb keys can't have spaces, still use $Verb for a display name
+	$VerbKey = StringReplace($Verb, " ", "")
+
+	; Set the default verb to use
+	Local $CurrentDefaultVerb = RegRead("HKCR\" & $FileType & "\shell", "")
+	If $Default Then
+		If Not @error Then RegWrite("HKCR\" & $FileType & "\shell", "oldverb", "REG_SZ", $CurrentDefaultVerb) ; Backup default verb
+		RegWrite("HKCR\" & $FileType & "\shell", "", "REG_SZ", $VerbKey) ; Make new verb the default
+		If Not @error Then $CurrentDefaultVerb = $VerbKey
 	EndIf
-	$curverb = RegRead("HKCR\" & $loc & "\shell", "")
-	If @error Then
-		If $def = 1 Then
-			RegWrite("HKCR\" & $loc & "\shell", "", "REG_SZ", $verb)
-		EndIf
-	Else
-		If $def = 1 Then
-			RegWrite("HKCR\" & $loc & "\shell", "", "REG_SZ", $verb)
-			RegWrite("HKCR\" & $loc & "\shell", "oldverb", "REG_SZ", $curverb)
-		EndIf
-	EndIf
-	$curcmd = RegRead("HKCR\" & $loc & "\shell\" & $verb & "\command", "")
-	If Not @error Then
-		RegRead("HKCR\" & $loc & "\shell\" & $verb & "\command", "oldcmd")
-		If @error Then
-			RegWrite("HKCR\" & $loc & "\shell\" & $verb & "\command", "oldcmd", "REG_SZ", $curcmd)
-		EndIf
-	EndIf
-	RegWrite("HKCR\" & $loc & "\shell\" & $verb & "\command", "", "REG_SZ", $cmd)
-	If $icon <> "" Then
-		$curicon = RegRead("HKCR\" & $loc & "\DefaultIcon", "")
-		If @error Then
-			RegWrite("HKCR\" & $loc & "\DefaultIcon", "", "REG_SZ", $icon)
-		Else
-			RegWrite("HKCR\" & $loc & "\DefaultIcon", "", "REG_SZ", $icon)
-			RegWrite("HKCR\" & $loc & "\DefaultIcon", "oldicon", "REG_SZ", $curicon)
+
+	If $Verb <> Default Then
+		; The display name for the verb
+		Local $CurrentVerbName = RegRead("HKCR\" & $FileType & "\shell\" & $VerbKey, "")
+		If Not @error Then RegWrite("HKCR\" & $FileType & "\shell\" & $VerbKey, "oldname", "REG_SZ", $CurrentVerbName) ; Backup verb name
+		RegWrite("HKCR\" & $FileType & "\shell\" & $VerbKey, "", "REG_SZ", $Verb) ; Set the display name
+
+		; Command is a subkey reprenseting what happens when a particular verb is selected
+		Local $CurrentCommand = RegRead("HKCR\" & $FileType & "\shell\" & $VerbKey & "\command", "")
+		If $Command <> Default Then
+			If Not @error Then RegWrite("HKCR\" & $FileType & "\shell\" & $VerbKey & "\command", "oldcmd", "REG_SZ", $CurrentCommand) ; Backup command
+			RegWrite("HKCR\" & $FileType & "\shell\" & $VerbKey & "\command", "", "REG_SZ", $Command) ; Set the command
+			If Not @error Then $CurrentCommand = $Command
 		EndIf
 	EndIf
+
+	; Specify the icon to be used for the FileType
+	If $Icon <> Default Then
+		Local $CurrentIcon = RegRead("HKCR\" & $FileType & "\DefaultIcon", "")
+		If @error Then RegWrite("HKCR\" & $FileType & "\DefaultIcon", "oldicon", "REG_SZ", $CurrentIcon) ; Backup icon
+		RegWrite("HKCR\" & $FileType & "\DefaultIcon", "", "REG_SZ", $Icon)
+	EndIf
+
+	; Set the description for the the file type
+	If $Description <> Default Then
+		Local $CurrentDescription = RegRead("HKCR\" & $FileType, "")
+		If @error Then RegWrite("HKCR\" & $FileType, "olddesc", "REG_SZ", $CurrentDescription) ; Backup description
+		RegWrite("HKCR\" & $FileType, "", "REG_SZ", $Description) ; Write the description
+	EndIf
+
+	Return SetError(0, $CurrentCommand, $CurrentDefaultVerb)
 EndFunc   ;==>_FileRegister
 ;===============================================================================
 ; Description:		FileUnRegister($ext, $verb)
@@ -1596,7 +1924,7 @@ EndFunc   ;==>_FileRegister
 ;					$verb - Name of file action to remove
 ;							eg. "Open with ProgramName" or "Extract Files"
 ;===============================================================================
-Func _FileUnRegister($ext, $verb)
+Func _FileUnRegister($ext, $Verb)
 	$loc = RegRead("HKCR\." & $ext, "")
 	If Not @error Then
 		$oldicon = RegRead("HKCR\" & $loc & "\shell", "oldicon")
@@ -1617,55 +1945,15 @@ Func _FileUnRegister($ext, $verb)
 		Else
 			RegDelete("HKCR\" & $loc, "")
 		EndIf
-		$oldcmd = RegRead("HKCR\" & $loc & "\shell\" & $verb & "\command", "oldcmd")
+		$oldcmd = RegRead("HKCR\" & $loc & "\shell\" & $Verb & "\command", "oldcmd")
 		If Not @error Then
-			RegWrite("HKCR\" & $loc & "\shell\" & $verb & "\command", "", "REG_SZ", $oldcmd)
-			RegDelete("HKCR\" & $loc & "\shell\" & $verb & "\command", "oldcmd")
+			RegWrite("HKCR\" & $loc & "\shell\" & $Verb & "\command", "", "REG_SZ", $oldcmd)
+			RegDelete("HKCR\" & $loc & "\shell\" & $Verb & "\command", "oldcmd")
 		Else
-			RegDelete("HKCR\" & $loc & "\shell\" & $verb)
+			RegDelete("HKCR\" & $loc & "\shell\" & $Verb)
 		EndIf
 	EndIf
 EndFunc   ;==>_FileUnRegister
-;===============================================================================
-; Function:		_SetDefaultContextItem
-; Purpose:		Set default context item for file type
-; Syntax:		_SetDefaultContextItem($sExtention)
-; Parameters:	$sExtention = File extention
-;				$sVerb = Verb to set as default
-; Returns:  	Success - 1
-;				Failure - 0
-; Notes:
-; Author:
-; Date/Version:   	10/15/2014  --  v1.1
-;===============================================================================
-Func _SetDefaultContextItem($sExtention, $sVerb)
-	Local $sRegistryLocation = RegRead("HKCR\." & $sExtention, "")
-	If @error Then Return 0
-
-	RegWrite("HKCR\" & $sRegistryLocation & "\shell", "", "REG_SZ", $sVerb)
-	If @error Then Return 0
-	Return 1
-EndFunc   ;==>_SetDefaultContextItem
-;===============================================================================
-; Function:		_GetDefaultContextItem
-; Purpose:		Get default context item for file type
-; Syntax:		_GetDefaultContextItem($sExtention)
-; Parameters:	$sExtention = File extention
-; Returns:  	Success - Current Verb
-;				Failure - 0
-; Notes:
-; Author:
-; Date/Version:   	10/15/2014  --  v1.1
-;===============================================================================
-Func _GetDefaultContextItem($sExtention)
-	Local $sRegistryLocation = RegRead("HKCR\." & $sExtention, "")
-	If @error Then Return 0
-
-	Local $sVerb = RegRead("HKCR\" & $sRegistryLocation & "\shell", "")
-	If @error Then Return 0
-
-	Return $sVerb
-EndFunc   ;==>_GetDefaultContextItem
 ;===============================================================================
 ; Function:		_GetBroadcast
 ; Purpose:		Get the UDP broadcast ip address for the adapter address specified
