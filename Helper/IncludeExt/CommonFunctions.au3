@@ -4,21 +4,21 @@
 ; https://github.com/jmclaren7/autoit-scripts/blob/master/CommonFunctions.au3
 ;===============================================================================
 ; If these files have already been included using a custom path, you may need to remove them here
-#include <Array.au3>
-#include <AutoItConstants.au3>
-#include <Date.au3>
-#include <EditConstants.au3>
-#include <File.au3>
-#include <GUIConstantsEx.au3>
-#include <GuiEdit.au3>
-#include <APIFilesConstants.au3>
-#include <Security.au3>
-#include <String.au3>
-#include <WinAPIFiles.au3>
-#include <WinAPIProc.au3>
-#include <WinAPIShPath.au3>
-#include <WinAPISysWin.au3>
-#include <WindowsConstants.au3>
+;~ #include <Array.au3>
+;~ #include <AutoItConstants.au3>
+;~ #include <Date.au3>
+;~ #include <EditConstants.au3>
+;~ #include <File.au3>
+;~ #include <GUIConstantsEx.au3>
+;~ #include <GuiEdit.au3>
+;~ #include <APIFilesConstants.au3>
+;~ #include <Security.au3>
+;~ #include <String.au3>
+;~ #include <WinAPIFiles.au3>
+;~ #include <WinAPIProc.au3>
+;~ #include <WinAPIShPath.au3>
+;~ #include <WinAPISysWin.au3>
+;~ #include <WindowsConstants.au3>
 ;===============================================================================
 
 ; #FUNCTION# ====================================================================================================================
