@@ -16,7 +16,7 @@
 #include <StaticConstants.au3>
 #include <WindowsConstants.au3>
 
-Global $Title = "VNCViewer Helper"
+Global $Title = "VNCScan"
 Global $ViewerFullPath = @TempDir & "\tvnviewer.exe"
 
 ConsoleWrite(@CRLF&"Start"&@CRLF)
