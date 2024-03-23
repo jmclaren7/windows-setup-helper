@@ -4,18 +4,19 @@ cls
 
 REM == Settings You Need To Change =================================
 REM The location of the extracted install media (no trailing slash)
-set mediapath=D:\Windows Images\11-23H2
+set mediapath=D:\Windows Images\11
 
 REM Extra files that you want to add to the image (no trailing slash, wildcard is added to the end)
 set extrafiles=D:\Windows Images\Additions
 
 REM The path where you want to save an ISO file
-set outputiso=D:\Windows Images\Windows.iso
+set outputiso=D:\Windows Images\Windows11.iso
 
 REM The index of the boot.wim image you want to modify
 REM Usually /Index:2 for an unmodified Windows 10/11 boot.wim
 REM Can also be /Name:"Microsoft Windows Setup (amd64)" if you want to use the name
-REM Some versions of Windows use "Microsoft Windows Setup (x64)" instead
+REM     Some versions of Windows use "Microsoft Windows Setup (x64)"
+REM     Some versions of Windows use "Microsoft Windows Setup (amd64)"
 set wimindex=/Name:"Microsoft Windows Setup (amd64)"
 
 REM == Other Paths =================================================
