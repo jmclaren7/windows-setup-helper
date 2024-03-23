@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <object type="TAForm" name="GUIMain">
 	<properties>
-		<property name="Left" vt="Int16">683</property>
-		<property name="Top" vt="Int16">454</property>
+		<property name="Left" vt="Int16">1193</property>
+		<property name="Top" vt="Int16">557</property>
 		<property name="Width" vt="Int16">768</property>
 		<property name="Height" vt="Int16">551</property>
 		<property name="Caption" vt="String">Title</property>
@@ -84,6 +84,66 @@
 					</properties>
 					<components/>
 				</object>
+				<object type="TAButton" name="TaskMgrButton">
+					<properties>
+						<property name="Left" vt="Int8">16</property>
+						<property name="Top" vt="Int16">417</property>
+						<property name="Width" vt="Int8">29</property>
+						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">Task Manager</property>
+						<property name="TabOrder" vt="Int8">2</property>
+						<property name="Color" vt="Ident">clBtnFace</property>
+						<property name="CtrlStyle" vt="Int32">1342373888</property>
+						<property name="CtrlExStyle" vt="Int8">0</property>
+						<property name="Resizing" vt="Set">DockLeft, DockBottom, DockWidth, DockHeight</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAButton" name="RegeditButton">
+					<properties>
+						<property name="Left" vt="Int8">56</property>
+						<property name="Top" vt="Int16">417</property>
+						<property name="Width" vt="Int8">29</property>
+						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">Registry Editor</property>
+						<property name="TabOrder" vt="Int8">3</property>
+						<property name="Color" vt="Ident">clBtnFace</property>
+						<property name="CtrlStyle" vt="Int32">1342373888</property>
+						<property name="CtrlExStyle" vt="Int8">0</property>
+						<property name="Resizing" vt="Set">DockLeft, DockBottom, DockWidth, DockHeight</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAButton" name="NotepadButton">
+					<properties>
+						<property name="Left" vt="Int8">96</property>
+						<property name="Top" vt="Int16">417</property>
+						<property name="Width" vt="Int8">29</property>
+						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">Notepad</property>
+						<property name="TabOrder" vt="Int8">4</property>
+						<property name="Color" vt="Ident">clBtnFace</property>
+						<property name="CtrlStyle" vt="Int32">1342373888</property>
+						<property name="CtrlExStyle" vt="Int8">0</property>
+						<property name="Resizing" vt="Set">DockLeft, DockBottom, DockWidth, DockHeight</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAButton" name="CMDButton">
+					<properties>
+						<property name="Left" vt="Int16">137</property>
+						<property name="Top" vt="Int16">417</property>
+						<property name="Width" vt="Int8">29</property>
+						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">Command Prompt</property>
+						<property name="TabOrder" vt="Int8">5</property>
+						<property name="Color" vt="Ident">clBtnFace</property>
+						<property name="CtrlStyle" vt="Int32">1342373888</property>
+						<property name="CtrlExStyle" vt="Int8">0</property>
+						<property name="Resizing" vt="Set">DockLeft, DockBottom, DockWidth, DockHeight</property>
+					</properties>
+					<components/>
+				</object>
 			</components>
 		</object>
 		<object type="TAGroup" name="Group6">
@@ -118,7 +178,7 @@
 					<properties>
 						<property name="Left" vt="Int16">176</property>
 						<property name="Top" vt="Int16">417</property>
-						<property name="Width" vt="Int16">163</property>
+						<property name="Width" vt="Int16">131</property>
 						<property name="Height" vt="Int8">25</property>
 						<property name="Caption" vt="String">Automated Install</property>
 						<property name="TabOrder" vt="Int8">1</property>
@@ -167,6 +227,21 @@
 						<property name="TabOrder" vt="Int8">4</property>
 						<property name="CtrlStyle" vt="Int32">1342374016</property>
 						<property name="CtrlExStyle" vt="Int16">512</property>
+						<property name="Resizing" vt="Set">DockRight, DockBottom, DockWidth, DockHeight</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAButton" name="FormatButton">
+					<properties>
+						<property name="Left" vt="Int16">314</property>
+						<property name="Top" vt="Int16">417</property>
+						<property name="Width" vt="Int8">29</property>
+						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">Delete and install to disk 0</property>
+						<property name="TabOrder" vt="Int8">5</property>
+						<property name="Color" vt="Ident">clBtnFace</property>
+						<property name="CtrlStyle" vt="Int32">1342373888</property>
+						<property name="CtrlExStyle" vt="Int8">0</property>
 						<property name="Resizing" vt="Set">DockRight, DockBottom, DockWidth, DockHeight</property>
 					</properties>
 					<components/>
