@@ -44,7 +44,7 @@ FileChangeDir(@ScriptDir)
 
 ; Miscellaneous global variables
 Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 6)
-Global $Version = "5.3"
+Global $Version = "5.4"
 Global $Title = "Windows Setup Helper v" & $Version & " (" & $Date & ")"
 Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
 Global $DoubleClick = False
@@ -125,7 +125,6 @@ GUICtrlCreateGroup("", -99, -99, 1, 1)
 $StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
 _GUICtrlStatusBar_SetSimple($StatusBar1)
 _GUICtrlStatusBar_SetText($StatusBar1, "")
-GUISetState(@SW_SHOW)
 #EndRegion ### END Koda GUI section ###
 
 ; Button Icons
@@ -138,7 +137,7 @@ GUICtrlSetImage($NotepadButton, @WindowsDir & "\System32\notepad.exe", 1, 0)
 GUICtrlSetStyle($CMDButton, $BS_ICON)
 GUICtrlSetImage($CMDButton, @WindowsDir & "\System32\cmd.exe", 1, 0)
 GUICtrlSetStyle($FormatButton, $BS_ICON)
-GUICtrlSetImage($FormatButton, @WindowsDir & "\System32\shell32.dll", 240, 0)
+GUICtrlSetImage($FormatButton, @WindowsDir & "\System32\shell32.dll", 161, 0)
 
 ; File Menu Items
 $MenuExitButton = GUICtrlCreateMenuItem("Exit", $FileMenu)
@@ -175,6 +174,9 @@ GUISetIcon($SystemDrive & "sources\setup.exe")
 ; Hide console windows
 _Log("Hide console window")
 WinSetState($LogTitle, "", @SW_HIDE)
+
+; Show GUI
+GUISetState(@SW_SHOW)
 
 ; Setup statusbar updates
 Global $StatusBarToolTip = _GUIToolTip_Create(0)
@@ -265,7 +267,7 @@ While 1
 				_Log("StringReplace @extended=" & @extended)
 			EndIf
 
-			If $nMsg = $FormatButton Then
+			If $nMsg = $FormatButton And $IsPE Then
 				$sFileData = StringReplace($sFileData, "<!--Format", "")
 				$sFileData = StringReplace($sFileData, "Format-->", "")
 				Run(@ComSpec & " /c " & '(echo Select Disk 0 & echo clean) | diskpart')
@@ -717,6 +719,11 @@ Func _StatusBarUpdate()
 	EndIf
 	$StatusbarToolTipText &= @CR & "Other IPs: " & @IPAddress1 & ", " & @IPAddress2 & ", " & @IPAddress3 & ", " & @IPAddress4
 
+	; Get firmware type
+	$Firmware_Type = EnvGet("firmware_type")
+	If $Firmware_Type = "Legacy" Then $Firmware_Type = "BIOS"
+	$StatusbarText &= $Delimiter & $Firmware_Type
+
 	; Get memory information
 	If Not IsDeclared("_MemStats") Then Global $_MemStats = MemGetStats()
 	$StatusbarText &= $Delimiter & Round($_MemStats[1] / 1024 / 1024) & "GB"
@@ -728,8 +735,9 @@ Func _StatusBarUpdate()
 	; Get motherboard bios information
 	$Win32_BIOS = _WMI("SELECT SerialNumber,SMBIOSBIOSVersion,ReleaseDate FROM Win32_BIOS")
 	If Not @error Then
-		If $Win32_BIOS.SerialNumber <> "" and $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 20)
-		$StatusbarText &= $Delimiter & "FW: " & StringLeft($Win32_BIOS.SMBIOSBIOSVersion, 20) & " (" & StringLeft($Win32_BIOS.ReleaseDate, 8) & ")"
+		If $Win32_BIOS.SerialNumber <> "" and $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 10)
+		$StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.ReleaseDate, 8)
+		$StatusbarToolTipText &= @CR & "Firmware: " & StringLeft($Win32_BIOS.SMBIOSBIOSVersion, 20) & " Date: " & StringLeft($Win32_BIOS.ReleaseDate, 8)
 	EndIf
 
 	; Get additional statusbar and tool tip text
