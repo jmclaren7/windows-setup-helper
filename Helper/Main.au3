@@ -149,7 +149,6 @@ $MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
 $MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
 $MenuRelistScripts = GUICtrlCreateMenuItem("Relist Tools && Scripts", $AdvancedMenu)
 $MenuListDebugTools = GUICtrlCreateMenuItem("List Debug && AutoRun Tools", $AdvancedMenu)
-$MenuInstallDisk0 = -1;GUICtrlCreateMenuItem("Auto Install To Disk 0", $AdvancedMenu)
 
 ; GUI Post Creation Setup
 WinSetTitle($GUIMain, "", $Title)
@@ -163,7 +162,8 @@ _PopulateScripts($PEScriptTreeView, "Tools*")
 ; Variables used in GUI loop
 Local $hSetup
 Local $RebootPrompt = False
-Local $CopyAutoLogonFiles = False
+Local $AutoInstallWait = False
+Local $NormalInstallWait = False
 Local $Reboot = False
 
 ; Start PE networking
@@ -205,9 +205,6 @@ While 1
 			If $IsPE And MsgBox(1, $Title, "Closing the program will reboot the system while in WinPE.") <> 1 Then ContinueLoop
 			Exit
 
-		Case $WM_SIZE
-
-
 		Case $MenuShowConsole
 			WinSetState($Title & " Log", "", @SW_SHOW)
 
@@ -223,7 +220,6 @@ While 1
 
 		Case $MenuOpenLog
 			_Log("MenuOpenLog")
-			;_RunFile($LogFullPath) ; Not working in Win11 PE
 			ShellExecute("notepad.exe", $LogFullPath)
 
 		Case $MenuRunMain
@@ -242,16 +238,16 @@ While 1
 
 		Case $NormalInstallButton
 			$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot")
-			$CopyAutoLogonFiles = False
-			$RebootPrompt = True
+			$NormalInstallWait = True
+			$AutoInstallWait = False
 
-		Case $AutomatedInstallButton, $MenuInstallDisk0
+		Case $AutomatedInstallButton, $FormatButton
 			If IsDeclared($hSetup) And ProcessExists($hSetup) Then
 				MsgBox(0, "Error - " & $Title, "Setup is already running, please close it first")
 				ContinueLoop
 			EndIf
 
-			If $nMsg = $MenuInstallDisk0 And MsgBox($MB_OKCANCEL, "Danger - " & $Title, "Setup will automaticly use disk 0 to install Windows") <> $IDOK Then ContinueLoop
+			If $nMsg = $FormatButton And MsgBox($MB_OKCANCEL + $MB_ICONWARNING, $Title, "Setup will automaticly use disk 0 to install Windows, any existing data will be lost, press ok to continue.") <> $IDOK Then ContinueLoop
 
 			$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
 			For $b = 0 To UBound($aAutoLogonCopy) - 1
@@ -269,8 +265,11 @@ While 1
 				_Log("StringReplace @extended=" & @extended)
 			EndIf
 
-			If $nMsg = $MenuInstallDisk0 Then
-				;$sFileData = StringReplace($sFileData, "", "")
+			If $nMsg = $FormatButton Then
+				$sFileData = StringReplace($sFileData, "<!--Format", "")
+				$sFileData = StringReplace($sFileData, "Format-->", "")
+				Run(@ComSpec & " /c " & '(echo Select Disk 0 & echo clean) | diskpart')
+				_Win11Bypass()
 			EndIf
 
 			If @OSVersion = "WIN_10" Then
@@ -289,7 +288,8 @@ While 1
 
 			$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
 
-			$CopyAutoLogonFiles = True
+			$NormalInstallWait = False
+			$AutoInstallWait = True
 
 		Case $TaskMgrButton
 			_RunFile("taskmgr.exe")
@@ -319,7 +319,8 @@ While 1
 
 	EndIf
 
-	If $CopyAutoLogonFiles And Not ProcessExists($hSetup) Then
+	; Wait for auotmatic install to finish
+	If $AutoInstallWait And Not ProcessExists($hSetup) Then
 		_Log("Copy AutoLogon Files")
 		For $i = 65 To 90 ; 65=A 90=Z
 			$Drive = Chr($i) & ":"
@@ -357,10 +358,17 @@ While 1
 			ContinueLoop
 		EndIf
 
-		$RebootPrompt = True
-		$CopyAutoLogonFiles = False
+		$RebootPrompt = True ; Will trigger a prompt that will reboot on timeout
+		$AutoInstallWait = False
 	EndIf
 
+	; Wait for normal install to finish
+	If $NormalInstallWait And Not ProcessExists($hSetup) Then
+		$RebootPrompt = True
+		$NormalInstallWait = False
+	EndIf
+
+	; Reboot
 	If $RebootPrompt Then
 		_Log("Reboot")
 		Beep(500, 1000)
@@ -375,6 +383,17 @@ WEnd
 
 ;=========== =========== =========== =========== =========== =========== =========== ===========
 ;=========== =========== =========== =========== =========== =========== =========== ===========
+Func _Win11Bypass()
+	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassSecureBootCheck", "REG_DWORD", 1)
+	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassTPMCheck", "REG_DWORD", 1)
+	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassCPUCheck", "REG_DWORD", 1)
+	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassRAMCheck", "REG_DWORD", 1)
+	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassStorageCheck", "REG_DWORD", 1)
+	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\MoSetup", "AllowUpgradesWithUnsupportedTPMOrCPU", "REG_DWORD", 1)
+	RegWrite("HKEY_CURRENT_USER\Control Panel\UnsupportedHardwareNotificationCache", "SV1", "REG_DWORD", 0)
+	RegWrite("HKEY_CURRENT_USER\Control Panel\UnsupportedHardwareNotificationCache", "SV2", "REG_DWORD", 0)
+	RegWrite("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE", "BypassNRO", "REG_DWORD", 1)
+EndFunc
 
 ; Proccess NOTIFY mesages to handle double clicks
 Func _WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
