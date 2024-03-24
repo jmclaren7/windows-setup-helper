@@ -35,7 +35,7 @@ if not exist "%helperrepo%\Helper\Main.au3" ( echo Main.au3 not found & pause & 
 REM == Default for toggle options ===================================
 set automaticpackages=No
 set automaticexport=No
-set automaticresolution=Yes
+set automaticresolution=NoChange
 
 REM == Menu ========================================================
 :mainmenu
@@ -56,7 +56,7 @@ echo.
 echo  F. Automatically run steps 1,2,3,4 (requires ADK)
 echo       G. Add Packages to Boot.wim: %automaticpackages%
 echo       H. Trim Boot.wim: %automaticexport%
-echo       T. Set Boot Resolution to 1024x768: %automaticresolution%
+echo       T. Set Boot Resolution to: %automaticresolution%
 echo.
 echo  B. Browse mounted image folder
 echo  A. Add packages to mounted image (requires ADK)
@@ -66,7 +66,7 @@ echo.
 echo  E. Convert install.esd to install.wim
 echo  R. Mount and browse install.wim
 echo  S. Trim boot.wim (Trims other indexes and removes unused files)
-echo  L. Use Bcdedit to set media boot resolution to 1024x768
+echo  L. Use Bcdedit to set media boot resolution to: %automaticresolution%
 echo.
 echo.  
 echo  Enter a selection or Q to quit...
@@ -367,9 +367,15 @@ if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
-REM == Set Resolution================================================
+REM == Set Resolution===============================================
 :setresolution
-bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} graphicsresolution 1024x768
+if %automaticresolution% NEQ NoChange ( 
+  if %automaticresolution%==Highest ( 
+    bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} highestmode on 
+  ) else (
+    bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} graphicsresolution %automaticresolution%
+  )
+)
 
 echo.
 if %pauseafter%==true ( pause )
@@ -388,9 +394,14 @@ REM == Toggle Trim ==================================================
 if %automaticexport%==Yes ( set automaticexport=No ) else ( set automaticexport=Yes )
 goto mainmenu
 
+
 REM == Toggle Resolution ===========================================
 :toggleresolution
-if %automaticresolution%==Yes ( set automaticresolution=No ) else ( set automaticresolution=Yes )
+if %automaticresolution%==Highest ( set automaticresolution=1920x1080 & goto mainmenu )
+if %automaticresolution%==1920x1080 ( set automaticresolution=1280x1024 & goto mainmenu )
+if %automaticresolution%==1280x1024 ( set automaticresolution=1024x768 & goto mainmenu )
+if %automaticresolution%==1024x768 ( set automaticresolution=NoChange & goto mainmenu )
+if %automaticresolution%==NoChange ( set automaticresolution=Highest & goto mainmenu )
 goto mainmenu
 
 
