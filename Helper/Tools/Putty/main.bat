@@ -1,1 +1,1 @@
-start putty.exe
+start /d "%~dp0" putty.exe
