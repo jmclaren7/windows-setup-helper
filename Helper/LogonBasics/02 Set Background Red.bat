@@ -14,7 +14,7 @@ IF "%~1"=="Orange" (SET BR=FF & SET BG=8C & SET BB=00)
 IF "%~1"=="Blue"   (SET BR=22 & SET BG=33 & SET BB=44)
 IF "%~1"=="Purple" (SET BR=22 & SET BG=33 & SET BB=44)
 IF "%~1"=="Gray"   (SET BR=7F & SET BG=7F & SET BB=7F)
-set BGPath=%ProgramData%\RTScripts
+set BGPath=%ProgramData%\Helper
 set BGFullPath=%BGPath%\backgroundpixel.bmp
 mkdir %BGPath%
 >backgroundpixel.tmp echo(42 4D 3A 00 00 00 00 00 00 00 36 00 00 00 28 00 00 00 01 00 00 00 01 00 00 00 01 00 18 00 00 00 00 00 00 00 00 00 12 0B 00 00 12 0B 00 00 00 00 00 00 00 00 00 00 %BB% %BG% %BR% 00
