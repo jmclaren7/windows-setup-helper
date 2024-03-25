@@ -60,10 +60,8 @@ Using DSIM is the recommended way to update Windows images (wim), it's more adva
 ### Prerequisites
 
 - Download and extract a Windows installer ISO (https://www.microsoft.com/software-download/windows11) 
-- Download and install Windows ADK and the PE add-on, see the note below on version selection (https://learn.microsoft.com/en-us/windows-hardware/get-started/adk-install) 
+- Download and install Windows ADK and the PE add-on, [Read this](https://github.com/jmclaren7/windows-setup-helper/blob/master/Extra/ADK-Versions.md) for links and information on available versions. 
 - Configure Build.bat with the correct path to the directory containing the extracted files, choose an ISO output path and review the additional options noted in the script
-
-Note: The source WinPE media you use must match the version of ADK or you won't be able to to do certain things like adding packages for powershell and .net. [Read this](https://github.com/jmclaren7/windows-setup-helper/blob/master/Extra/ADK-Versions.md) for my notes on available versions.
 
 ### Running the script
 
