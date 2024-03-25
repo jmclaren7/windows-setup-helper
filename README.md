@@ -71,7 +71,7 @@ Note: The source WinPE media you use must match the version of ADK or you won't 
 2. Either select the individual step you want or select F to go through the entire process
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/build1.png?raw=true">
+  <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/Build1.png?raw=true">
 </p>
 
 ## Prepare Using NTLite
