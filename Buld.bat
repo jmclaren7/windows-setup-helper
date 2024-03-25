@@ -3,20 +3,21 @@ Call :Admin
 cls
 
 REM == Settings You Need To Change =================================
-REM The location of the extracted install media (no trailing slash)
+REM The ISO file you want to extract
+set sourceiso=D:\Windows Images\Windows 11 23H2 MCT 2403.iso
+
+REM The for to the extracted ISO to (no trailing slash)
 set mediapath=D:\Windows Images\11
 
-REM Extra files that you want to add to the image (no trailing slash, wildcard is added to the end)
+REM Extra files that you want to add to the image (no trailing slash)
 set extrafiles=D:\Windows Images\Additions
 
 REM The path where you want to save an ISO file
 set outputiso=D:\Windows Images\Windows11.iso
 
-REM The index of the boot.wim image you want to modify
-REM Usually /Index:2 for an unmodified Windows 10/11 boot.wim
-REM Can also be /Name:"Microsoft Windows Setup (amd64)" if you want to use the name
-REM     Some versions of Windows use "Microsoft Windows Setup (x64)"
-REM     Some versions of Windows use "Microsoft Windows Setup (amd64)"
+
+REM == Other Settings ==============================================
+REM The index of the boot.wim image you want to modify eg: "/Index:2" or "/Name:name"
 set wimindex=/Name:"Microsoft Windows Setup (amd64)"
 
 REM == Other Paths =================================================
@@ -25,91 +26,157 @@ set sourcewim=%mediapath%\sources\boot.wim
 set mountpath=%temp%\WIMMount
 set adk=%ProgramFiles(x86)%\Windows Kits\10\Assessment and Deployment Kit
 
+REM == Defaults for toggle options ==================================
+set "auto_extractiso=*"
+set "auto_mountwim=*"
+set "auto_copyfiles=*"
+set "auto_addpackages= "
+set "auto_unmountcommit=*"
+set "auto_setresolution= "
+set "auto_trimimages= "
+set "auto_makeiso=*"
+set "auto_setresolution_detail=Highest"
+
 
 REM == Basic Checks ================================================
 if not exist "%mediapath%\" ( echo Media path not found, reconfigure batch file & pause & exit)
-if not exist "%sourcewim%" ( echo Boot.wim not found & pause & exit)
+REM if not exist "%sourcewim%" ( echo Boot.wim not found & pause & exit)
 if "%helperrepo:~-1%"=="\" SET helperrepo=%helperrepo:~0,-1%
 if not exist "%helperrepo%\Helper\Main.au3" ( echo Main.au3 not found & pause & exit)
 
-REM == Default for toggle options ===================================
-set automaticpackages=No
-set automaticexport=No
-set automaticresolution=NoChange
 
 REM == Menu ========================================================
 :mainmenu
 set pauseafter=true
 set returnafter=false
 cls
+echo  Source ISO = %sourceiso%
+echo  Media folder = %mediapath%
+echo  Output ISO = %outputiso%
 echo.
-echo       Media folder = %mediapath%
-echo       Mount folder = %mountpath%
-echo       Helper files = %helperrepo%
-echo       Output ISO = %outputiso%
+echo  Q/1. %auto_extractiso%Extract ISO to media folder
+echo  W/2. %auto_mountwim%Mount boot.wim from media folder
+echo  E/3. %auto_copyfiles%Copy Helper files to mounted image
+echo  R/4. %auto_addpackages%Add packages to mounted image (requires ADK)
+echo  Y/5. %auto_unmountcommit%Unmount and commit changes to WIM
+echo  T/6. %auto_setresolution%Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
+echo  U/7. %auto_trimimages%Trim boot.wim (Trims other indexes and removes unused files)
+echo  I/8. %auto_makeiso%Make ISO from media folder (requires ADK)
 echo.
-echo  1. Mount boot.wim (Windows Image) from media folder
-echo  2. Copy Helper files to mounted image
-echo  3. Unmount and commit changes to WIM
-echo  4. Make ISO from media folder (requires ADK)
-echo.
-echo  F. Automatically run steps 1,2,3,4 (requires ADK)
-echo       G. Add Packages to Boot.wim: %automaticpackages%
-echo       H. Trim Boot.wim: %automaticexport%
-echo       T. Set Boot Resolution to: %automaticresolution%
+echo  F. Automatically run the * steps (enter a step # to toggle its inclusion)
 echo.
 echo  B. Browse mounted image folder
-echo  A. Add packages to mounted image (requires ADK)
-echo  X. Unmount, discard changes and cleanup (use if mounted image is stuck)
-echo  I. Get image information
-echo.
-echo  E. Convert install.esd to install.wim
-echo  R. Mount and browse install.wim
-echo  S. Trim boot.wim (Trims other indexes and removes unused files)
-echo  L. Use Bcdedit to set media boot resolution to: %automaticresolution%
-echo.
+echo  X. Discard changes and unmount WIM (%mountpath%)
+echo  A. Get image information
+
+REM echo  E. Convert install.esd to install.wim
+REM echo  R. Mount and browse install.wim
 echo.  
-echo  Enter a selection or Q to quit...
-choice /C 1234FGHBAXIERSTLQ /N
+echo  Select letter of the function to run...
+choice /C 12345678QWERTYUIFBXAG /N
 goto option%errorlevel%
 
 :option1
-goto mount
+if "%auto_extractiso%"=="*" ( set "auto_extractiso= " ) else ( set "auto_extractiso=*" )
+goto mainmenu
 :option2
-goto copyfiles
+if "%auto_mountwim%"=="*" ( set "auto_mountwim= " ) else ( set "auto_mountwim=*" )
+goto mainmenu
 :option3
-goto unmountcommit
+if "%auto_copyfiles%"=="*" ( set "auto_copyfiles= " ) else ( set "auto_copyfiles=*" )
+goto mainmenu
 :option4
-goto makeiso
+if "%auto_addpackages%"=="*" ( set "auto_addpackages= " ) else ( set "auto_addpackages=*" )
+goto mainmenu
 :option5
-goto automatic
+if "%auto_unmountcommit%"=="*" ( set "auto_unmountcommit= " ) else ( set "auto_unmountcommit=*" )
+goto mainmenu
 :option6
-goto togglepackages
+if "%auto_setresolution%"=="*" ( set "auto_setresolution= " ) else ( set "auto_setresolution=*" )
+goto mainmenu
 :option7
-goto toggletrim
+if "%auto_trimimages%"=="*" ( set "auto_trimimages= " ) else ( set "auto_trimimages=*" )
+goto mainmenu
 :option8
-goto browsemount
+if "%auto_makeiso%"=="*" ( set "auto_makeiso= " ) else ( set "auto_makeiso=*" )
+goto mainmenu
 :option9
-goto addpackages
+goto extractiso
 :option10
-goto unmountdiscard
+goto mountwim
 :option11
-goto getinfo
+goto copyfiles
 :option12
-goto convertinstallesd
+goto addpackages
 :option13
-goto mountinstallwim
-:option14
-goto trimimage
-:option15
-goto toggleresolution
-:option16
 goto setresolution
+:option14
+goto unmountcommit
+:option15
+goto trimimages
+:option16
+goto makeiso
 :option17
-exit
+goto automatic
+:option18
+goto browsemount
+:option19
+goto unmountdiscard
+:option20
+goto getinfo
+:option21
+goto toggle_resolution_detail
+
+REM == Toggles ======================================================
+:toggle_resolution_detail
+if %auto_setresolution_detail%==Highest ( set auto_setresolution_detail=1920x1080 & goto mainmenu )
+if %auto_setresolution_detail%==1920x1080 ( set auto_setresolution_detail=1280x1024 & goto mainmenu )
+if %auto_setresolution_detail%==1280x1024 ( set auto_setresolution_detail=1024x768 & goto mainmenu )
+if %auto_setresolution_detail%==1024x768 ( set auto_setresolution_detail=Highest & goto mainmenu )
+goto mainmenu
+
+REM == Automatic ===================================================
+:automatic
+
+echo.
+echo [96mRunning steps automatically[0m
+echo.
+
+set pauseafter=false
+set returnafter=true
+if "%auto_extractiso%"=="*" ( call :extractiso )
+if "%auto_mountwim%"=="*" ( call :mountwim )
+if "%auto_copyfiles%"=="*" ( call :copyfiles )
+if "%auto_addpackages%"=="*" ( call :addpackages )
+if "%auto_unmountcommit%"=="*" ( call :unmountcommit )
+if "%auto_setresolution%"=="*" ( call :setresolution )
+if "%auto_trimimages%"=="*" ( call :trimimages )
+if "%auto_makeiso%"=="*" ( call :makeiso )
+
+echo.
+pause
+goto mainmenu
+
+
+REM == Extract From ISO ============================================
+:extractiso
+
+echo.
+echo [96mExtracting ISO to media folder[0m
+echo.
+
+rmdir /s /q "%mediapath%"
+mkdir "%mediapath%"
+"%~dp0Helper\Tools\7-Zip\7z.exe" x -y -o"%mediapath%" "%sourceiso%"
+
+echo.
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
+goto mainmenu
+
 
 REM == Mount =======================================================
-:mount
+:mountwim
 
 echo.
 echo [96mMounting image to: %mountpath%[0m
@@ -145,6 +212,8 @@ echo.
 
 set adkpackages=%adk%\Windows Preinstallation Environment\amd64\WinPE_OCs
 
+echo Packages From: %adkpackages%
+
 Dism /Image:"%mountpath%" /Add-Package ^
 /PackagePath:"%adkpackages%\WinPE-WMI.cab" /PackagePath:"%adkpackages%\en-us\WinPE-WMI_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-NetFx.cab" /PackagePath:"%adkpackages%\en-us\WinPE-NetFx_en-us.cab" ^
@@ -153,15 +222,15 @@ Dism /Image:"%mountpath%" /Add-Package ^
 /PackagePath:"%adkpackages%\WinPE-StorageWMI.cab" /PackagePath:"%adkpackages%\en-us\WinPE-StorageWMI_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-SecureBootCmdlets.cab" ^
 /PackagePath:"%adkpackages%\WinPE-SecureStartup.cab" /PackagePath:"%adkpackages%\en-us\WinPE-SecureStartup_en-us.cab" ^
-/PackagePath:"%adkpackages%\WinPE-DismCmdlets.cab" /PackagePath:"%adkpackages%\en-us\WinPE-DismCmdlets_en-us.cab"
+/PackagePath:"%adkpackages%\WinPE-DismCmdlets.cab" /PackagePath:"%adkpackages%\en-us\WinPE-DismCmdlets_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-EnhancedStorage.cab" /PackagePath:"%adkpackages%\en-us\WinPE-EnhancedStorage_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-Dot3Svc.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Dot3Svc_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-FMAPI.cab" ^
-/PackagePath:"%adkpackages%\WinPE-FontSupport-WinRE.cab ^
+/PackagePath:"%adkpackages%\WinPE-FontSupport-WinRE.cab" ^
 /PackagePath:"%adkpackages%\WinPE-PlatformId.cab" ^
 /PackagePath:"%adkpackages%\WinPE-WDS-Tools.cab" /PackagePath:"%adkpackages%\en-us\WinPE-WDS-Tools_en-us.cab" ^
 /PackagePath:"%adkpackages%\WinPE-HTA.cab" /PackagePath:"%adkpackages%\en-us\WinPE-HTA_en-us.cab" ^
-/PackagePath:"%adkpackages%\WinPE-WinReCfg.cab" /PackagePath:"%adkpackages%\en-us\WinPE-WinReCfg_en-us.cab" ^
+/PackagePath:"%adkpackages%\WinPE-WinReCfg.cab" /PackagePath:"%adkpackages%\en-us\WinPE-WinReCfg_en-us.cab"
 REM /PackagePath:"%adkpackages%\WinPE-Setup.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Setup_en-us.cab" ^
 REM /PackagePath:"%adkpackages%\WinPE-Setup-Client.cab" /PackagePath:"%adkpackages%\en-us\WinPE-Setup-Client_en-us.cab"
 
@@ -279,27 +348,6 @@ if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
-REM == Automatic ===================================================
-:automatic
-
-echo.
-echo [96mRunning steps automatically[0m
-echo.
-
-set pauseafter=false
-set returnafter=true
-call :mount
-call :copyfiles
-if %automaticpackages%==Yes ( call :addpackages )
-call :unmountcommit
-if %automaticexport%==Yes ( call :trimimage )
-call :makeiso
-
-echo.
-pause
-goto mainmenu
-
-
 REM == Get Information =============================================
 :getinfo
 
@@ -347,7 +395,7 @@ goto mainmenu
 
 
 REM == Export Image ================================================
-:trimimage
+:trimimages
 
 set "sourcewimindex=%wimindex:/=/Source%"
 
@@ -369,11 +417,11 @@ goto mainmenu
 
 REM == Set Resolution===============================================
 :setresolution
-if %automaticresolution% NEQ NoChange ( 
-  if %automaticresolution%==Highest ( 
+if %auto_setresolution% NEQ NoChange ( 
+  if %auto_setresolution%==Highest ( 
     bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} highestmode on 
   ) else (
-    bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} graphicsresolution %automaticresolution%
+    bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} graphicsresolution %auto_setresolution%
   )
 )
 
@@ -383,26 +431,7 @@ if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
-REM == Toggle Packages =============================================
-:togglepackages
-if %automaticpackages%==Yes ( set automaticpackages=No ) else ( set automaticpackages=Yes )
-goto mainmenu
 
-
-REM == Toggle Trim ==================================================
-:toggletrim
-if %automaticexport%==Yes ( set automaticexport=No ) else ( set automaticexport=Yes )
-goto mainmenu
-
-
-REM == Toggle Resolution ===========================================
-:toggleresolution
-if %automaticresolution%==Highest ( set automaticresolution=1920x1080 & goto mainmenu )
-if %automaticresolution%==1920x1080 ( set automaticresolution=1280x1024 & goto mainmenu )
-if %automaticresolution%==1280x1024 ( set automaticresolution=1024x768 & goto mainmenu )
-if %automaticresolution%==1024x768 ( set automaticresolution=NoChange & goto mainmenu )
-if %automaticresolution%==NoChange ( set automaticresolution=Highest & goto mainmenu )
-goto mainmenu
 
 
 REM == Check For Admin =============================================
