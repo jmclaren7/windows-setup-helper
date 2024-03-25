@@ -21,6 +21,15 @@ By only modifying the the WinPE image (boot.wim) you can easily swap out install
 - This program is integrated into the boot.wim image, this means you can pxe boot this image and use the same tools
 - Tools and scripts are added to the interface from any available drive with folders matching the specific folder path/names
 
+<br>
+
+<div align="center">
+Building, Booting, Installing
+
+https://www.youtube.com/watch?v=NjPxmrIeGhw<br>
+[![](https://img.youtube.com/vi/NjPxmrIeGhw/maxresdefault.jpg)](https://www.youtube.com/watch?v=NjPxmrIeGhw)
+</div>
+
 ## Included 3rd Party Tools
 
 Some of the tools I normally use aren't included here because the licensing doesn't allows it, free closed source software that I've included is noted as such.
