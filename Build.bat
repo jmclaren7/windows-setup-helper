@@ -6,7 +6,7 @@ REM == Settings You Need To Change =================================
 REM The ISO file you want to extract
 set sourceiso=D:\Windows Images\Windows 11 23H2 MCT 2403.iso
 
-REM The for to the extracted ISO to (no trailing slash)
+REM The path to the extracted ISO to (no trailing slash)
 set mediapath=D:\Windows Images\11
 
 REM Extra files that you want to add to the image (no trailing slash)
