@@ -54,19 +54,19 @@ echo  Source ISO = %sourceiso%
 echo  Media folder = %mediapath%
 echo  Output ISO = %outputiso%
 echo.
-echo  Q/1. %auto_extractiso%Extract ISO to media folder
-echo  W/2. %auto_mountwim%Mount boot.wim from media folder
-echo  E/3. %auto_copyfiles%Copy Helper files to mounted image
-echo  R/4. %auto_addpackages%Add packages to mounted image (requires ADK)
-echo  Y/5. %auto_unmountcommit%Unmount and commit changes to WIM
-echo  T/6. %auto_setresolution%Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
-echo  U/7. %auto_trimimages%Trim boot.wim (Trims other indexes and removes unused files)
-echo  I/8. %auto_makeiso%Make ISO from media folder (requires ADK)
+echo  Q^|1. %auto_extractiso%Extract ISO to media folder
+echo  W^|2. %auto_mountwim%Mount boot.wim from media folder
+echo  E^|3. %auto_copyfiles%Copy Helper files to mounted image
+echo  R^|4. %auto_addpackages%Add packages to mounted image (requires ADK)
+echo  Y^|5. %auto_unmountcommit%Unmount and commit changes to WIM
+echo  T^|6. %auto_setresolution%Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
+echo  U^|7. %auto_trimimages%Trim boot.wim (Trims other indexes and removes unused files)
+echo  I^|8. %auto_makeiso%Make ISO from media folder (requires ADK)
 echo.
 echo  F. Automatically run the * steps (enter a step # to toggle its inclusion)
 echo.
-echo  B. Browse mounted image folder
-echo  X. Discard changes and unmount WIM (%mountpath%)
+echo  B. Browse mounted image folder (%mountpath%)
+echo  X. Discard changes and unmount WIM 
 echo  A. Get image information
 
 REM echo  E. Convert install.esd to install.wim
@@ -355,6 +355,7 @@ echo.
 
 Dism /Get-MountedImageInfo 
 Dism /Get-ImageInfo /imagefile:"%sourcewim%"
+Dism /Get-ImageInfo /imagefile:"%sourcewim%" %wimindex%
 
 echo.
 pause 
