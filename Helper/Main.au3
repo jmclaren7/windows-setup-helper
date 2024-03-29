@@ -239,12 +239,20 @@ While 1
 			EndIf
 
 		Case $NormalInstallButton
+			_Log("NormalInstallButton")
+			If ProcessExists($hSetup) Then
+				_Log("Setup is already running")
+				MsgBox(0, "Error - " & $Title, "Setup is already running, please close it first")
+				ContinueLoop
+			EndIf
 			$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot")
 			$NormalInstallWait = True
 			$AutoInstallWait = False
 
 		Case $AutomatedInstallButton, $FormatButton
-			If IsDeclared($hSetup) And ProcessExists($hSetup) Then
+			_Log("AutomatedInstallButton")
+			If ProcessExists($hSetup) Then
+				_Log("Setup is already running")
 				MsgBox(0, "Error - " & $Title, "Setup is already running, please close it first")
 				ContinueLoop
 			EndIf
@@ -366,7 +374,8 @@ While 1
 
 	; Wait for normal install to finish
 	If $NormalInstallWait And Not ProcessExists($hSetup) Then
-		$RebootPrompt = True
+		_Log("Normal install finished")
+		$RebootPrompt = True  ; Will trigger a prompt that will reboot on timeout
 		$NormalInstallWait = False
 	EndIf
 
