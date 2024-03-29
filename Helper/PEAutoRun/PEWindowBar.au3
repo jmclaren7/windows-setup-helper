@@ -35,9 +35,9 @@ Global $IsPE = StringInStr(@SystemDir, "X:")
 Global $TaskBarHeight = 30
 Global $TaskBarWidth = @DesktopWidth
 Global $TaskBarTop = @DesktopHeight - $TaskBarHeight
-Global $MenuButtonWidth = 70
+Global $SpecialButtonWidth = 0
 Global $ButtonHSpace = 3
-Global $ButtonLeft = $ButtonHSpace + $MenuButtonWidth + $ButtonHSpace
+Global $ButtonLeft = $ButtonHSpace + $SpecialButtonWidth + $ButtonHSpace
 Global $ButtonWidth = 150
 Global $ButtonVSpace = 2
 Global $ButtonHeight = $TaskBarHeight - ($ButtonVSpace * 2)
@@ -47,13 +47,16 @@ Global $aWindows
 Const $WindowTitleIndex = 0
 Const $WindowHandleIndex = 1
 Const $WindowStateIndex = 2
-Const $WindowPIDIndex = 3
-Const $WindowNameIndex = 4
-Const $WindowPathIndex = 5
-Const $WindowStyleIndex = 6
-Const $WindowExStyleIndex = 7
-Const $WindowButtonIDIndex = 8
-
+Const $WindowPIDIndex = 4
+Const $WindowNameIndex = 5
+Const $WindowPathIndex = 6
+Const $WindowStyleIndex = 9
+Const $WindowExStyleIndex = 10
+Const $WindowButtonIDIndex = 15
+Const $WindowContextCloseIDIndex = 16
+Const $WindowContextMinimizeIDIndex = 17
+Const $WindowContextRestoreIDIndex = 18
+Const $WindowContextKillIDIndex = 19
 
 If $IsPE Then
 	_WorkingArea(0, 0, @DesktopWidth, @DesktopHeight - $TaskBarHeight - 1)
@@ -68,14 +71,12 @@ GUISetState(@SW_SHOWNOACTIVATE)
 ; == Setup GUI
 Global $TaskBarForm = GUICreate($Title, $TaskBarWidth, $TaskBarHeight, 0, $TaskBarTop, $WS_POPUP, BitOR($WS_EX_TOOLWINDOW, $WS_EX_TOPMOST, $WS_EX_NOACTIVATE))
 GUISetBkColor(0xE8E8E8)
-$SpecialButton = GUICtrlCreateButton("Close", $ButtonHSpace, $ButtonVSpace, $MenuButtonWidth, $ButtonHeight, BitOR($BS_CENTER, $BS_VCENTER))
-_GUICtrlSetImage(-1, "C:\Windows\System32\shell32.dll", -16751, 16)
+;$SpecialButton = GUICtrlCreateButton("Close", $ButtonHSpace, $ButtonVSpace, $SpecialButtonWidth, $ButtonHeight, BitOR($BS_CENTER, $BS_VCENTER))
+;_GUICtrlSetImage(-1, "C:\Windows\System32\shell32.dll", -16751, 16)
+$idThisMenu = GUICtrlCreateContextMenu()
+$CloseContext = GUICtrlCreateMenuItem("Close", $idThisMenu)
 GUISetState(@SW_SHOWNOACTIVATE)
 
-
-
-_UpdateTaskBar()
-AdlibRegister("_UpdateTaskBar", 200)
 
 While 1
 	;$TimerMainLoop = TimerInit()
@@ -83,31 +84,55 @@ While 1
 	$nMsg = GUIGetMsg()
 	If $nMsg > 0 Then _Log("GUI Event: " & $nMsg)
 	Switch $nMsg
-		Case $GUI_EVENT_CLOSE, $SpecialButton
+		Case $GUI_EVENT_CLOSE, $CloseContext
 			_Log("Case Exit")
 			Exit
 
 		Case 1 To 9999
 			; A taskbar button was pressed, activate/deactivate the related window
-			$SearchIndex = _ArraySearch($aWindows, $nMsg, 0, 0, 0, 0, 1, 15)
+			$SearchIndex = _ArraySearch($aWindows, $nMsg, 0, 0, 0, 0, 1, $WindowButtonIDIndex)
 			If Not @error Then
-				If WinGetHandle("[Active]") = $aWindows[$SearchIndex][$WindowHandleIndex] Then
-					_Log("Minimizing: " & $aWindows[$SearchIndex][0] & " - " & $aWindows[$SearchIndex][$WindowHandleIndex], 2)
+				If WinActive($aWindows[$SearchIndex][$WindowHandleIndex]) Then
+					_Log("Minimizing: " & $aWindows[$SearchIndex][$WindowTitleIndex] & " - " & $aWindows[$SearchIndex][$WindowHandleIndex], 2)
 					WinSetState($aWindows[$SearchIndex][$WindowHandleIndex], "", @SW_MINIMIZE)
 				Else
-					_Log("Activating: " & $aWindows[$SearchIndex][0] & " - " & $aWindows[$SearchIndex][$WindowHandleIndex], 2)
+					_Log("Activating: " & $aWindows[$SearchIndex][$WindowTitleIndex] & " - " & $aWindows[$SearchIndex][$WindowHandleIndex], 2)
 					WinActivate($aWindows[$SearchIndex][$WindowHandleIndex])
 				EndIf
-
+				ContinueLoop
+			EndIf
+			; A taskbar button's conext menu exit item was pressed
+			$SearchIndex = _ArraySearch($aWindows, $nMsg, 0, 0, 0, 0, 1, $WindowContextCloseIDIndex)
+			If Not @error Then
+				WinClose($aWindows[$SearchIndex][$WindowHandleIndex])
+				ContinueLoop
+			EndIf
+			; A taskbar button's conext menu minimize item was pressed
+			$SearchIndex = _ArraySearch($aWindows, $nMsg, 0, 0, 0, 0, 1, $WindowContextMinimizeIDIndex)
+			If Not @error Then
+				WinSetState($aWindows[$SearchIndex][$WindowHandleIndex], "", @SW_MINIMIZE)
+				ContinueLoop
+			EndIf
+			; A taskbar button's conext menu restore item was pressed
+			$SearchIndex = _ArraySearch($aWindows, $nMsg, 0, 0, 0, 0, 1, $WindowContextRestoreIDIndex)
+			If Not @error Then
+				WinActivate($aWindows[$SearchIndex][$WindowHandleIndex])
+				ContinueLoop
+			EndIf
+			; A taskbar button's conext menu kill item was pressed
+			$SearchIndex = _ArraySearch($aWindows, $nMsg, 0, 0, 0, 0, 1, $WindowContextKillIDIndex)
+			If Not @error Then
+				ProcessClose($aWindows[$SearchIndex][$WindowPIDIndex])
+				ContinueLoop
 			EndIf
 
 
 	EndSwitch
 
+	_UpdateTaskBar()
 
 	; Detect minimized window and move out of view
 	For $i = 1 To $aWindows[0][0]
-		_Log("WinGetState: " & $i & " vs " & Ubound($aWindows))
 		$WindowState = WinGetState($aWindows[$i][$WindowHandleIndex])
 		If BitAND($WindowState, $WIN_STATE_MINIMIZED) Then
 			$WinPos = WinGetPos($aWindows[$i][$WindowHandleIndex])
@@ -117,7 +142,6 @@ While 1
 			EndIf
 		EndIf
 	Next
-
 
 	; Detect change in active windows that wasnt cause by taskbar action
 	$hActiveWindow = WinGetHandle("[Active]")
@@ -129,7 +153,7 @@ While 1
 		EndIf
 
 	Else
-		; Active active window doesn't have a button so uncheck all buttons
+		; Active window doesn't have a button so uncheck all buttons
 		For $i = 1 To $aWindows[0][0]
 			GUICtrlSetState($aWindows[$i][$WindowButtonIDIndex], $GUI_UNCHECKED)
 		Next
@@ -163,9 +187,17 @@ Func _UpdateTaskBar()
 	$aWindowsNew = $aReversed
 
 
-	; Add column for button ID
+	; Add columns
 	_ArrayColInsert($aWindowsNew, $WindowButtonIDIndex)
 	$aWindowsNew[0][$WindowButtonIDIndex] = "ButtonID"
+	_ArrayColInsert($aWindowsNew, $WindowContextCloseIDIndex)
+	$aWindowsNew[0][$WindowContextCloseIDIndex] = "ContextCloseID"
+	_ArrayColInsert($aWindowsNew, $WindowContextMinimizeIDIndex)
+	$aWindowsNew[0][$WindowContextMinimizeIDIndex] = "ContextMinimizeID"
+	_ArrayColInsert($aWindowsNew, $WindowContextRestoreIDIndex)
+	$aWindowsNew[0][$WindowContextRestoreIDIndex] = "ContextMaximizeID"
+	_ArrayColInsert($aWindowsNew, $WindowContextKillIDIndex)
+	$aWindowsNew[0][$WindowContextKillIDIndex] = "ContextKillID"
 
 
 	; Delete windows we don't want in taskbar
@@ -173,7 +205,7 @@ Func _UpdateTaskBar()
 	_ArrayAdd($aWindowsTrimed, _ArrayExtract($aWindowsNew, 0, 0))
 	For $i = 1 To $aWindowsNew[0][0]
 		;If $aWindowsNew[$i][1] = $TaskBarForm Then ContinueLoop
-		If $aWindowsNew[$i][6] = "X:\sources\setup.exe" Then ContinueLoop
+		If $aWindowsNew[$i][$WindowPathIndex] = "X:\sources\setup.exe" And $aWindowsNew[$i][$WindowTitleIndex] = "Install Windows" Then ContinueLoop
 		If BitAND($aWindowsNew[$i][$WindowExStyleIndex], $WS_EX_TOOLWINDOW) Then ContinueLoop
 		If Not $IsPE And BitAND($aWindowsNew[$i][$WindowStyleIndex], $WS_POPUP) Then ContinueLoop
 		_ArrayAdd($aWindowsTrimed, _ArrayExtract($aWindowsNew, $i, $i))
@@ -183,11 +215,10 @@ Func _UpdateTaskBar()
 
 
 	; Setup $aWindows on first pass to match columns
-	If Not IsArray($aWindows) Then Global $aWindows[1][UBound($aWindowsNew, 2)]
+	If Not IsArray($aWindows) Then Global $aWindows[$WindowHandleIndex][UBound($aWindowsNew, 2)]
 
 	;_ArrayDisplay($aWindows,"$aWindows")
 	;_ArrayDisplay($aWindowsNew,"$aWindowsNew")
-	;Exit
 
 	; If change is detected do things
 	If $aWindowsNew[0][0] <> $aWindows[0][0] Then
@@ -206,7 +237,7 @@ Func _UpdateTaskBar()
 			Local $aWindowsTrimed[0][UBound($aWindows,2)]
 			_ArrayAdd($aWindowsTrimed, _ArrayExtract($aWindowsNew, 0, 0))
 			For $i = 1 To $aWindows[0][0]
-				$Index = _ArraySearch($aWindowsNew, $aWindows[$i][1], 1, 0, 0, 2, 1, 1) ; Search for window handle
+				$Index = _ArraySearch($aWindowsNew, $aWindows[$i][$WindowHandleIndex], 1, 0, 0, 2, 1, 1) ; Search for window handle
 				If Not @error Then _ArrayAdd($aWindowsTrimed, _ArrayExtract($aWindowsNew, $Index, $Index))
 			Next
 			$aWindowsTrimed[0][0] = Ubound($aWindowsTrimed) - 1
@@ -215,7 +246,7 @@ Func _UpdateTaskBar()
 
 			; Add new windows to the end of $aWindows
 			For $i = 1 To $aWindowsNew[0][0]
-				$SearchIndex = _ArraySearch($aWindows, $aWindowsNew[$i][1], 1, 0, 1, 0, 1, 1)
+				$SearchIndex = _ArraySearch($aWindows, $aWindowsNew[$i][$WindowHandleIndex], 1, 0, 1, 0, 1, 1)
 				If @error Then
 					;_Log("Add Window: " & $i)
 					_ArrayAdd($aWindows, _ArrayExtract($aWindowsNew, $i, $i))
@@ -224,17 +255,24 @@ Func _UpdateTaskBar()
 			$aWindows[0][0] = UBound($aWindows) - 1
 
 
+
+
 			; Create buttons
 			For $i = 1 To $aWindows[0][0]
-				;_Log("Adding button: " & $i)
-				$Label = "";_GenerateLabelText($aWindows[$i][0])
-				$aWindows[$i][$WindowButtonIDIndex] = GUICtrlCreateRadio(" " & $Label, $ButtonLeft + (($i - 1) * ($ButtonWidth + $ButtonHSpace)), $ButtonVSpace, $ButtonWidth, $ButtonHeight, BitOR($GUI_SS_DEFAULT_RADIO,$BS_LEFT,$BS_PUSHLIKE))
+				$aWindows[$i][$WindowButtonIDIndex] = GUICtrlCreateRadio(" ", $ButtonLeft + (($i - 1) * ($ButtonWidth + $ButtonHSpace)), $ButtonVSpace, $ButtonWidth, $ButtonHeight, BitOR($GUI_SS_DEFAULT_RADIO,$BS_LEFT,$BS_PUSHLIKE))
 				GUICtrlSetTip(-1, $aWindows[$i][0])
+				$idThisMenu = GUICtrlCreateContextMenu($aWindows[$i][$WindowButtonIDIndex])
+				$aWindows[$i][$WindowContextKillIDIndex] = GUICtrlCreateMenuItem("Kill", $idThisMenu)
+				$aWindows[$i][$WindowContextRestoreIDIndex] = GUICtrlCreateMenuItem("Restore", $idThisMenu)
+				$aWindows[$i][$WindowContextMinimizeIDIndex] = GUICtrlCreateMenuItem("Minimize", $idThisMenu)
+				$aWindows[$i][$WindowContextCloseIDIndex] = GUICtrlCreateMenuItem("Close", $idThisMenu)
+
 				; Checks for special cases where we set a different icon
-				If $aWindows[$i][$WindowPIDIndex] = @AutoItPID Then
-					_GUICtrlSetImage(-1, "X:\sources\setup.exe", 0, 16)
+				$HelperTitle = "Windows Setup Helper v"
+				If StringLeft($aWindows[$i][$WindowTitleIndex], StringLen($HelperTitle)) = $HelperTitle Then
+					_GUICtrlSetImage($aWindows[$i][$WindowButtonIDIndex], "X:\sources\setup.exe", 0, 16)
 				Else
-					_GUICtrlSetImage(-1, $aWindows[$i][$WindowPathIndex], 0, 16)
+					_GUICtrlSetImage($aWindows[$i][$WindowButtonIDIndex], $aWindows[$i][$WindowPathIndex], 0, 16)
 				EndIf
 			Next
 		EndIf
@@ -246,7 +284,7 @@ Func _UpdateTaskBar()
 		$ButtonText = GUICtrlRead($aWindows[$i][$WindowButtonIDIndex], 1)
 		$SearchIndex = _ArraySearch($aWindowsNew, $aWindows[$i][$WindowHandleIndex], 1, 0, 1, 0, 1, 1)
 		If Not @error Then
-			$Title = $aWindowsNew[$SearchIndex][0]
+			$Title = $aWindowsNew[$SearchIndex][$WindowTitleIndex]
 			$Label = _GenerateLabelText($Title)
 			If $ButtonText <> $Label Then GUICtrlSetData($aWindows[$i][$WindowButtonIDIndex], $Label)
 		EndIf
@@ -321,7 +359,7 @@ EndFunc   ;==>_WorkingArea
 ; Modified ......:
 ; ===============================================================================================================================
 Func __GetVisibleWindows($GetText = False)
-	Local $NewCol, $LastCol, $TotalTime, $Timer
+	Local $NewCol, $TotalTime, $Timer
 
 	Local $TotalTime = TimerInit()
 
@@ -330,9 +368,11 @@ Func __GetVisibleWindows($GetText = False)
 	If Not IsArray($aWinList) Then Return SetError(0, 0, 0)
 	$aWinList[0][1] = "WinHandle"
 
+	; Resize Array
+	ReDim $aWinList[UBound($aWinList) + 1][14 + 1]
+
 	; 2 Add window states
-	$NewCol = UBound($aWinList, 2)
-	_ArrayColInsert($aWinList, $NewCol)
+	$NewCol = 2
 	$aWinList[0][$NewCol] = "State"
 	For $i = 1 To $aWinList[0][0]
 		$aWinList[$i][$NewCol] = WinGetState($aWinList[$i][1])
@@ -353,18 +393,16 @@ Func __GetVisibleWindows($GetText = False)
 	$aNewWinList[0][0] = UBound($aNewWinList) - 1
 	$aWinList = $aNewWinList
 
-	; 3 Get Process ID (PID) and add to the array.
-	$NewCol = UBound($aWinList, 2)
-	_ArrayColInsert($aWinList, $NewCol)
+	; 4 Get Process ID (PID) and add to the array.
+	$NewCol = 4
 	$aWinList[0][$NewCol] = "PID"
 	For $i = 1 To $aWinList[0][0]
 		$aWinList[$i][$NewCol] = WinGetProcess($aWinList[$i][1])
 	Next
 
-	; 4 Add process name
-	Local $PIDIndex = 3
-	$NewCol = UBound($aWinList, 2)
-	_ArrayColInsert($aWinList, $NewCol)
+	; 5 Add process name
+	Local $PIDIndex = 4
+	$NewCol = 5
 	$aWinList[0][$NewCol] = "Name"
 	Local $aProcessList = ProcessList()
 	For $i = 1 To $aWinList[0][0]
@@ -375,17 +413,15 @@ Func __GetVisibleWindows($GetText = False)
 		Next
 	Next
 
-	; 5 Add path using winapi method
-	$NewCol = UBound($aWinList, 2)
-	_ArrayColInsert($aWinList, $NewCol)
+	; 6 Add path using winapi method
+	$NewCol = 6
 	$aWinList[0][$NewCol] = "Path"
-	Local $ProccessNameIndex = 3
 	For $i = 1 To $aWinList[0][0]
-		Local $Path = _WinAPI_GetProcessFileName($aWinList[$i][$ProccessNameIndex])
+		Local $Path = _WinAPI_GetProcessFileName($aWinList[$i][4])
 		; No path might mean the process is elevated so let's try some other things...
 		If $Path = "" Then
 			; Might only help if the stars align
-			Local $aEnum = _WinAPI_EnumProcessModules($aWinList[$i][$ProccessNameIndex])
+			Local $aEnum = _WinAPI_EnumProcessModules($aWinList[$i][4])
 			If Not @error Then
 				$TestPath = $aEnum[1]
 				; The exe might be in the system folder (elevated cmd or task manager)
@@ -400,13 +436,12 @@ Func __GetVisibleWindows($GetText = False)
 
 	Next
 
-	; 6,7 Add window style and exstyle
-	$NewCol = UBound($aWinList, 2)
-	_ArrayColInsert($aWinList, $NewCol)
+	; 9,10 Add window style and exstyle
+	$NewCol = 9
 	$aWinList[0][$NewCol] = "Style"
-	$NewCol2 = UBound($aWinList, 2)
-	_ArrayColInsert($aWinList, $NewCol2)
+	$NewCol2 = 10
 	$aWinList[0][$NewCol2] = "ExStyle"
+
 	For $i = 1 To $aWinList[0][0]
 		Local $tWINDOWINFO = _WinAPI_GetWindowInfo($aWinList[$i][1])
 		$aWinList[$i][$NewCol] = DllStructGetData($tWINDOWINFO, 'Style', 1)
