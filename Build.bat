@@ -418,20 +418,20 @@ goto mainmenu
 
 REM == Set Resolution===============================================
 :setresolution
-if %auto_setresolution% NEQ NoChange ( 
-  if %auto_setresolution%==Highest ( 
-    bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} highestmode on 
-  ) else (
-    bcdedit.exe /store "%mediapath%\boot\bcd" /set {globalsettings} graphicsresolution %auto_setresolution%
-  )
-)
 
+echo.
+echo [96mSet Resolution[0m
+echo.
+if "%auto_setresolution_detail%"=="Highest" ( 
+  bcdedit.exe /store "%mediapath%\boot\bcd" /set {default} highestmode on 
+) else (
+  echo other
+  bcdedit.exe /store "%mediapath%\boot\bcd" /set {default} graphicsresolution %auto_setresolution_detail%
+)
 echo.
 if %pauseafter%==true ( pause )
 if %returnafter%==true ( exit /B )
 goto mainmenu
-
-
 
 
 
