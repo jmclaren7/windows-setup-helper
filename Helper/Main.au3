@@ -91,7 +91,7 @@ $Group5 = GUICtrlCreateGroup("WinPE Tools", 12, 7, 354, 452)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
 $PEScriptTreeView = GUICtrlCreateTreeView(24, 31, 330, 385)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
-$PERunButton = GUICtrlCreateButton("Run", 237, 424, 107, 25)
+$PERunButton = GUICtrlCreateButton("Run", 242, 424, 107, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 $TaskMgrButton = GUICtrlCreateButton("", 28, 424, 29, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
@@ -102,9 +102,12 @@ GUICtrlSetTip(-1, "Registry Editor")
 $NotepadButton = GUICtrlCreateButton("", 108, 424, 29, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Notepad")
-$CMDButton = GUICtrlCreateButton("", 149, 424, 29, 25)
+$CMDButton = GUICtrlCreateButton("", 148, 424, 29, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Command Prompt")
+$ShellButton = GUICtrlCreateButton("", 188, 424, 29, 25)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "File Explorer")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 $Group6 = GUICtrlCreateGroup("First Logon Scripts", 384, 7, 354, 452)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
@@ -136,6 +139,12 @@ GUICtrlSetStyle($NotepadButton, $BS_ICON)
 GUICtrlSetImage($NotepadButton, @WindowsDir & "\System32\notepad.exe", 1, 0)
 GUICtrlSetStyle($CMDButton, $BS_ICON)
 GUICtrlSetImage($CMDButton, @WindowsDir & "\System32\cmd.exe", 1, 0)
+If FileExists("Tools\.Explorer++.exe") Then
+	GUICtrlSetStyle($ShellButton, $BS_ICON)
+	GUICtrlSetImage($ShellButton, "Tools\.Explorer++.exe", 1, 0)
+Else
+	GUICtrlDelete($ShellButton)
+EndIf
 GUICtrlSetStyle($FormatButton, $BS_ICON)
 GUICtrlSetImage($FormatButton, @WindowsDir & "\System32\shell32.dll", 161, 0)
 
@@ -312,6 +321,9 @@ While 1
 
 		Case $CMDButton
 			_RunFile("cmd.exe")
+
+		Case $ShellButton
+			_RunFile("Tools\.Explorer++.exe")
 
 	EndSwitch
 

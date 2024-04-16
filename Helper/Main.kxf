@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <object type="TAForm" name="GUIMain">
 	<properties>
-		<property name="Left" vt="Int16">1193</property>
-		<property name="Top" vt="Int16">557</property>
+		<property name="Left" vt="Int16">1060</property>
+		<property name="Top" vt="Int16">437</property>
 		<property name="Width" vt="Int16">768</property>
 		<property name="Height" vt="Int16">551</property>
 		<property name="Caption" vt="String">Title</property>
@@ -71,7 +71,7 @@
 				</object>
 				<object type="TAButton" name="PERunButton">
 					<properties>
-						<property name="Left" vt="Int16">225</property>
+						<property name="Left" vt="Int16">230</property>
 						<property name="Top" vt="Int16">417</property>
 						<property name="Width" vt="Int8">107</property>
 						<property name="Height" vt="Int8">25</property>
@@ -131,12 +131,27 @@
 				</object>
 				<object type="TAButton" name="CMDButton">
 					<properties>
-						<property name="Left" vt="Int16">137</property>
+						<property name="Left" vt="Int16">136</property>
 						<property name="Top" vt="Int16">417</property>
 						<property name="Width" vt="Int8">29</property>
 						<property name="Height" vt="Int8">25</property>
 						<property name="Hint" vt="String">Command Prompt</property>
 						<property name="TabOrder" vt="Int8">5</property>
+						<property name="Color" vt="Ident">clBtnFace</property>
+						<property name="CtrlStyle" vt="Int32">1342373888</property>
+						<property name="CtrlExStyle" vt="Int8">0</property>
+						<property name="Resizing" vt="Set">DockLeft, DockBottom, DockWidth, DockHeight</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAButton" name="ShellButton">
+					<properties>
+						<property name="Left" vt="Int16">176</property>
+						<property name="Top" vt="Int16">417</property>
+						<property name="Width" vt="Int8">29</property>
+						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">File Explorer</property>
+						<property name="TabOrder" vt="Int8">6</property>
 						<property name="Color" vt="Ident">clBtnFace</property>
 						<property name="CtrlStyle" vt="Int32">1342373888</property>
 						<property name="CtrlExStyle" vt="Int8">0</property>
