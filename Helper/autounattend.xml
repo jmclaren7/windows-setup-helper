@@ -160,7 +160,7 @@
 					<WillShowUI>OnError</WillShowUI>
 					<!--Format
 					<InstallTo>
-                        <DiskID>0</DiskID>
+                        <DiskID></DiskID>
                         <PartitionID>3</PartitionID>
                     </InstallTo>
                     <InstallToAvailablePartition>false</InstallToAvailablePartition>
