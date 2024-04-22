@@ -31,12 +31,13 @@ set "auto_extractiso=*"
 set "auto_mountwim=*"
 set "auto_copyfiles=*"
 set "auto_addpackages= "
+set "auto_disabledpi=*"
 set "auto_unmountcommit=*"
 set "auto_setresolution= "
 set "auto_trimimages= "
 set "auto_makeiso=*"
-set "auto_setresolution_detail=Highest"
-
+::set "auto_setresolution_detail=Highest"
+set "auto_setresolution_detail=1024x768"
 
 REM == Basic Checks ================================================
 if not exist "%mediapath%\" ( echo Media path not found, reconfigure batch file & pause & exit)
@@ -58,10 +59,11 @@ echo  Q^|1. %auto_extractiso%Extract ISO to media folder
 echo  W^|2. %auto_mountwim%Mount boot.wim from media folder
 echo  E^|3. %auto_copyfiles%Copy Helper files to mounted image
 echo  R^|4. %auto_addpackages%Add packages to mounted image (requires ADK)
-echo  Y^|5. %auto_unmountcommit%Unmount and commit changes to WIM
-echo  T^|6. %auto_setresolution%Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
-echo  U^|7. %auto_trimimages%Trim boot.wim (Trims other indexes and removes unused files)
-echo  I^|8. %auto_makeiso%Make ISO from media folder (requires ADK)
+echo  T^|5. %auto_disabledpi%Apply registry settings to disable DPI scaling in PE
+echo  Y^|6. %auto_unmountcommit%Unmount and commit changes to WIM
+echo  U^|7. %auto_setresolution%(Not Working)Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
+echo  I^|8. %auto_trimimages%Trim boot.wim (Trims other indexes and removes unused files)
+echo  O^|9. %auto_makeiso%Make ISO from media folder (requires ADK)
 echo.
 echo  F. Automatically run the * steps (enter a step # to toggle its inclusion)
 echo.
@@ -73,7 +75,7 @@ REM echo  E. Convert install.esd to install.wim
 REM echo  R. Mount and browse install.wim
 echo.  
 echo  Select letter of the function to run...
-choice /C 12345678QWERTYUIFBXAG /N
+choice /C 1234567890QWERTYUIOPFBXAG /N
 goto option%errorlevel%
 
 :option1
@@ -89,49 +91,76 @@ goto mainmenu
 if "%auto_addpackages%"=="*" ( set "auto_addpackages= " ) else ( set "auto_addpackages=*" )
 goto mainmenu
 :option5
-if "%auto_unmountcommit%"=="*" ( set "auto_unmountcommit= " ) else ( set "auto_unmountcommit=*" )
+if "%auto_disabledpi%"=="*" ( set "auto_disabledpi= " ) else ( set "auto_disabledpi=*" )
 goto mainmenu
 :option6
-if "%auto_setresolution%"=="*" ( set "auto_setresolution= " ) else ( set "auto_setresolution=*" )
+if "%auto_unmountcommit%"=="*" ( set "auto_unmountcommit= " ) else ( set "auto_unmountcommit=*" )
 goto mainmenu
 :option7
-if "%auto_trimimages%"=="*" ( set "auto_trimimages= " ) else ( set "auto_trimimages=*" )
+if "%auto_setresolution%"=="*" ( set "auto_setresolution= " ) else ( set "auto_setresolution=*" )
 goto mainmenu
 :option8
-if "%auto_makeiso%"=="*" ( set "auto_makeiso= " ) else ( set "auto_makeiso=*" )
+if "%auto_trimimages%"=="*" ( set "auto_trimimages= " ) else ( set "auto_trimimages=*" )
 goto mainmenu
 :option9
-goto extractiso
+if "%auto_makeiso%"=="*" ( set "auto_makeiso= " ) else ( set "auto_makeiso=*" )
+goto mainmenu
 :option10
-goto mountwim
+REM Not used
+goto mainmenu
+
+:: Q
 :option11
-goto copyfiles
+goto extractiso
+:: W
 :option12
-goto addpackages
+goto mountwim
+:: E
 :option13
-goto setresolution
+goto copyfiles
+:: R
 :option14
-goto unmountcommit
+goto addpackages
+:: T
 :option15
-goto trimimages
+goto disabledpi
+:: Y
 :option16
-goto makeiso
+goto setresolution
+:: U
 :option17
-goto automatic
+goto unmountcommit
+:: I
 :option18
-goto browsemount
+goto trimimages
+:: O
 :option19
-goto unmountdiscard
+goto makeiso
+:: P
 :option20
-goto getinfo
+REM Not used
+goto mainmenu
+:: F
 :option21
+goto automatic
+:: B
+:option22
+goto browsemount
+:: X
+:option23
+goto unmountdiscard
+:: A
+:option24
+goto getinfo
+:: G
+:option25
 goto toggle_resolution_detail
 
 REM == Toggles ======================================================
 :toggle_resolution_detail
-if %auto_setresolution_detail%==Highest ( set auto_setresolution_detail=1920x1080 & goto mainmenu )
-if %auto_setresolution_detail%==1920x1080 ( set auto_setresolution_detail=1280x1024 & goto mainmenu )
-if %auto_setresolution_detail%==1280x1024 ( set auto_setresolution_detail=1024x768 & goto mainmenu )
+if %auto_setresolution_detail%==Highest ( set auto_setresolution_detail=800x600 & goto mainmenu )
+if %auto_setresolution_detail%==800x600 ( set auto_setresolution_detail=1024x600 & goto mainmenu )
+if %auto_setresolution_detail%==1024x600 ( set auto_setresolution_detail=1024x768 & goto mainmenu )
 if %auto_setresolution_detail%==1024x768 ( set auto_setresolution_detail=Highest & goto mainmenu )
 goto mainmenu
 
@@ -148,6 +177,7 @@ if "%auto_extractiso%"=="*" ( call :extractiso )
 if "%auto_mountwim%"=="*" ( call :mountwim )
 if "%auto_copyfiles%"=="*" ( call :copyfiles )
 if "%auto_addpackages%"=="*" ( call :addpackages )
+if "%auto_disabledpi%"=="*" ( call :disabledpi )
 if "%auto_unmountcommit%"=="*" ( call :unmountcommit )
 if "%auto_setresolution%"=="*" ( call :setresolution )
 if "%auto_trimimages%"=="*" ( call :trimimages )
@@ -416,7 +446,7 @@ if %returnafter%==true ( exit /B )
 goto mainmenu
 
 
-REM == Set Resolution===============================================
+REM == Set Resolution ===============================================
 :setresolution
 
 echo.
@@ -433,6 +463,24 @@ if %pauseafter%==true ( pause )
 if %returnafter%==true ( exit /B )
 goto mainmenu
 
+
+REM == Disable DPI Scaling =============================================
+:disabledpi
+
+echo.
+echo [96mEdit Registry[0m
+echo.
+
+reg load HKLM\_WinPE_Default %mountpath%\Windows\System32\config\default
+reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v LogPixels /t REG_DWORD /d 96 /f
+reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v Win8DpiScaling /t REG_DWORD /d 0x00000001 /f
+reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v DpiScalingVer /t REG_DWORD /d 0x00001018 /f
+reg unload HKLM\_WinPE_Default
+
+echo.
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
+goto mainmenu
 
 
 REM == Check For Admin =============================================
