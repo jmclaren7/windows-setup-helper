@@ -75,6 +75,7 @@
 						<property name="Top" vt="Int16">417</property>
 						<property name="Width" vt="Int8">107</property>
 						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">Run the selected tool (you can also double click on the list item)</property>
 						<property name="Caption" vt="String">Run</property>
 						<property name="TabOrder" vt="Int8">1</property>
 						<property name="Color" vt="Ident">clBtnFace</property>
@@ -150,7 +151,7 @@
 						<property name="Top" vt="Int16">417</property>
 						<property name="Width" vt="Int8">29</property>
 						<property name="Height" vt="Int8">25</property>
-						<property name="Hint" vt="String">File Explorer</property>
+						<property name="Hint" vt="String">File Explorer (Explorer++)</property>
 						<property name="TabOrder" vt="Int8">6</property>
 						<property name="Color" vt="Ident">clBtnFace</property>
 						<property name="CtrlStyle" vt="Int32">1342373888</property>
@@ -180,6 +181,7 @@
 						<property name="Top" vt="Int16">417</property>
 						<property name="Width" vt="Int16">131</property>
 						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">Starts the installer with no modifications or automations</property>
 						<property name="Caption" vt="String">Normal Install</property>
 						<property name="TabOrder" vt="Int8">0</property>
 						<property name="Color" vt="Ident">clBtnFace</property>
@@ -195,6 +197,7 @@
 						<property name="Top" vt="Int16">417</property>
 						<property name="Width" vt="Int16">131</property>
 						<property name="Height" vt="Int8">25</property>
+						<property name="Hint" vt="String">Prompts for drive selection using Windows installer</property>
 						<property name="Caption" vt="String">Automated Install</property>
 						<property name="TabOrder" vt="Int8">1</property>
 						<property name="Color" vt="Ident">clBtnFace</property>
@@ -252,7 +255,7 @@
 						<property name="Top" vt="Int16">417</property>
 						<property name="Width" vt="Int8">29</property>
 						<property name="Height" vt="Int8">25</property>
-						<property name="Hint" vt="String">Delete and install to disk 0</property>
+						<property name="Hint" vt="String">Prompts for drive selection using Helper and skips Windows 11 requirements</property>
 						<property name="TabOrder" vt="Int8">5</property>
 						<property name="Color" vt="Ident">clBtnFace</property>
 						<property name="CtrlStyle" vt="Int32">1342373888</property>

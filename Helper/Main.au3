@@ -8,6 +8,7 @@
 #include "include\FileConstants.au3"
 #include "include\GuiConstantsEx.au3"
 #include "include\GuiEdit.au3"
+#include "include\GuiListBox.au3"
 #include "include\GuiListView.au3"
 #include "include\GuiTab.au3"
 #include "include\GuiToolTip.au3"
@@ -51,7 +52,7 @@ Global $DoubleClick = False
 Global $SystemDrive = StringLeft(@SystemDir, 3)
 Global $IsPE = StringInStr(@SystemDir, "X:")
 Global $Debug = Not $IsPE
-Global $FolderExecFiles = StringSplit("main.au3,main.bat,a.bat",",") ; Used by _RunFile & _PopulateScripts
+Global $FolderExecFiles = StringSplit("main.au3,main.bat,a.bat", ",") ; Used by _RunFile & _PopulateScripts
 
 ; Globals used by _Log function
 Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
@@ -93,6 +94,7 @@ $PEScriptTreeView = GUICtrlCreateTreeView(24, 31, 330, 385)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
 $PERunButton = GUICtrlCreateButton("Run", 242, 424, 107, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "Run the selected tool (you can also double click on the list item)")
 $TaskMgrButton = GUICtrlCreateButton("", 28, 424, 29, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Task Manager")
@@ -107,14 +109,16 @@ GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEI
 GUICtrlSetTip(-1, "Command Prompt")
 $ShellButton = GUICtrlCreateButton("", 188, 424, 29, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
-GUICtrlSetTip(-1, "File Explorer")
+GUICtrlSetTip(-1, "File Explorer (Explorer++)")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 $Group6 = GUICtrlCreateGroup("First Logon Scripts", 384, 7, 354, 452)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
 $NormalInstallButton = GUICtrlCreateButton("Normal Install", 400, 424, 131, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "Starts the installer with no modifications or automations")
 $AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 560, 424, 131, 25, $BS_DEFPUSHBUTTON)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "(Experimental) Prompts for drive selection using Windows installer")
 $Label4 = GUICtrlCreateLabel("Computer Name", 471, 396, 80, 17)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 $PEInstallTreeView = GUICtrlCreateTreeView(396, 31, 330, 350, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
@@ -123,7 +127,7 @@ $PEComputerNameInput = GUICtrlCreateInput("", 553, 392, 169, 21)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 $FormatButton = GUICtrlCreateButton("", 698, 424, 29, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
-GUICtrlSetTip(-1, "Delete and install to disk 0")
+GUICtrlSetTip(-1, "Prompts for drive selection using Helper and skips Windows 11 requirements")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 $StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
 _GUICtrlStatusBar_SetSimple($StatusBar1)
@@ -266,7 +270,61 @@ While 1
 				ContinueLoop
 			EndIf
 
-			If $nMsg = $FormatButton And MsgBox($MB_OKCANCEL + $MB_ICONWARNING, $Title, "Setup will automaticly use disk 0 to install Windows, any existing data will be lost, press ok to continue.") <> $IDOK Then ContinueLoop
+			If $nMsg = $FormatButton Then
+				$TargetDisk = 0
+
+				$aDiskInfo = _GetDisks()
+				$Disk0Index = _ArraySearch($aDiskInfo, 0)
+				If @error Then
+					MsgBox($MB_OK + $MB_ICONWARNING, $Title, "Disk 0 not found")
+					ContinueLoop
+				EndIf
+				$InfoText = "Model: " & $aDiskInfo[$Disk0Index][1] & @CRLF & "Size: " & $aDiskInfo[$Disk0Index][3] & @CRLF & "Partitons: " & $aDiskInfo[$Disk0Index][4]
+
+				#Region ### START Koda GUI section ###
+				$FormatGUI = GUICreate("", 396, 174, -1, -1)
+				$FormatList1 = GUICtrlCreateList("", 80, 48, 297, 67, -1, 0)
+				$FormatIcon1 = GUICtrlCreateIcon(@SystemDir & "\shell32.dll", -236, 24, 64, 32, 32)
+				$FormatLabel1 = GUICtrlCreateLabel("Setup will use the disk highlighted below, any data will be lost.", 16, 16, 295, 17)
+				$FormatCancel = GUICtrlCreateButton("Cancel", 304, 136, 75, 25)
+				$FormatOK = GUICtrlCreateButton("OK", 216, 136, 75, 25)
+				GUISetState(@SW_SHOW)
+				#EndRegion ### END Koda GUI section ###
+
+				For $i = UBound($aDiskInfo) - 1 To 0 Step -1
+					GUICtrlSetData($FormatList1, "Disk " & $aDiskInfo[$i][0] & " (" & $aDiskInfo[$i][4] & " Partitions)" & "  " & $aDiskInfo[$i][3] & "  " & $aDiskInfo[$i][1])
+				Next
+				_GUICtrlListBox_SelectString($FormatList1, "Disk " & $TargetDisk)
+
+				While 1
+					$FormatGUIMsg = GUIGetMsg()
+					Switch $FormatGUIMsg
+						Case $GUI_EVENT_CLOSE, $FormatCancel
+							GUIDelete($FormatGUI)
+							ContinueLoop 2
+
+						Case $FormatOK
+							$TargetDisk = _GUICtrlListBox_GetText($FormatList1, _GUICtrlListBox_GetCurSel($FormatList1))
+							$TargetDisk = StringMid($TargetDisk, StringLen("Disk X"), 2)
+							$TargetDisk = Int(StringStripWS($TargetDisk, 8))
+							If IsInt($TargetDisk) And $TargetDisk >= 0 And $TargetDisk <= 99 Then
+								GUIDelete($FormatGUI)
+								ExitLoop
+							Else
+								MsgBox(0, $Title, "Error selecting disk")
+								GUIDelete($FormatGUI)
+								ContinueLoop 2
+							EndIf
+
+
+					EndSwitch
+
+					Sleep(10)
+				WEnd
+
+				;$MsgReturn = MsgBox($MB_OKCANCEL + $MB_ICONWARNING, $Title, "Setup will automaticly use disk 0 to install Windows, any existing data will be lost, press ok to continue." & @CRLF & @CRLF & $InfoText)
+				;If $MsgReturn <> $IDOK Then ContinueLoop
+			EndIf
 
 			$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
 			For $b = 0 To UBound($aAutoLogonCopy) - 1
@@ -287,6 +345,8 @@ While 1
 			If $nMsg = $FormatButton And $IsPE Then
 				$sFileData = StringReplace($sFileData, "<!--Format", "")
 				$sFileData = StringReplace($sFileData, "Format-->", "")
+				$sFileData = StringReplace($sFileData, "<DiskID></DiskID>", "<DiskID>" & $TargetDisk & "</DiskID>")
+
 				Run(@ComSpec & " /c " & '(echo Select Disk 0 & echo clean) | diskpart')
 				_Win11Bypass()
 			EndIf
@@ -416,7 +476,7 @@ Func _Win11Bypass()
 	RegWrite("HKEY_CURRENT_USER\Control Panel\UnsupportedHardwareNotificationCache", "SV1", "REG_DWORD", 0)
 	RegWrite("HKEY_CURRENT_USER\Control Panel\UnsupportedHardwareNotificationCache", "SV2", "REG_DWORD", 0)
 	RegWrite("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE", "BypassNRO", "REG_DWORD", 1)
-EndFunc
+EndFunc   ;==>_Win11Bypass
 
 ; Proccess NOTIFY mesages to handle double clicks
 Func _WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
@@ -435,9 +495,9 @@ EndFunc   ;==>_WM_NOTIFY
 
 ; Proccess NOTIFY mesages to handle window resize for status bar
 Func _WM_SIZE($hWnd, $iMsg, $iwParam, $ilParam)
-    _GUICtrlStatusBar_Resize($StatusBar1)
-    Return $GUI_RUNDEFMSG
-EndFunc   ;==>MY_WM_SIZE
+	_GUICtrlStatusBar_Resize($StatusBar1)
+	Return $GUI_RUNDEFMSG
+EndFunc   ;==>_WM_SIZE
 
 ; Calculate the full path of a item from the GUI tree view
 Func _GetTreeItemFullPath($Parent, $Item)
@@ -756,14 +816,14 @@ Func _StatusBarUpdate()
 	; Get motherboard bios information
 	$Win32_BIOS = _WMI("SELECT SerialNumber,SMBIOSBIOSVersion,ReleaseDate FROM Win32_BIOS")
 	If Not @error Then
-		If $Win32_BIOS.SerialNumber <> "" and $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 10)
+		If $Win32_BIOS.SerialNumber <> "" And $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 10)
 		$StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.ReleaseDate, 8)
 		$StatusbarToolTipText &= @CR & "Firmware: " & StringLeft($Win32_BIOS.SMBIOSBIOSVersion, 20) & " Date: " & StringLeft($Win32_BIOS.ReleaseDate, 8)
 	EndIf
 
 	; Get additional statusbar and tool tip text
 	$HelperStatusFiles = _FileListToArray(@TempDir, "Helper_Status_*.txt", $FLTA_FILES, True)
-	For $i = 1 To Ubound($HelperStatusFiles) - 1
+	For $i = 1 To UBound($HelperStatusFiles) - 1
 		If _FileModifiedAge($HelperStatusFiles[$i]) < 10 * 1000 Then
 			$FileText = FileReadLine($HelperStatusFiles[$i], 1)
 			_Log("$FileText=" & $FileText, 3)
@@ -771,7 +831,7 @@ Func _StatusBarUpdate()
 
 			$FileText = FileReadLine($HelperStatusFiles[$i], 2)
 			_Log("$FileText=" & $FileText, 3)
-			If Not @error Then $StatusBarToolTipText &= @CRLF & $FileText
+			If Not @error Then $StatusbarToolTipText &= @CRLF & $FileText
 
 		Else
 			FileDelete($HelperStatusFiles[$i])
@@ -786,20 +846,52 @@ Func _StatusBarUpdate()
 	EndIf
 
 	; Update statusbar tool tip if the text changed
-	If _GUIToolTip_GetText($StatusBarToolTip, 0, $StatusBar1) <> $StatusBarToolTipText Then
-		_GUIToolTip_UpdateTipText($StatusBarToolTip, 0, $StatusBar1, $StatusBarToolTipText)
+	If _GUIToolTip_GetText($StatusBarToolTip, 0, $StatusBar1) <> $StatusbarToolTipText Then
+		_GUIToolTip_UpdateTipText($StatusBarToolTip, 0, $StatusBar1, $StatusbarToolTipText)
 		_Log("Statusbar Tooltip Updated", 3)
 	EndIf
 
 
 
 	If $Debug Then
-		$StatusBarTimer2 = TimerInit()
+		$StatusbarTimer2 = TimerInit()
 		_Log("_StatusBarUpdate Timer: " & Round(TimerDiff($StatusBarTimer1)) & "ms " & Round($StatusBarTimer2Value) & "ms")
 	EndIf
 
 	Return
 EndFunc   ;==>_StatusBarUpdate
+
+Func _GetDisks()
+	Local $WMI = ObjGet('winmgmts:\\.\root\cimv2')
+
+	Local $Partitions[0][3]
+	Local $Query = $WMI.ExecQuery("Select DeviceID,Bootable,Type From Win32_DiskPartition")
+	For $Item In $Query
+		$Index = UBound($Partitions)
+		ReDim $Partitions[$Index + 1][UBound($Partitions, 2)]
+		$Partitions[$Index][0] = $Item.DeviceID
+		$Partitions[$Index][0] = StringReplace(StringMid($Partitions[$Index][0], StringInStr($Partitions[$Index][0], "#") + 1, 2), ",", "")
+		$Partitions[$Index][1] = $Item.Bootable
+		$Partitions[$Index][2] = $Item.Type
+	Next
+
+	Local $Disks[0][5]
+	Local $Query = $WMI.ExecQuery("Select DeviceID,Caption,InterfaceType,Size From Win32_DiskDrive")
+	For $Item In $Query
+		$Index = UBound($Disks)
+		ReDim $Disks[$Index + 1][UBound($Disks, 2)]
+		$Disks[$Index][0] = $Item.DeviceID
+		$Disks[$Index][0] = StringMid($Disks[$Index][0], StringInStr($Disks[$Index][0], "DRIVE") + 5, 2)
+		$Disks[$Index][1] = $Item.Caption
+		$Disks[$Index][2] = $Item.InterfaceType
+		$Disks[$Index][3] = Round($Item.Size / (1024 ^ 3)) & "MB"
+		$Disks[$Index][4] = UBound(_ArrayFindAll($Partitions, $Disks[$Index][0], Default, Default, Default, Default, Default, 0))
+	Next
+
+	_ArraySort($Disks)
+
+	Return $Disks
+EndFunc   ;==>_GetDisks
 
 ; Custom error handling, probably only good for running compiled
 Func _CommError()

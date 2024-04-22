@@ -107,7 +107,7 @@
 			<!--Format
 			<DiskConfiguration>
                 <Disk wcm:action="add">
-                    <DiskID>0</DiskID>
+                    <DiskID></DiskID>
                     <WillWipeDisk>false</WillWipeDisk>
                     <CreatePartitions>
                         <CreatePartition wcm:action="add">
