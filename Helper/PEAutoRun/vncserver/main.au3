@@ -5,7 +5,7 @@ Global $Settings = @ScriptDir & "\Settings.ini"
 Global $VNCRegPath = "HKEY_CURRENT_USER\SOFTWARE\TightVNC\Server"
 Global $VNCExe = "tvnserver.exe"
 Global $IsPE = StringInStr(@WindowsDir, "X:")
-
+If Not $IsPE Then Exit
 FileChangeDir(@ScriptDir)
 
 _Log($Title)
@@ -22,7 +22,7 @@ For $i=1 to 6
 Next
 
 ; Disable the PE firewall
-If $IsPE Then Run(@ComSpec & " /c " & 'wpeutil.exe disablefirewall', "", @SW_HIDE)
+Run(@ComSpec & " /c " & 'wpeutil.exe disablefirewall', "", @SW_HIDE)
 
 ; Import VNC settings to registry
 Run(@ComSpec & " /c " & 'reg.exe import vnc_settings.reg', "", @SW_HIDE)
