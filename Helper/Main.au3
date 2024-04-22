@@ -884,7 +884,7 @@ Func _GetDisks()
 		$Disks[$Index][0] = StringMid($Disks[$Index][0], StringInStr($Disks[$Index][0], "DRIVE") + 5, 2)
 		$Disks[$Index][1] = $Item.Caption
 		$Disks[$Index][2] = $Item.InterfaceType
-		$Disks[$Index][3] = Round($Item.Size / (1024 ^ 3)) & "MB"
+		$Disks[$Index][3] = Round($Item.Size / (1024 ^ 3)) & "GB"
 		$Disks[$Index][4] = UBound(_ArrayFindAll($Partitions, $Disks[$Index][0], Default, Default, Default, Default, Default, 0))
 	Next
 
