@@ -29,6 +29,7 @@
 
 ; https://github.com/jmclaren7/autoit-scripts/blob/master/CommonFunctions.au3
 #include "includeExt\CommonFunctions.au3"
+#include "includeExt\Misc.au3"
 
 ; Register a function to run whenever the script exits
 OnAutoItExitRegister("_Exit")
@@ -85,49 +86,49 @@ Global $StatusbarTimer2
 
 ; Create main GUI
 #Region ### START Koda GUI section ###
-$GUIMain = GUICreate("Title", 753, 513, -1, -1, BitOR($GUI_SS_DEFAULT_GUI,$WS_MAXIMIZEBOX,$WS_SIZEBOX,$WS_THICKFRAME,$WS_TABSTOP))
+$GUIMain = GUICreate("Title", 753, 513, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_MAXIMIZEBOX, $WS_SIZEBOX, $WS_THICKFRAME, $WS_TABSTOP))
 $FileMenu = GUICtrlCreateMenu("&File")
 $AdvancedMenu = GUICtrlCreateMenu("&Advanced")
 GUISetBkColor(0xF9F9F9)
 $Group5 = GUICtrlCreateGroup("WinPE Tools", 12, 7, 354, 452)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 $PEScriptTreeView = GUICtrlCreateTreeView(24, 31, 330, 385)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 $PERunButton = GUICtrlCreateButton("Run", 242, 424, 107, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Run the selected tool (you can also double click on the list item)")
 $TaskMgrButton = GUICtrlCreateButton("", 28, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Task Manager")
 $RegeditButton = GUICtrlCreateButton("", 68, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Registry Editor")
 $NotepadButton = GUICtrlCreateButton("", 108, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Notepad")
 $CMDButton = GUICtrlCreateButton("", 148, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Command Prompt")
 $ShellButton = GUICtrlCreateButton("", 188, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "File Explorer (Explorer++)")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 $Group6 = GUICtrlCreateGroup("First Logon Scripts", 384, 7, 354, 452)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 $NormalInstallButton = GUICtrlCreateButton("Normal Install", 400, 424, 131, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Starts the installer with no modifications or automations")
 $AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 560, 424, 131, 25, $BS_DEFPUSHBUTTON)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Prompts for drive selection using Windows installer")
 $Label4 = GUICtrlCreateLabel("Computer Name", 471, 396, 80, 17)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
-$PEInstallTreeView = GUICtrlCreateTreeView(396, 31, 330, 350, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+$PEInstallTreeView = GUICtrlCreateTreeView(396, 31, 330, 350, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
 $PEComputerNameInput = GUICtrlCreateInput("", 553, 392, 169, 21)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 $FormatButton = GUICtrlCreateButton("", 698, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "(Experimental) Prompts for drive selection using Helper and skips Windows 11 requirements")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 $StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
@@ -306,7 +307,6 @@ While 1
 						Case $GUI_EVENT_CLOSE, $FormatCancel
 							GUIDelete($FormatGUI)
 							ContinueLoop 2
-
 						Case $FormatOK
 							$TargetDisk = _GUICtrlListBox_GetText($FormatList1, _GUICtrlListBox_GetCurSel($FormatList1))
 							$TargetDisk = StringMid($TargetDisk, StringLen("Disk X"), 2)
@@ -319,15 +319,9 @@ While 1
 								GUIDelete($FormatGUI)
 								ContinueLoop 2
 							EndIf
-
-
 					EndSwitch
-
 					Sleep(10)
 				WEnd
-
-				;$MsgReturn = MsgBox($MB_OKCANCEL + $MB_ICONWARNING, $Title, "Setup will automaticly use disk 0 to install Windows, any existing data will be lost, press ok to continue." & @CRLF & @CRLF & $InfoText)
-				;If $MsgReturn <> $IDOK Then ContinueLoop
 			EndIf
 
 			$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
@@ -351,7 +345,7 @@ While 1
 				$sFileData = StringReplace($sFileData, "Format-->", "")
 				$sFileData = StringReplace($sFileData, "<DiskID></DiskID>", "<DiskID>" & $TargetDisk & "</DiskID>")
 
-				Run(@ComSpec & " /c " & '(echo Select Disk 0 & echo clean) | diskpart')
+				RunWait(@ComSpec & " /c " & '(echo Select Disk ' & $TargetDisk & ' & echo clean) | diskpart')
 				_Win11Bypass()
 			EndIf
 
@@ -470,18 +464,6 @@ WEnd
 
 ;=========== =========== =========== =========== =========== =========== =========== ===========
 ;=========== =========== =========== =========== =========== =========== =========== ===========
-Func _Win11Bypass()
-	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassSecureBootCheck", "REG_DWORD", 1)
-	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassTPMCheck", "REG_DWORD", 1)
-	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassCPUCheck", "REG_DWORD", 1)
-	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassRAMCheck", "REG_DWORD", 1)
-	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassStorageCheck", "REG_DWORD", 1)
-	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\MoSetup", "AllowUpgradesWithUnsupportedTPMOrCPU", "REG_DWORD", 1)
-	RegWrite("HKEY_CURRENT_USER\Control Panel\UnsupportedHardwareNotificationCache", "SV1", "REG_DWORD", 0)
-	RegWrite("HKEY_CURRENT_USER\Control Panel\UnsupportedHardwareNotificationCache", "SV2", "REG_DWORD", 0)
-	RegWrite("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\OOBE", "BypassNRO", "REG_DWORD", 1)
-EndFunc   ;==>_Win11Bypass
-
 ; Proccess NOTIFY mesages to handle double clicks
 Func _WM_NOTIFY($hWnd, $iMsg, $wParam, $lParam)
 	$TagStruct1 = DllStructCreate($tagNMHDR, $lParam)
@@ -503,7 +485,7 @@ Func _WM_SIZE($hWnd, $iMsg, $iwParam, $ilParam)
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_WM_SIZE
 
-; Calculate the full path of a item from the GUI tree view
+; Calculate the full path of an item from the GUI tree view
 Func _GetTreeItemFullPath($Parent, $Item)
 	Local $FullPath
 
@@ -864,38 +846,6 @@ Func _StatusBarUpdate()
 
 	Return
 EndFunc   ;==>_StatusBarUpdate
-
-Func _GetDisks()
-	Local $WMI = ObjGet('winmgmts:\\.\root\cimv2')
-
-	Local $Partitions[0][3]
-	Local $Query = $WMI.ExecQuery("Select DeviceID,Bootable,Type From Win32_DiskPartition")
-	For $Item In $Query
-		$Index = UBound($Partitions)
-		ReDim $Partitions[$Index + 1][UBound($Partitions, 2)]
-		$Partitions[$Index][0] = $Item.DeviceID
-		$Partitions[$Index][0] = StringReplace(StringMid($Partitions[$Index][0], StringInStr($Partitions[$Index][0], "#") + 1, 2), ",", "")
-		$Partitions[$Index][1] = $Item.Bootable
-		$Partitions[$Index][2] = $Item.Type
-	Next
-
-	Local $Disks[0][5]
-	Local $Query = $WMI.ExecQuery("Select DeviceID,Caption,InterfaceType,Size From Win32_DiskDrive")
-	For $Item In $Query
-		$Index = UBound($Disks)
-		ReDim $Disks[$Index + 1][UBound($Disks, 2)]
-		$Disks[$Index][0] = $Item.DeviceID
-		$Disks[$Index][0] = StringMid($Disks[$Index][0], StringInStr($Disks[$Index][0], "DRIVE") + 5, 2)
-		$Disks[$Index][1] = $Item.Caption
-		$Disks[$Index][2] = $Item.InterfaceType
-		$Disks[$Index][3] = Round($Item.Size / (1024 ^ 3)) & "GB"
-		$Disks[$Index][4] = UBound(_ArrayFindAll($Partitions, $Disks[$Index][0], Default, Default, Default, Default, Default, 0))
-	Next
-
-	_ArraySort($Disks)
-
-	Return $Disks
-EndFunc   ;==>_GetDisks
 
 ; Custom error handling, probably only good for running compiled
 Func _CommError()
