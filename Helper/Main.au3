@@ -45,8 +45,9 @@ FileChangeDir(@ScriptDir)
 
 ; Miscellaneous global variables
 Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 6)
-Global $Version = "5.4"
-Global $Title = "Windows Setup Helper v" & $Version & " (" & $Date & ")"
+Global $Version = "5.5"
+Global $TitleShort = "Windows Setup Helper"
+Global $Title = $TitleShort & " v" & $Version & " (" & $Date & ")"
 Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
 Global $DoubleClick = False
 Global $SystemDrive = StringLeft(@SystemDir, 3)
@@ -290,6 +291,9 @@ While 1
 				$FormatOK = GUICtrlCreateButton("OK", 216, 136, 75, 25)
 				GUISetState(@SW_SHOW)
 				#EndRegion ### END Koda GUI section ###
+
+				GUISetIcon($SystemDrive & "sources\setup.exe")
+				WinSetTitle($FormatGUI, "", "Select Disk - " & $TitleShort)
 
 				For $i = UBound($aDiskInfo) - 1 To 0 Step -1
 					GUICtrlSetData($FormatList1, "Disk " & $aDiskInfo[$i][0] & " (" & $aDiskInfo[$i][4] & " Partitions)" & "  " & $aDiskInfo[$i][3] & "  " & $aDiskInfo[$i][1])
