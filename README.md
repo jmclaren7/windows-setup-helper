@@ -1,8 +1,8 @@
 # Windows Setup Helper
 
-This project provides an interface to use with Windows Installer or WinPE (Iboot.wim). The interface gives you access to whatever scripts and tools you choose to add. The interface provides options to start a normal Windows Install or one that is automated. Automated installs will use an Autounattend.xml file to skip all but partitioning steps, once the install completes any scripts you selected will automatically run.
+This project provides a GUI to use along side the traditional Windows installer interface you see on a normal Windows installation ISO/USB. You'll have access to whatever scripts and tools you choose to add along with options to start an automated Windows installation. Automated installs will use an Autounattend.xml file to skip all but partitioning steps, once the install completes any scripts you selected will automatically run.
 
-To use Windows Setup Helper you'll need to add the project files to a WinPE image (sources\boot.wim) along with your custom scripts and tools, I've created a script (Build.bat) to help get this done quickly, just follow the instructions below.
+To use Windows Setup Helper you'll need to add the project files to a Windows installer image along with your custom scripts and tools. I've created a script (Build.bat) to help get this done quickly, just follow the instructions below.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/jmclaren7/windows-setup-helper/master/Extra/Screenshot1.png?raw=true">
@@ -10,16 +10,21 @@ To use Windows Setup Helper you'll need to add the project files to a WinPE imag
 
 ## Features
 
-By only modifying the the WinPE image (boot.wim) you can easily swap out install.wim with new or customized versions without needing to worry about how it will effect the customizations you make with this project. This project aims to include only open source or highly trusted free programs, other WinPE projects often include obscure, commercial or trial software while also making the WinPE environment over complicated and less reliable to serve it's purpose of diagnosing or repairing technical issues.
-
 - Boot Windows install media and use the custom GUI to run to tools or install Windows
 - Select "Automated Install" or "Normal Install"
   - Normal install will run the Windows installation without any modifications or automation
-  - Automated install will skip all install steps except for partitioning and run any selected scripts after install completes
+  - Automated install will skip all install steps (except for partitioning) and run any of the selected logon scripts after install completes
 - Automatic login to the administrator account after install (Default password is 1234, be sure to disable the administrator account when done)
-- Select programs/scripts to run once install and automatic login completes
-- This program is integrated into the boot.wim image, this means you can pxe boot this image and use the same tools
+- Only open source or highly trusted free programs are included
 - Tools and scripts are added to the interface from any available drive with folders matching the specific folder path/names
+- This project focuses on only modifying the the boot image (boot.wim) and not the Windows image that gets installed, this has multiple benefits.
+  - The installer image can be better trusted to be bug free and unmodified
+  - Change install.wim with new or customized versions without effecting the customizations you make with this project
+  - Have multiple install.wim images you can choose from (future version)
+  - Use the boot image with PXE booting and still have all the customizations available
+- Starts a VNC server so you can remotely connect from another computer
+- Automatically add drivers that you add (useful for storage drivers when the installer can't detect drives)
+- Has a basic taskbar for switching between open windows
 
 <br>
 
@@ -38,31 +43,33 @@ Some of the tools I normally use aren't included here because the licensing does
 - [7-Zip](https://www.7-zip.org/)
 - [Putty](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
 - [Explorer++](https://github.com/derceg/explorerplusplus)
-- Useful [Nirsoft Tools](https://www.nirsoft.net/) (Closed source)
+- Some [Nirsoft Tools](https://www.nirsoft.net/) (Closed source)
 - Some [Sysinternal Tools](https://learn.microsoft.com/en-us/sysinternals/) (Closed source)
 - [SeaMonkey](https://www.seamonkey-project.org/) Browser
 - [Crystal DiskInfo & DiskMark](https://github.com/hiyohiyo)
+- [GSmartControl](https://gsmartcontrol.shaduri.dev/)
 - [ReactOS](https://reactos.org/) Components
+- [SeaMonkey Web Browser](https://www.seamonkey-project.org/)
 - [TightVNC](https://www.tightvnc.com/)
 
-## Adding Tools/Scripts/Programs
+## Adding Tools/Scripts/Programs/Drivers
 
 - Add file to the "Tools" folder to list them in the GUI so you can run them later
 - Add files to the "PEAutoRun" folder to have them automatically run when WinPE starts
+  - Add driver files under PEAutoRun\Drivers
 - Add files to the "Logon" folder to make them selectable before install and then executed after install completes
-- All the above folders can be used as a prefix for other folder names and they will be treated the same as described:
-  - LogonACME
-  - ToolsJohn
-- Folders on different drives matching the naming convention will also be processed, this allows you to add files to a bootable USB after the fact, a supplementary drive or even a network drive
-  - USB:\Helper\Tools
-  - USB:\Helper\ToolsAV
-  - USB:\Helper\LogonMisc
+- Folders (Tools, Logon, PEAutoRun) can be used as a prefix for other folder names and they will also be processed:
+  - \Helper\Logon
+  - \Helper\LogonCustom
+- Folders on different drives matching the path will also be processed, this allows you to add files to a bootable USB after the fact, a supplementary drive or even a network drive
+  - X:\Helper\Tools
+  - F:\Helper\Tools
 
 ## Other Customizations & Features
 
-I've created a number of features which may not be clearly documented but I've tried to include examples each of these in the project, as time goes on and if interest in the project increases I will begin to document more of these.
+I've created a number of features which may not be clearly documented but I've tried to include examples for each of these in the project, as time goes on and if interest in the project increases I will begin to document more of these.
 
-## Prepare Using DSIM
+## Prepare Using DSIM (Build.bat)
 
 Using DSIM is the recommended way to update Windows images (wim), it's more advanced but can be faster for repeatedly creating the ISO. I've created a script (Build.bat) to help automate the process.
 
@@ -106,7 +113,7 @@ Using DSIM is the recommended way to update Windows images (wim), it's more adva
 </p>
 
 ## TightVNC
-This feature is a work in progress, the idea is that if you have remote access to another machine on a network, you could have someone boot to WinPE and then you can VNC into it to do recovery, diagnostics or Windows installation.
+This feature is a work in progress, the idea is that if you have remote access to another machine on a network, you could have someone boot to a USB and then you can VNC into it to do recovery, diagnostics or Windows installation.
 
 - A VNC server will start automatically with WinPE (PEAutoRun Folder)
 - The port and password are configured in "PEAutoRun\vncserver\settings.ini" (Defaults to port 5950, password "vncwatch")
