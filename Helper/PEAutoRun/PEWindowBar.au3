@@ -422,7 +422,7 @@ Func __GetVisibleWindows($GetText = False)
 		If $Path = "" Then
 			; Might only help if the stars align
 			Local $aEnum = _WinAPI_EnumProcessModules($aWinList[$i][4])
-			If Not @error Then
+			If Not @error And UBound($aEnum) >= 2 Then
 				$TestPath = $aEnum[1]
 				; The exe might be in the system folder (elevated cmd or task manager)
 			Else
