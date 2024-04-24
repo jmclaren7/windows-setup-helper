@@ -104,11 +104,11 @@
 		<component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
 			xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
 			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-			<!--Format
+			<!--FormatUEFI
 			<DiskConfiguration>
                 <Disk wcm:action="add">
                     <DiskID></DiskID>
-                    <WillWipeDisk>false</WillWipeDisk>
+                    <WillWipeDisk>true</WillWipeDisk>
                     <CreatePartitions>
                         <CreatePartition wcm:action="add">
                             <Order>1</Order>
@@ -147,24 +147,62 @@
                     </ModifyPartitions>
                 </Disk>
             </DiskConfiguration>
-			Format-->
-			<Diagnostics>
-				<OptIn>false</OptIn>
-			</Diagnostics>
-			<DynamicUpdate>
-				<Enable>true</Enable>
-				<WillShowUI>OnError</WillShowUI>
-			</DynamicUpdate>
+			FormatUEFI-->
+			<!--FormatBIOS
+			<DiskConfiguration>
+                <Disk wcm:action="add">
+					<DiskID></DiskID>
+                    <WillWipeDisk>true</WillWipeDisk>
+                    <CreatePartitions>
+                        <CreatePartition wcm:action="add">
+                            <Order>1</Order>
+                            <Type>Primary</Type>
+                            <Size>100</Size>
+                        </CreatePartition>
+                        <CreatePartition wcm:action="add">
+                            <Extend>true</Extend>
+                            <Order>2</Order>
+                            <Type>Primary</Type>
+                        </CreatePartition>
+                    </CreatePartitions>
+                    <ModifyPartitions>
+                        <ModifyPartition wcm:action="add">
+                            <Active>true</Active>
+                            <Format>NTFS</Format>
+                            <Label>System Reserved</Label>
+                            <Order>1</Order>
+                            <PartitionID>1</PartitionID>
+                            <TypeID>0x27</TypeID>
+                        </ModifyPartition>
+                        <ModifyPartition wcm:action="add">
+                            <Active>true</Active>
+                            <Format>NTFS</Format>
+                            <Label>OS</Label>
+                            <Letter>C</Letter>
+                            <Order>2</Order>
+                            <PartitionID>2</PartitionID>
+                        </ModifyPartition>
+                    </ModifyPartitions>
+                </Disk>
+            </DiskConfiguration>
+			FormatBIOS-->
 			<ImageInstall>
 				<OSImage>
 					<WillShowUI>OnError</WillShowUI>
-					<!--Format
+					<!--FormatUEFI
 					<InstallTo>
                         <DiskID></DiskID>
                         <PartitionID>3</PartitionID>
                     </InstallTo>
                     <InstallToAvailablePartition>false</InstallToAvailablePartition>
-					Format-->
+					FormatUEFI-->
+					<!--FormatBIOS
+					<InstallTo>
+                        <DiskID></DiskID>
+                        <PartitionID>2</PartitionID>
+                    </InstallTo>
+                    <InstallToAvailablePartition>false</InstallToAvailablePartition>
+					FormatBIOS-->
 					<InstallFrom>
 						<MetaData wcm:action="add">
 							<Key>/IMAGE/NAME</Key>
@@ -173,6 +211,14 @@
 					</InstallFrom>
 				</OSImage>
 			</ImageInstall>
+			<Diagnostics>
+				<OptIn>false</OptIn>
+			</Diagnostics>
+			<DynamicUpdate>
+				<Enable>true</Enable>
+				<WillShowUI>OnError</WillShowUI>
+			</DynamicUpdate>
+
 			<UserData>
 				<AcceptEula>true</AcceptEula>
 				<ProductKey>

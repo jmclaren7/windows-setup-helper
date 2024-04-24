@@ -341,11 +341,16 @@ While 1
 			EndIf
 
 			If $nMsg = $FormatButton And $IsPE Then
-				$sFileData = StringReplace($sFileData, "<!--Format", "")
-				$sFileData = StringReplace($sFileData, "Format-->", "")
+				If EnvGet("firmware_type") = "Legacy" Then
+					$sFileData = StringReplace($sFileData, "<!--FormatBIOS", "")
+					$sFileData = StringReplace($sFileData, "FormatBIOS-->", "")
+				Else
+					$sFileData = StringReplace($sFileData, "<!--FormatUEFI", "")
+					$sFileData = StringReplace($sFileData, "FormatUEFI-->", "")
+				EndIf
+
 				$sFileData = StringReplace($sFileData, "<DiskID></DiskID>", "<DiskID>" & $TargetDisk & "</DiskID>")
 
-				RunWait(@ComSpec & " /c " & '(echo Select Disk ' & $TargetDisk & ' & echo clean) | diskpart')
 				_Win11Bypass()
 			EndIf
 
