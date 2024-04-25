@@ -206,7 +206,8 @@
 					<InstallFrom>
 						<MetaData wcm:action="add">
 							<Key>/IMAGE/NAME</Key>
-							<Value>Windows 11 Pro</Value>
+							<!--KeyPro<Value>Windows 11 Pro</Value>KeyPro-->
+							<!--KeyHome<Value>Windows 11 Home</Value>KeyHome-->
 						</MetaData>
 					</InstallFrom>
 				</OSImage>
@@ -222,7 +223,8 @@
 			<UserData>
 				<AcceptEula>true</AcceptEula>
 				<ProductKey>
-					<Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
+					<!--KeyPro<Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>KeyPro-->
+					<!--KeyHome<Key>YTMG3-N6DKC-DKB77-7M9GH-8HVX7</Key>KeyHome-->
 					<WillShowUI>OnError</WillShowUI>
 				</ProductKey>
 			</UserData>

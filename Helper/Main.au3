@@ -163,6 +163,7 @@ $MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
 $MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
 $MenuRelistScripts = GUICtrlCreateMenuItem("Relist Tools && Scripts", $AdvancedMenu)
 $MenuListDebugTools = GUICtrlCreateMenuItem("List Debug && AutoRun Tools", $AdvancedMenu)
+$SelectEdition = GUICtrlCreateMenuItem("Select Edition For Automatic Install", $AdvancedMenu)
 
 ; GUI Post Creation Setup
 WinSetTitle($GUIMain, "", $Title)
@@ -179,6 +180,8 @@ Local $RebootPrompt = False
 Local $AutoInstallWait = False
 Local $NormalInstallWait = False
 Local $Reboot = False
+Local $EdditionChoice = "Windows 11 Pro"
+If @OSVersion = "WIN_10" Then $EdditionChoice = "Windows 10 Pro"
 
 ; Start PE networking
 If $IsPE Then Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
@@ -273,66 +276,42 @@ While 1
 			EndIf
 
 			If $nMsg = $FormatButton Then
-				$TargetDisk = 0
-
+				; Get disks information
 				$aDiskInfo = _GetDisks()
-				$Disk0Index = _ArraySearch($aDiskInfo, 0)
-				If @error Then
-					MsgBox($MB_OK + $MB_ICONWARNING, $Title, "Disk 0 not found")
-					ContinueLoop
-				EndIf
-				$InfoText = "Model: " & $aDiskInfo[$Disk0Index][1] & @CRLF & "Size: " & $aDiskInfo[$Disk0Index][3] & @CRLF & "Partitons: " & $aDiskInfo[$Disk0Index][4]
 
-				#Region ### START Koda GUI section ###
-				$FormatGUI = GUICreate("", 396, 174, -1, -1)
-				$FormatList1 = GUICtrlCreateList("", 80, 48, 297, 67, -1, 0)
-				$FormatIcon1 = GUICtrlCreateIcon(@SystemDir & "\shell32.dll", -236, 24, 64, 32, 32)
-				$FormatLabel1 = GUICtrlCreateLabel("Setup will use the disk highlighted below, any data will be lost.", 16, 16, 295, 17)
-				$FormatCancel = GUICtrlCreateButton("Cancel", 304, 136, 75, 25)
-				$FormatOK = GUICtrlCreateButton("OK", 216, 136, 75, 25)
-				GUISetState(@SW_SHOW)
-				#EndRegion ### END Koda GUI section ###
-
-				GUISetIcon($SystemDrive & "sources\setup.exe")
-				WinSetTitle($FormatGUI, "", "Select Disk - " & $TitleShort)
-
+				; Build a formated list of disk and partition information
+				Local $aListItems[1]
 				For $i = UBound($aDiskInfo) - 1 To 0 Step -1
-					GUICtrlSetData($FormatList1, "Disk " & $aDiskInfo[$i][0] & " (" & $aDiskInfo[$i][4] & " Partitions)" & "  " & $aDiskInfo[$i][3] & "  " & $aDiskInfo[$i][1])
+					$ListItem = "Disk " & $aDiskInfo[$i][0] & " (" & $aDiskInfo[$i][4] & " Partitions)" & "  " & $aDiskInfo[$i][3] & "  " & $aDiskInfo[$i][1]
+					_ArrayAdd($aListItems, $ListItem)
 				Next
-				_GUICtrlListBox_SelectString($FormatList1, "Disk " & $TargetDisk)
 
-				While 1
-					$FormatGUIMsg = GUIGetMsg()
-					Switch $FormatGUIMsg
-						Case $GUI_EVENT_CLOSE, $FormatCancel
-							GUIDelete($FormatGUI)
-							ContinueLoop 2
-						Case $FormatOK
-							$TargetDisk = _GUICtrlListBox_GetText($FormatList1, _GUICtrlListBox_GetCurSel($FormatList1))
-							$TargetDisk = StringMid($TargetDisk, StringLen("Disk X"), 2)
-							$TargetDisk = Int(StringStripWS($TargetDisk, 8))
-							If IsInt($TargetDisk) And $TargetDisk >= 0 And $TargetDisk <= 99 Then
-								GUIDelete($FormatGUI)
-								ExitLoop
-							Else
-								MsgBox(0, $Title, "Error selecting disk")
-								GUIDelete($FormatGUI)
-								ContinueLoop 2
-							EndIf
-					EndSwitch
-					Sleep(10)
-				WEnd
+				; Display a list select dialog so the user can select what disk to use for the install
+				$DefaultListItemIndex = _ArraySearch($aListItems, "Disk 0", 0, 0, 0, 1)
+				$TargetDisk = _ListSelect($aListItems, "Disk Select - " & $TitleShort, "Setup will use the disk highlighted below, any data will be lost.", $DefaultListItemIndex, @SystemDir & "\shell32.dll,-236")
+				If @error Then
+					ContinueLoop
+				Else
+					; Extract the disk ID from the returned string
+					$TargetDisk = StringMid($TargetDisk, StringLen("Disk X"), 2)
+					$TargetDisk = Int(StringStripWS($TargetDisk, 8))
+					If Not IsInt($TargetDisk) Or $TargetDisk < 0 Or $TargetDisk > 99 Then
+						MsgBox(0, "Select Disk - " & $TitleShort, "Error selecting disk")
+						ContinueLoop
+					EndIf
+				EndIf
 			EndIf
 
+			; Get the list of scripts that need to be copied later
 			$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
 			For $b = 0 To UBound($aAutoLogonCopy) - 1
 				_Log("TreeItem: " & $aAutoLogonCopy[$b])
 			Next
 
-			; Read the autounattend.xml file to memory
+			; Read the autounattend.xml file
 			$sFileData = FileRead(@ScriptDir & "\autounattend.xml")
 
-			; Make modifications to autounattend.xml
+			; Start modifications to autounattend.xml ================
 			$ComputerName = GUICtrlRead($PEComputerNameInput)
 			If $ComputerName <> "" Then
 				_Log("$ComputerName=" & $ComputerName)
@@ -351,14 +330,20 @@ While 1
 
 				$sFileData = StringReplace($sFileData, "<DiskID></DiskID>", "<DiskID>" & $TargetDisk & "</DiskID>")
 
-				_Win11Bypass()
+				If @OSVersion = "WIN_11" Then _Win11Bypass()
 			EndIf
 
-			If @OSVersion = "WIN_10" Then
-				_Log("WIN_10")
-				$sFileData = StringReplace($sFileData, "Windows 11", "Windows 10")
-				_Log("StringReplace @extended=" & @extended)
+			If StringInStr($EdditionChoice, "Home") Then
+				$sFileData = StringReplace($sFileData, "<!--KeyHome", "")
+				$sFileData = StringReplace($sFileData, "KeyHome-->", "")
+			Else
+				$sFileData = StringReplace($sFileData, "<!--KeyPro", "")
+				$sFileData = StringReplace($sFileData, "KeyHome-->", "")
 			EndIf
+
+			If @OSVersion = "WIN_10" Then $sFileData = StringReplace($sFileData, "Windows 11", "Windows 10")
+
+			; End modifications to autounattend.xml ================
 
 			; Save modifications to autounattend.xml in new location
 			$AutounattendPath = @TempDir & "\autounattend.xml"
@@ -388,6 +373,16 @@ While 1
 		Case $ShellButton
 			_RunFile("Tools\.Explorer++.exe")
 
+		Case $SelectEdition
+			Local $aListItems = ["", "Windows 11 Home", "Windows 11 Pro"]
+			If @OSVersion = "WIN_10" Then Local $aListItems = ["", "Windows 10 Home", "Windows 10 Pro"]
+
+			$ListSelectReturn = _ListSelect($aListItems, "Edition Select - " & $TitleShort, "Select the Windows edition to use for automated install.", 2)
+			If @error Then
+				ContinueLoop
+			Else
+				$EdditionChoice = $ListSelectReturn
+			EndIf
 	EndSwitch
 
 	; If a double click is detected on the PE Tools treeview run the script
@@ -802,7 +797,7 @@ Func _StatusBarUpdate()
 
 	; Get CPU information
 	$Win32_Processor = _WMI("SELECT NumberOfCores,NumberOfLogicalProcessors FROM Win32_Processor")
-	If Not @error Then $StatusbarText &= $Delimiter & $Win32_Processor.NumberOfCores & "/" & $Win32_Processor.NumberOfLogicalProcessors & " Cores"
+	If Not @error Then $StatusbarText &= $Delimiter & $Win32_Processor.NumberOfCores & "C/" & $Win32_Processor.NumberOfLogicalProcessors & "T"
 
 	; Get motherboard bios information
 	$Win32_BIOS = _WMI("SELECT SerialNumber,SMBIOSBIOSVersion,ReleaseDate FROM Win32_BIOS")
