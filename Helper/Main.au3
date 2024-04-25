@@ -163,7 +163,7 @@ $MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
 $MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
 $MenuRelistScripts = GUICtrlCreateMenuItem("Relist Tools && Scripts", $AdvancedMenu)
 $MenuListDebugTools = GUICtrlCreateMenuItem("List Debug && AutoRun Tools", $AdvancedMenu)
-$SelectEdition = GUICtrlCreateMenuItem("Select Edition For Automatic Install", $AdvancedMenu)
+$SelectEdition = GUICtrlCreateMenuItem("Select Edition For Automated Install", $AdvancedMenu)
 
 ; GUI Post Creation Setup
 WinSetTitle($GUIMain, "", $Title)
@@ -338,7 +338,7 @@ While 1
 				$sFileData = StringReplace($sFileData, "KeyHome-->", "")
 			Else
 				$sFileData = StringReplace($sFileData, "<!--KeyPro", "")
-				$sFileData = StringReplace($sFileData, "KeyHome-->", "")
+				$sFileData = StringReplace($sFileData, "KeyPro-->", "")
 			EndIf
 
 			If @OSVersion = "WIN_10" Then $sFileData = StringReplace($sFileData, "Windows 11", "Windows 10")
