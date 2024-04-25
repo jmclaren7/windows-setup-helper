@@ -20,7 +20,51 @@
 ;~ #include <WinAPISysWin.au3>
 ;~ #include <WindowsConstants.au3>
 ;===============================================================================
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _ListSelect
+; Description ...: Creates a list select box
+; Syntax ........: _ListSelect()
+; Parameters ....:
+; Return values .: The text of the selected item, @extended contains the index of the slected item
+; Author ........: JohnMC - JohnsCS.com
+; Modified ......: 04/24/2024  --  v1.0
+; ===============================================================================================================================
+Func _ListSelect($aList, $sTitle = "", $sMessage = "", $iDefaultIndex = 1, $sIcon = "", $iWidth = 400, $iHieght = 175)
+	Local $IconFile = StringLeft($sIcon,StringInStr($sIcon, ",", 0, -1) - 1)
+	Local $IconID = Number(StringTrimLeft($sIcon,StringInStr($sIcon, ",", 0, -1)))
 
+	Local $ListSelectGUI = GUICreate($sTitle, $iWidth, $iHieght, -1, -1)
+	Local $ListSelectList1 = GUICtrlCreateList("", 70, 48, $iWidth - 90, $iHieght - 90, -1, 0)
+	Local $ListSelectIcon1 = GUICtrlCreateIcon($IconFile, $IconID, 20, 64, 32, 32)
+	Local $ListSelectLabel1 = GUICtrlCreateLabel($sMessage, 20, 16, $iWidth - 100, 17)
+	Local $ListSelectCancel = GUICtrlCreateButton("Cancel", 304, 140, 75, 25)
+	Local $ListSelectOK = GUICtrlCreateButton("OK", 216, 140, 75, 25)
+	GUISetIcon($IconFile, $IconID)
+	GUISetState(@SW_SHOW)
+
+	For $i = UBound($aList) - 1 To 1 Step -1
+		GUICtrlSetData($ListSelectList1, $aList[$i])
+	Next
+	_GUICtrlListBox_SelectString($ListSelectList1, $aList[$iDefaultIndex])
+
+	Local $ListSelectGUIMsg
+	While 1
+		$ListSelectGUIMsg = GUIGetMsg()
+		Switch $ListSelectGUIMsg
+			Case $GUI_EVENT_CLOSE, $ListSelectCancel
+				GUIDelete($ListSelectGUI)
+				Return SetError(1, 0, 0)
+
+			Case $ListSelectOK
+				Local $ReturnIndex = _GUICtrlListBox_GetCurSel($ListSelectList1)
+				Local $ReturnText = _GUICtrlListBox_GetText($ListSelectList1, $ReturnIndex)
+				GUIDelete($ListSelectGUI)
+
+				Return SetError(0, $ReturnIndex, $ReturnText)
+		EndSwitch
+		Sleep(10)
+	WEnd
+EndFunc
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _Timer
 ; Description ...: Creates a quick to use timer
@@ -131,7 +175,7 @@ Func _GetVisibleWindows($GetText = False)
 		If $Path = "" Then
 			; Might only help if the stars align
 			Local $aEnum = _WinAPI_EnumProcessModules($aWinList[$i][4])
-			If Not @error Then
+			If Not @error And UBound($aEnum) >= 2 Then
 				$TestPath = $aEnum[1]
 				; The exe might be in the system folder (elevated cmd or task manager)
 			Else
