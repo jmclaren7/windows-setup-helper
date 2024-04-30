@@ -36,7 +36,7 @@ Func _ListSelect($aList, $sTitle = "", $sMessage = "", $iDefaultIndex = 1, $sIco
 	Local $ListSelectGUI = GUICreate($sTitle, $iWidth, $iHieght, -1, -1)
 	Local $ListSelectList1 = GUICtrlCreateList("", 70, 48, $iWidth - 90, $iHieght - 90, -1, 0)
 	Local $ListSelectIcon1 = GUICtrlCreateIcon($IconFile, $IconID, 20, 64, 32, 32)
-	Local $ListSelectLabel1 = GUICtrlCreateLabel($sMessage, 20, 16, $iWidth - 100, 17)
+	Local $ListSelectLabel1 = GUICtrlCreateLabel($sMessage, 20, 10, $iWidth - 50, 30)
 	Local $ListSelectCancel = GUICtrlCreateButton("Cancel", 304, 140, 75, 25)
 	Local $ListSelectOK = GUICtrlCreateButton("OK", 216, 140, 75, 25)
 	GUISetIcon($IconFile, $IconID)
