@@ -288,7 +288,7 @@ While 1
 
 				; Display a list select dialog so the user can select what disk to use for the install
 				$DefaultListItemIndex = _ArraySearch($aListItems, "Disk 0", 0, 0, 0, 1)
-				$TargetDisk = _ListSelect($aListItems, "Disk Select - " & $TitleShort, "Setup will use the disk highlighted below, any data will be lost.", $DefaultListItemIndex, @SystemDir & "\shell32.dll,-236")
+				$TargetDisk = _ListSelect($aListItems, "Disk Select - " & $TitleShort, "Setup will use the disk highlighted below, data will be lost, continuing will start the installation.", $DefaultListItemIndex, @SystemDir & "\shell32.dll,-236")
 				If @error Then
 					ContinueLoop
 				Else
