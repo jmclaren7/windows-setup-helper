@@ -45,11 +45,10 @@ Some of the tools I normally use aren't included here because the licensing does
 - [Explorer++](https://github.com/derceg/explorerplusplus)
 - Some [Nirsoft Tools](https://www.nirsoft.net/) (Closed source)
 - Some [Sysinternal Tools](https://learn.microsoft.com/en-us/sysinternals/) (Closed source)
-- [SeaMonkey](https://www.seamonkey-project.org/) Browser
+- [SeaMonkey](https://www.seamonkey-project.org/) Web Browser
 - [Crystal DiskInfo & DiskMark](https://github.com/hiyohiyo)
 - [GSmartControl](https://gsmartcontrol.shaduri.dev/)
 - [ReactOS](https://reactos.org/) Components
-- [SeaMonkey Web Browser](https://www.seamonkey-project.org/)
 - [TightVNC](https://www.tightvnc.com/)
 - [NTPWEdit](https://github.com/jmclaren7/ntpwedit)
 
