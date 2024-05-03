@@ -51,6 +51,7 @@ Some of the tools I normally use aren't included here because the licensing does
 - [ReactOS](https://reactos.org/) Components
 - [SeaMonkey Web Browser](https://www.seamonkey-project.org/)
 - [TightVNC](https://www.tightvnc.com/)
+- [NTPWEdit](https://github.com/jmclaren7/ntpwedit)
 
 ## Adding Tools/Scripts/Programs/Drivers
 
