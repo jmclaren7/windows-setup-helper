@@ -1,4 +1,5 @@
 @echo off
+REM Set the desktop background color to red for the current user
 
 Call :SetBackground Red
 Exit

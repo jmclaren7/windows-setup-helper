@@ -1,4 +1,5 @@
 Windows Registry Editor Version 5.00
+; Disabled the Microsoft Edge first run setup questions
 
 [HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Edge]
 "HideFirstRunExperience"=dword:00000001

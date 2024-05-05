@@ -1,4 +1,5 @@
 Windows Registry Editor Version 5.00
+; Disable the "swipe" lock screen so that users only see the logon screen
 
 [HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\Personalization]
 "NoLockScreen"=dword:00000001

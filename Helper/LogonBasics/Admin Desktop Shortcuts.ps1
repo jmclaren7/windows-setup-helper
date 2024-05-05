@@ -1,3 +1,5 @@
+# Create shortcuts on the current users desktop to some common admin tasks
+
 $WshShell = New-Object -comObject WScript.Shell
 
 $Shortcut = $WshShell.CreateShortcut("$Home\Desktop\System Properties.lnk")

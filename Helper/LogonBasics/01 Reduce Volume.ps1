@@ -1,3 +1,5 @@
+# Reduce the volume so sounds that might play during first logon or scripts running won't be disruptive
+
 Add-Type -TypeDefinition @'
 using System.Runtime.InteropServices;
 

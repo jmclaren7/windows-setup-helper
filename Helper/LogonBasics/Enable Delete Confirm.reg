@@ -1,4 +1,5 @@
 Windows Registry Editor Version 5.00
+; Enable the file delete confirmation dialog for the current user and new users
 
 [HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer]
 "ConfirmFileDelete"=dword:00000001
