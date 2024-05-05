@@ -1,7 +1,6 @@
-;#include "CommonFunctions.au3"
+; This script adds file associations for common file types so the can be easily opened
 
 Global $IsPE = StringInStr(@SystemDir, "X:")
-
 If Not $IsPE Then Exit
 
 $HelperHome = StringLeft(@AutoItExe, StringInStr(@AutoItExe, "\", 0, -1) - 1)

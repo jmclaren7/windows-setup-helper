@@ -1,9 +1,4 @@
-#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Change2CUI=y
-#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-
-;#RequireAdmin
+; This script creates a basic 'taskbar' to make it easier to identify what is running and to make window switching easier in WinPE
 
 #include <APIDlgConstants.au3>
 #include <Array.au3>

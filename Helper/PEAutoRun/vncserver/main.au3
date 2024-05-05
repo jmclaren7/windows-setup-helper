@@ -1,3 +1,5 @@
+; This script starts a VNC server and updates the status bar in Windows Setup Helper GUI
+
 #include <WinAPIProc.au3>
 
 Global $Title = "PEVNCServer"

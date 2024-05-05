@@ -1,5 +1,6 @@
 Windows Registry Editor Version 5.00
-
+; This disables automatic logon 
+; By default Windows Helper automated install will setup automatic logon so the logon scripts can run
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon]
 "AutoAdminLogon"=""
 "DefaultUserName"=""
