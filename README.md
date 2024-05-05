@@ -36,7 +36,7 @@ https://www.youtube.com/watch?v=NjPxmrIeGhw<br>
 </div>
 
 ## Included 3rd Party Tools
-Some of the tools I normally use aren't included here because the licensing doesn't allows it, free closed source software that I've included is noted as such.
+You can add any x64 program but here are some basic tools to get you started, closed source software that I've included is noted as such.
 
 - [AutoIt.exe](https://www.autoitscript.com/) (Closed source, required) For Running The Helper Script and It's Components
 - [7-Zip](https://www.7-zip.org/) For Working With Compressed Files
@@ -44,9 +44,9 @@ Some of the tools I normally use aren't included here because the licensing does
 - [Explorer++](https://github.com/derceg/explorerplusplus) For Browsing Files/Folders
 - [Nirsoft Tools](https://www.nirsoft.net/) (Closed source) Including DevManView, FullEventLogView and SearchMyFiles
 - [Sysinternal Tools](https://learn.microsoft.com/en-us/sysinternals/) (Closed source) Including Disk2VHD and Autoruns
-- [SeaMonkey](https://www.seamonkey-project.org/) Web Browser
-- [Crystal DiskInfo & DiskMark](https://github.com/hiyohiyo) For Disk Benchmark and Viewing SMART Data
-- [GSmartControl](https://gsmartcontrol.shaduri.dev/) For Viewing SMART Data
+- [SeaMonkey](https://www.seamonkey-project.org/) Web Browser (Portable exe from my project [here](https://github.com/jmclaren7/seamonkey-sfx))
+- [Crystal DiskInfo & DiskMark](https://github.com/hiyohiyo) For Disk Benchmark and Viewing SMART Data (Portable exe from my project [here](https://github.com/jmclaren7/crystaldisk-sfx))
+- [GSmartControl](https://gsmartcontrol.shaduri.dev/) For Viewing SMART Data  (Portable exe from my project [here](https://github.com/jmclaren7/gsmartcontrol-sfx))
 - [ReactOS](https://reactos.org/) Paint For Viewing Images
 - [TightVNC](https://www.tightvnc.com/) Server For Remote Access To WinPE
 - [NTPWEdit](https://github.com/jmclaren7/ntpwedit) Offline Password Reset
@@ -69,7 +69,6 @@ Using DISM is the recommended way to update Windows images (wim), it's more adva
 ### Prerequisites
 - Download a Windows installer ISO (https://www.microsoft.com/software-download/windows11) 
 - Download and install Windows ADK and the PE add-on, [Read this](https://github.com/jmclaren7/windows-setup-helper/blob/master/Extra/ADK-Versions.md) for links and information on available versions. 
-
 
 ### Running Build.bat
 1. Edit Build.bat to configure various paths  
@@ -118,9 +117,11 @@ NetBird is an overlay/mesh network tool and the NetBird client happens to work w
 - Files or folders with a "." at the start of their name are treated as hidden and won't be listed or autorun
 - If ".Explorer++.exe" is present in Tools, it's treated as hidden but also causes an "explorer" button to show in the GUI
 - ".Options.txt" is a text file that can be used for special treatment of files/folders
-    - Listing the name of a file will check it be default
+    - Listing the name of a file will check it by default
     - Including the text "CheckAll" will check everything in that folder by default
     - Including the text "CollapseTree" will cause that section of the list to be collapsed by default
+- Adding "[system]" to the filename of a logon script will cause the item to run in the system context before the user logon
+- Adding "[background]" to the filename of a logon script will make the system run the next logon script without waiting
 
 ### Misc
 - Windows Pro is used by default for automated installs, you can switch to home using the advanced menu
