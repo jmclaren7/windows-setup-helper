@@ -1,5 +1,5 @@
 # Windows Setup Helper
-This project provides a GUI to use along side the traditional Windows installer interface you see on a normal Windows installation ISO/USB. You'll have access to whatever scripts and tools you choose to add along with some great included tools. Automated installs will skip everything but desk selection, once the install completes and Windows boots any scripts you selected will automatically run.
+This project provides a GUI to use along side the traditional Windows installer interface you see on a normal Windows installation ISO/USB. You'll have access to whatever scripts and tools you choose to add along with some great included tools. Automated installs will skip everything but disk selection, once the install completes and Windows boots any scripts you selected will automatically run.
 
 To use Windows Setup Helper you'll need to add the project files to a Windows installer image along with your custom scripts and tools. I've created a script (Build.bat) to help get this done quickly, just follow the instructions below.
 
