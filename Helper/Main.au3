@@ -807,6 +807,9 @@ Func _StatusBarUpdate()
 		$StatusbarToolTipText &= @CR & "Firmware: " & StringLeft($Win32_BIOS.SMBIOSBIOSVersion, 20) & " Date: " & StringLeft($Win32_BIOS.ReleaseDate, 8)
 	EndIf
 
+	; Get time
+	$StatusbarText &= $Delimiter & Int(@MON) & "/" & Int(@MDAY) & "/" & StringRight(@YEAR, 2)  & " " & @HOUR  & ":" & @MIN
+
 	; Get additional statusbar and tool tip text
 	$HelperStatusFiles = _FileListToArray(@TempDir, "Helper_Status_*.txt", $FLTA_FILES, True)
 	For $i = 1 To UBound($HelperStatusFiles) - 1
@@ -836,8 +839,6 @@ Func _StatusBarUpdate()
 		_GUIToolTip_UpdateTipText($StatusBarToolTip, 0, $StatusBar1, $StatusbarToolTipText)
 		_Log("Statusbar Tooltip Updated", 3)
 	EndIf
-
-
 
 	If $Debug Then
 		$StatusbarTimer2 = TimerInit()
