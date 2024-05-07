@@ -1,4 +1,5 @@
 Windows Registry Editor Version 5.00
+; An example script for changing Windows update settings/policy
 
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\PolicyState]
 "DeferQualityUpdates"=dword:00000001

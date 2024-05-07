@@ -1,3 +1,5 @@
+# This script will check to see if the computer is manufacturered by Dell, download and install Dell Command Update, and attempt to install updates
+
 If ($(Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer -like "*Dell*"){
     "Waiting for user input to continue Dell command update"
 

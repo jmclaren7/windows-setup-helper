@@ -1,3 +1,6 @@
+@echo off
+REM This script will start an automatic check and install of Windows updates through the update GUI
+
 usoclient StartInteractiveScan ScanInstallWait
 explorer.exe ms-settings:windowsupdate
 

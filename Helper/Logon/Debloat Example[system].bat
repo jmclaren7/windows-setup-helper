@@ -1,7 +1,6 @@
 @echo off
-
-REM This is an example of a script that will run in the specialize pass (running as system, after setup but before logon)
-REM These registry values will be applies to all new users (including the first user/logon)
+REM This is an example of a script that will run in the specialize pass because it has [system] in the file name (running as system, after setup but before logon)
+REM These registry values will be applied to all new users (including the first user/logon)
 REM The specific settings here, try to prevent Windows from installing 3rd party apps automatically and stop ads/suggestions
 
 reg.exe load "HKU\mount" "C:\Users\Default\NTUSER.DAT"

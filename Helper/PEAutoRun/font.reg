@@ -1,5 +1,6 @@
 Windows Registry Editor Version 5.00
 ; As long as segoeui.ttf is available this will correct an issue with fonts displaying italics in PE
+
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts]
 "Segoe UI (TrueType)"="segoeui.ttf"
 "Segoe UI Italic (TrueType)"="segoeui.ttf"
