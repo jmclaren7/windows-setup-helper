@@ -1128,53 +1128,84 @@ EndFunc   ;==>_ConsoleWrite
 ; Return Value(s):  The original message, if $iLevel is greater than $LogLevel returns an empty string
 ; Notes:			Some options are configured with global variables
 ; Author(s):        JohnMC - JohnsCS.com
-; Date/Version:		11/20/2023 --  V1.0 Added function to CommoneFunctions.au3
+; Date/Last Change:	4/26/2024 -- Fixed global handling, added minimize window on start
+;					5/6/2024 -- Added $bOverWriteLast, changed the way line returns work on consolewrite
 ;===============================================================================
 ; Write to the log, prepend a timestamp, create a custom log GUI
-Func _Log($sMessage, $iLevel = 1)
+Func _Log($sMessage, $iLevel = Default, $bOverWriteLast = Default)
+	Static Local $_hLogFile
+
+	; Defaults
+	If $iLevel = Default Then $iLevel = 1
+	if $bOverWriteLast = Default Then $bOverWriteLast = False
+
 	; Global options
-	If Not IsDeclared("LogLevel") Then Global $LogLevel = 1 ; Only show messages this level or below
-	If Not IsDeclared("LogTitle") Then Global $LogTitle = "" ; Title to use for log GUI, no title will skip the GUI
-	If Not IsDeclared("LogWindowStart") Then Global $LogWindowStart = -1 ; -1 for center
-	If Not IsDeclared("LogWindowSize") Then Global $LogWindowSize = 750 ; Starting width, height will be .6 of this value
-	If Not IsDeclared("LogFullPath") Then Global $LogFullPath = "" ; The path of the log file, empty value will not log to file
-	If Not IsDeclared("LogFileMaxSize") Then Global $LogFileMaxSize = 1024 ; Size limit for log in KB
-	If Not IsDeclared("LogFlushAlways") Then Global $LogFlushAlways = False
+	Global $LogLevel, $LogTitle, $LogWindowStart, $LogWindowSize, $LogFullPath, $LogFileMaxSize, $LogFlushAlways
+
+	; If $LogTitle is empty, skip the GUI
+	If $LogLevel = "" Then $LogLevel = 1 ; Only show messages this level or below
+	If $LogWindowStart = "" Then Global $LogWindowStart = -1 ; -1 for center, -# for minimized with position being the absolute value
+	If $LogWindowSize = "" Then Global $LogWindowSize = 750 ; Starting width, height will be .6 of this value
+	If $LogFullPath = "" Then Global $LogFullPath = "" ; The path of the log file, empty value will not log to file
+	If $LogFileMaxSize = "" Then Global $LogFileMaxSize = 1024 ; Size limit for log in KB
+	If $LogFlushAlways = "" Then Global $LogFlushAlways = False ; Flush log to disk after each update
 
 	Local $LogFileMaxSize_Bytes = $LogFileMaxSize * 1024
 	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC & "> "
 	Local $sLogLine = $sTime & $sMessage
+	Local $Minimize = False
 
 	; Do not log this message if $iLevel is greater than global $LogLevel
 	If $iLevel > $LogLevel Then Return ""
 
 	; Send to console
-	ConsoleWrite($sLogLine & @CRLF)
+	If $bOverWriteLast And Not @Compiled Then
+		; Do Nothing
+	ElseIf $bOverWriteLast Then
+		ConsoleWrite(@CR & $sLogLine)
+	Else
+		ConsoleWrite(@CRLF & $sLogLine)
+	EndIf
 
 	; Append message to custom GUI if $LogTitle is set
 	If $LogTitle <> "" Then
 		If Not IsDeclared("_hLogEdit") Then
 			; The GUI doesn't exist, create it
+			If $LogWindowStart < -1 Then
+				$LogWindowStart = Abs($LogWindowStart)
+				$Minimize = True
+			EndIf
 			Global $_hLogWindow = GUICreate($LogTitle, $LogWindowSize, Round($LogWindowSize * 0.6), $LogWindowStart, $LogWindowStart, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX))
 			Global $_hLogEdit = GUICtrlCreateEdit("", 0, 0, $LogWindowSize, Round($LogWindowSize * 0.6), BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
 			GUICtrlSetFont(-1, 10, 400, 0, "Consolas")
 			GUICtrlSetColor(-1, 0xFFFFFF)
 			GUICtrlSetBkColor(-1, 0x000000)
 			GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
-			GUISetState(@SW_SHOW)
+			_GUICtrlEdit_SetReadOnly($_hLogEdit, True)
+			GUISetState(@SW_SHOW, $_hLogWindow)
+			If $Minimize Then GUISetState(@SW_MINIMIZE, $_hLogWindow)
 			_GUICtrlEdit_AppendText($_hLogEdit, $sLogLine)
 		Else
 			; Update an existing GUI
 			_GUICtrlEdit_BeginUpdate($_hLogEdit)
+
+			If $bOverWriteLast Then
+				Local $sFullText = _GUICtrlEdit_GetText($_hLogEdit)
+				;Msgbox(0,"",$sFullText)
+				$sFullText = StringLeft($sFullText, StringInStr($sFullText, @CRLF, 0, -1) - 1)
+				;Msgbox(0,"",$sFullText)
+				_GUICtrlEdit_SetText($_hLogEdit, $sFullText)
+
+			EndIf
 			_GUICtrlEdit_AppendText($_hLogEdit, @CRLF & $sLogLine)
-			_GUICtrlEdit_LineScroll($_hLogEdit, -StringLen($sLogLine), _GUICtrlEdit_GetLineCount($_hLogEdit))
+			_GUICtrlEdit_LineScroll($_hLogEdit, - StringLen($sLogLine), _GUICtrlEdit_GetLineCount($_hLogEdit))
 			_GUICtrlEdit_EndUpdate($_hLogEdit)
 		EndIf
 	EndIf
 
 	; Append message to file
-	If $LogFullPath <> "" Then
-		If Not IsDeclared("_hLogFile") Then Global $_hLogFile = FileOpen($LogFullPath, $FO_APPEND)
+	If $LogFullPath <> "" And Not $bOverWriteLast Then
+		If $_hLogFile = "" Then $_hLogFile = FileOpen($LogFullPath, $FO_APPEND)
 
 		; Limit log size
 		If $LogFileMaxSize > 0 Then
