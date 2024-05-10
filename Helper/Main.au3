@@ -54,7 +54,7 @@ Global $DoubleClick = False
 Global $SystemDrive = StringLeft(@SystemDir, 3)
 Global $IsPE = StringInStr(@SystemDir, "X:")
 Global $Debug = Not $IsPE
-Global $FolderExecFiles = StringSplit("main.au3,main.bat,a.bat", ",") ; Used by _RunFile & _PopulateScripts
+Global $LaunchFiles = StringSplit("main.au3,main.bat,main.exe,a.bat", ",") ; Used by _RunFile & _PopulateScripts
 
 ; Globals used by _Log function
 Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
@@ -77,7 +77,7 @@ _Log("@WorkingDir=" & @WorkingDir)
 _Log("PATH=" & EnvGet("PATH"))
 
 ; Run automatic setup scripts
-If $IsPE Then _RunMulti("PEAutoRun")
+If $IsPE Then _RunFolder("PEAutoRun")
 
 ; Globals used by GUI
 Global $GUIMain
@@ -507,12 +507,11 @@ EndFunc   ;==>_GetTreeItemFullPath
 ; Check to see if the same folder exists on other drives or if other folder start with the same name
 Func _GetSimilarPaths($Folder, $Path = Default)
 	If $Path = Default Then $Path = @ScriptDir
-
 	_Log("_GetSimilarPaths: " & $Folder & " - " & $Path)
 
 	; Get folders from the script path
 	Local $aFolders = _FileListToArrayRec($Path, $Folder & "*", $FLTAR_FOLDERS, $FLTAR_RECUR, $FLTAR_NOSORT, $FLTAR_FULLPATH)
-	If @error Then _Log("@error=" & @error & " @extended=" & @extended)
+	If @error Then _Log("  @error=" & @error & " @extended=" & @extended)
 
 	; Check other drives for similar folders and add them to the list
 	Local $aDrivesLetters = DriveGetDrive($DT_ALL)
@@ -575,8 +574,8 @@ Func _PopulateScripts($TreeID, $Folder)
 			; Folders that contain specific files can be added as a script
 			If StringInStr(FileGetAttrib($aFiles[$i]), "D") Then
 				Local $FileExists = 0
-				For $b = 1 To $FolderExecFiles[0]
-					$FileExists += FileExists($aFiles[$i] & "\" & $FolderExecFiles[$b])
+				For $b = 1 To $LaunchFiles[0]
+					$FileExists += FileExists($aFiles[$i] & "\" & $LaunchFiles[$b])
 				Next
 
 				; If this folder does not have a reqiured file do not add it to the scripts
@@ -599,12 +598,10 @@ Func _PopulateScripts($TreeID, $Folder)
 		; CollapseTree option
 		If Not StringInStr($sOptions, "CollapseTree") Then _GUICtrlTreeView_Expand($TreeID, $FolderTreeItem)
 
-
 	Else
 		_Log("  " & $Folder & " No files or missing")
 
 	EndIf
-
 
 	If $ResolveSimilarPaths = True Then
 		_Log("  ResolveSimilarPaths")
@@ -626,10 +623,9 @@ Func _PopulateScripts($TreeID, $Folder)
 			_PopulateScripts($TreeID, $aOtherFolders[$i])
 		Next
 
-
 	EndIf
 
-	_Log("End _PopulateScripts for: " & $Folder)
+	_Log("  End _PopulateScripts for: " & $Folder)
 
 	Return $aFiles
 
@@ -650,7 +646,7 @@ Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
 
 			If $FileChecked Then
 				$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
-				_Log("Checked: $RunFullPath=" & $RunFullPath)
+				_Log("  Checked: $RunFullPath=" & $RunFullPath)
 				If $ListOnly = False Then
 					ControlTreeView($hWindow, "", $hTreeView, "Uncheck", "#" & $iTop & "|#" & $iSub)
 					_RunFile($RunFullPath)
@@ -666,36 +662,28 @@ Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
 EndFunc   ;==>_RunTreeView
 
 ; Run all scripts in a folder and folders starting with the same name and on other drives
-Func _RunMulti($Folder)
-	_Log("_RunMulti " & $Folder)
+Func _RunFolder($Folder)
+	_Log("_RunFolder " & $Folder)
 
-	Local $Paths = _GetSimilarPaths($Folder)
-	For $x = 1 To $Paths[0]
-		_RunFolder($Paths[$x])
+	Local $aPaths = _GetSimilarPaths($Folder)
+	For $x = 1 To $aPaths[0]
+		_Log("  $Paths["&$x&"]=" & $aPaths[$x])
+		Local $aFiles = _FileListToArray($aPaths[$x], "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
+		If Not @error Then
+			_Log("  Files: " & $aFiles[0])
+			For $i = 1 To $aFiles[0]
+				If StringInStr($aFiles[$i], "\.") Then ContinueLoop
+				_Log($aFiles[$i])
+				_RunFile($aFiles[$i])
+			Next
+			Return $aFiles[0]
+		Else
+			_Log("  No files")
+		EndIf
 
 	Next
 
-	Return $Paths
-EndFunc   ;==>_RunMulti
-
-; Run all the files in a folder
-Func _RunFolder($Path)
-	_Log("_RunFolder " & $Path)
-	$FileArray = _FileListToArray($Path, "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
-	If Not @error Then
-		_Log("Files: " & $FileArray[0])
-		For $i = 1 To $FileArray[0]
-			If StringInStr($FileArray[$i], "\.") Then ContinueLoop
-			;We probably don't care if the folder is valid to run at this point, deal with it in the _RunFile function
-			;If StringInStr(FileGetAttrib($FileArray[$i]), "D") And Not FileExists($FileArray[$i] & "\main.au3") Then ContinueLoop
-			_Log($FileArray[$i])
-			_RunFile($FileArray[$i])
-		Next
-		Return $FileArray[0]
-	Else
-		_Log("No files")
-	EndIf
-
+	Return $aPaths
 EndFunc   ;==>_RunFolder
 
 ; Runs a file, automaticly handling file type and sub folders
@@ -705,10 +693,10 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 	If StringInStr(FileGetAttrib($File), "D") Then
 		; Folders that contain specific files can be executed
 		Local $FileExists = 0
-		For $b = 1 To $FolderExecFiles[0]
-			If FileExists($File & "\" & $FolderExecFiles[$b]) Then
+		For $b = 1 To $LaunchFiles[0]
+			If FileExists($File & "\" & $LaunchFiles[$b]) Then
 				$FileExists = 1
-				$File = $File & "\" & $FolderExecFiles[$b]
+				$File = $File & "\" & $LaunchFiles[$b]
 				ExitLoop
 			EndIf
 		Next
@@ -721,13 +709,13 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 		Case "au3", "a3x"
 			_Log("  au3")
 			$RunLine = @AutoItExe & " /AutoIt3ExecuteScript """ & $File & """ " & $Params
-			_Log("$RunLine=" & $RunLine)
+			_Log("  $RunLine=" & $RunLine)
 			Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDIO_INHERIT_PARENT)
 
 		Case "ps1"
 			_Log("  ps1")
 			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Bypass -File """ & $File & """ " & $Params
-			_Log("$RunLine=" & $RunLine)
+			_Log("  $RunLine=" & $RunLine)
 			Return Run($RunLine, $WorkingDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case "reg"
@@ -743,11 +731,11 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 				$RunLine = $RunLine & " /reg:64"
 			EndIf
 
-			_Log("$RunLine=" & $RunLine)
+			_Log("  $RunLine=" & $RunLine)
 			Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
 
 		Case Else
-			_Log("  other")
+			_Log("  Other file type")
 			Return ShellExecute($File, $Params, $WorkingDir)
 
 	EndSwitch

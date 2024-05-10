@@ -1,7 +1,4 @@
 @ECHO OFF
-Call :Admin
-cls
-
 REM == Settings You Need To Change =================================
 REM Path of the ISO file to extract
 set sourceiso=D:\Windows Images\Windows 11 23H2 MCT 2403.iso
@@ -9,7 +6,7 @@ set sourceiso=D:\Windows Images\Windows 11 23H2 MCT 2403.iso
 REM Directory to extract the ISO to (no trailing slash)
 set mediapath=D:\Windows Images\11
 
-REM Directory of extra files to add to the image (no trailing slash)
+REM (Optional) Directory of extra files to add to the image (no trailing slash)
 set extrafiles=D:\Windows Images\Additions
 
 REM Path to the new ISO file
@@ -19,8 +16,6 @@ set outputiso=D:\Windows Images\Windows11.iso
 REM == Other Settings ==============================================
 REM The index of the boot.wim image you want to modify eg: "/Index:2" or "/Name:name"
 set wimindex=/Name:"Microsoft Windows Setup (amd64)"
-
-REM == Other Paths =================================================
 set helperrepo=%~dp0
 set sourcewim=%mediapath%\sources\boot.wim
 set mountpath=%temp%\WIMMount
@@ -40,11 +35,11 @@ set "auto_makeiso=*"
 set "auto_setresolution_detail=1024x768"
 
 REM == Basic Checks ================================================
+Call :Admin
 if not exist "%mediapath%\" ( echo Media path not found, reconfigure batch file & pause & exit)
 REM if not exist "%sourcewim%" ( echo Boot.wim not found & pause & exit)
 if "%helperrepo:~-1%"=="\" SET helperrepo=%helperrepo:~0,-1%
 if not exist "%helperrepo%\Helper\Main.au3" ( echo Main.au3 not found & pause & exit)
-
 
 REM == Menu ========================================================
 :mainmenu
@@ -61,7 +56,7 @@ echo  E^|3. %auto_copyfiles%Copy Helper files to mounted image
 echo  R^|4. %auto_addpackages%Add packages to mounted image (requires ADK)
 echo  T^|5. %auto_disabledpi%Apply registry settings to disable DPI scaling in PE
 echo  Y^|6. %auto_unmountcommit%Unmount and commit changes to WIM
-echo  U^|7. %auto_setresolution%(Not Working)Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
+echo  U^|7. %auto_setresolution%(Not Working) Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
 echo  I^|8. %auto_trimimages%Trim boot.wim (Trims other indexes and removes unused files)
 echo  O^|9. %auto_makeiso%Make ISO from media folder (requires ADK)
 echo.
