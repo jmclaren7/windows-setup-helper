@@ -405,31 +405,31 @@ While 1
 		For $i = 65 To 90 ; 65=A 90=Z
 			$Drive = Chr($i) & ":"
 			$TestFile = $Drive & "\Windows\System32\Config\SYSTEM"
-			$Target = $Drive & "\Temp\Helper\"
+			$Target = $Drive & "\Temp\Helper"
 
+			; If the Windows install is less than 10 minutes old it must be the target
 			If FileExists($TestFile) And _FileModifiedAge($TestFile) < 600000 Then
-				_Log("Found: " & $TestFile)
+				_Log("Test file found on drive " & $Drive)
 
-				; Copy the answers file so it can be used with registry key method during oobe
-				; This is to deal with WDS overriding our answers file
-				; Doing this also requieres a registry value set in the install image
-				$Return = FileCopy($AutounattendPath, $Target, 1 + 8)
-				_Log("FileCopy: " & $AutounattendPath & " (" & $Return & ")")
+				; Add autorun script that's executed on first logon
+				_ArrayAdd($aAutoLogonCopy, @ScriptDir & "\Logon\.Autorun.ps1")
 
-				; Copy the script that is run at Logon and runs the other scripts we copy
-				If UBound($aAutoLogonCopy) Then
-					$AutoLogonSource = @ScriptDir & "\Logon\.Autorun.ps1"
-					$Return = FileCopy($AutoLogonSource, $Target, 1 + 8)
-					_Log("FileCopy: " & $AutoLogonSource & " (" & $Return & ")")
-				EndIf
+				; Add log file for diagnostics
+				_ArrayAdd($aAutoLogonCopy, $LogFullPath)
 
-				; Copy selected files from the install list
+				; Copy files to new Windows installation
 				For $iFile = 0 To UBound($aAutoLogonCopy) - 1
-					$Return = FileCopy($aAutoLogonCopy[$iFile], $Target, 1 + 8)
-					_Log("FileCopy: " & $aAutoLogonCopy[$iFile] & " (" & $Return & ")")
+					$ThisFile = $aAutoLogonCopy[$iFile]
+					If StringInStr(FileGetAttrib($ThisFile), "D") > 0 Then
+						$DirName = StringTrimLeft($ThisFile, StringInStr($ThisFile, "\", 0, -1))
+						$Return = DirCopy($ThisFile, $Target & "\" & $DirName, 1)
+					Else
+						$Return = FileCopy($ThisFile, $Target & "\", 1 + 8)
+					EndIf
+					_Log("Copy: " & $ThisFile & " (" & $Return & ")")
 				Next
 
-				FileCopy($LogFullPath, $Target & "pe.log")
+				ExitLoop
 
 			EndIf
 		Next

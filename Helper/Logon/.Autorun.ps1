@@ -23,16 +23,20 @@ if ($args[0] -ne 'system' -and $installAge.Days -gt 1) {
 
 # Set the file types to run
 $FileTypes = ('*.bat', '*.ps1', '*.exe', '*.reg', '*.cmd')
+$LaunchFiles = ('main.ps1', 'main.bat', 'main.exe', 'a.bat')
 
 # Get a list of files from the working directory
-$Run = Get-ChildItem -Include $FileTypes -Exclude '.*' -Recurse -Depth 0
+$Run = Get-ChildItem -Include $FileTypes -Exclude '.*' -Recurse -Depth 0  | Where-Object { $_.Directory -ilike (Get-Location).Path }
+
+# Get subfolder launch files
+$Run += Get-ChildItem -Include $LaunchFiles -Exclude '.*' -Recurse -Depth 1  | Where-Object { $_.Directory -inotlike (Get-Location).Path }
 
 # Filter out system files unless specified
 if ($args[0] -eq 'system') {
-    $Run = $Run | Where-Object { $_.Name -like '*`[system`]*' }
+    $Run = $Run | Where-Object { $_.FullName -ilike '*`[system`]*' }
 }
 else {
-    $Run = $Run | Where-Object { $_.Name -notlike '*`[system`]*' }
+    $Run = $Run | Where-Object { $_.FullName -inotlike '*`[system`]*' }
 }
 
 # Run each file in the list
@@ -69,8 +73,8 @@ $Run | ForEach-Object {
         }
 
 
-        # If the file name noes not have [background] in it, wait for it to finish for 20 seconds
-        if ($_.Name -notlike '*`[background`]*') { 
+        # If the file name noes not have [background] in it, wait for it to finish, 20 second timeout
+        if ($_.Name -inotlike '*`[background`]*') { 
 
             Start-Sleep 2
 
