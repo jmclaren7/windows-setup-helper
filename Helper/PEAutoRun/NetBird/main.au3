@@ -1,28 +1,32 @@
-#include <WinAPIProc.au3>
-
-; NetBird creates a mesh/overlay network and luckily the NetBird client works well in WinPEx64
-; We can use it to join a network on WinPE boot and then use that network to VNC to the WinPE session
 ; This script is an example to start the NetBird service
-;     Add netbird.exe and wintun.dll to the folder with this script
-;     Add the setup key below
+;     Make sure netbird.exe and wintun.dll are in the folder with this script
+;     Add the NetBird setup key below
 ; Be sure you understand the security implications and that you have your setup key and access control configured correctly
 
-$Key = ""
+$NetBirdSetupKey = ""
+
+; Advanced/Self-hosted options
+$NetBirdAdminURL = ""
+$NetBirdMgmtURL = ""
+$NetBirdPSK = ""
+
+;==============================================================================
 
 Global $Title = "PENetBird"
 Global $IsPE = StringInStr(@WindowsDir, "X:")
 If Not $IsPE Then Exit
 FileChangeDir(@ScriptDir)
+If $NetBirdSetupKey = "" Or Not FileExists("netbird.exe") Then Exit
 
 _Log($Title)
-_Log("@WorkingDir="&@WorkingDir)
-_Log("@ScriptDir="&@ScriptDir)
+_Log("@WorkingDir=" & @WorkingDir)
+_Log("@ScriptDir=" & @ScriptDir)
 
 OnAutoItExitRegister("_Exit")
 
 ; Wait for network
-For $i=1 to 10
-	Ping ("8.8.8.8", 1000)
+For $i = 1 To 10
+	Ping("8.8.8.8", 1000)
 	If Not @error Then ExitLoop
 	Sleep(1000)
 Next
@@ -35,7 +39,12 @@ $Command = "netbird.exe service start"
 $Run = _RunWait($Command)
 _Log("$Run=" & $Run & "  @error=" & @error & "  $Command=" & $Command)
 
-$Command = "netbird.exe up -k " & $Key
+$Command = "netbird.exe up"
+If $NetBirdSetupKey <> "" Then $Command &= " --setup-key " & $NetBirdSetupKey
+If $NetBirdAdminURL <> "" Then $Command &= " --admin-url " & $NetBirdAdminURL
+If $NetBirdMgmtURL <> "" Then $Command &= " --management-url " & $NetBirdMgmtURL
+If $NetBirdPSK <> "" Then $Command &= " --preshared-key " & $NetBirdPSK
+
 $Run = _RunWait($Command)
 _Log("$Run=" & $Run & "  @error=" & @error & "  $Command=" & $Command)
 
@@ -43,10 +52,9 @@ _Log("$Run=" & $Run & "  @error=" & @error & "  $Command=" & $Command)
 While 1
 	$Command = "netbird.exe status"
 	$Run = _RunWait($Command)
-	If StringInStr($Run, "Signal: Connected") Then _UpdateStatusBar()
-
-	Sleep(2000)
-Wend
+	If StringInStr($Run, "Signal: Connected") Then _UpdateStatusBar("NetBird Connected")
+	Sleep(3000)
+WEnd
 
 Exit
 
@@ -55,38 +63,28 @@ Exit
 
 Func _Exit()
 
-EndFunc
+EndFunc   ;==>_Exit
 
-Func _UpdateStatusBar()
+Func _UpdateStatusBar($Text)
 	Local $Path = @TempDir & "\Helper_Status_" & $Title & ".txt"
 
-	$hFile = FileOpen ($Path, 2)
-	FileWrite($hFile, "NetBird Connected")
+	$hFile = FileOpen($Path, 2)
+	FileWrite($hFile, $Text)
 
 	FileClose($hFile)
-EndFunc
+EndFunc   ;==>_UpdateStatusBar
 
 Func _Log($Data)
-	ConsoleWrite($Title & ": " & $Data & @CRLF)
-EndFunc
+	ConsoleWrite(@CRLF & $Title & ": " & $Data)
+	FileWriteLine($Title & "_Log.txt", $Data)
+EndFunc   ;==>_Log
 
-
-;===============================================================================
-; Function Name:    _RunWait
-; Description:		Improved version of RunWait that plays nice with my console logging
-; Call With:		_RunWait($Run, $Working="")
-; Parameter(s):
-; Return Value(s):  On Success - Return value of Run() (Should be PID)
-; 					On Failure - Return value of Run()
-; Author(s):        JohnMC - JohnsCS.com
-; Date/Version:		01/16/2016  --  v1.1
-;===============================================================================
-Func _RunWait($sProgram, $Working = "", $Show = @SW_HIDE, $Opt = $STDERR_MERGED, $Live = False)
+Func _RunWait($sProgram, $Working = "", $Show = @SW_HIDE, $Opt = 8, $Live = False)
 	Local $sData, $iPid
 
 	$iPid = Run($sProgram, $Working, $Show, $Opt)
 	If @error Then
-		_ConsoleWrite("_RunWait: Couldn't Run " & $sProgram)
+		_Log("_RunWait: Couldn't Run " & $sProgram)
 		Return SetError(1, 0, 0)
 	EndIf
 
@@ -94,17 +92,7 @@ Func _RunWait($sProgram, $Working = "", $Show = @SW_HIDE, $Opt = $STDERR_MERGED,
 
 	Return SetError(0, $iPid, $sData)
 EndFunc   ;==>_RunWait
-;===============================================================================
-; Function Name:    _ProcessWaitClose
-; Description:		ProcessWaitClose that handles stdout from the running process
-;					Proccess must have been started with $STDERR_CHILD + $STDOUT_CHILD
-; Call With:		_ProcessWaitClose($iPid)
-; Parameter(s):
-; Return Value(s):  On Success -
-; 					On Failure -
-; Author(s):        JohnMC - JohnsCS.com
-; Date/Version:		09/8/2023  --  v1.3
-;===============================================================================
+
 Func _ProcessWaitClose($iPid, $Live = False, $Diag = False)
 	Local $sData, $sStdRead
 
@@ -126,7 +114,7 @@ Func _ProcessWaitClose($iPid, $Live = False, $Diag = False)
 			If $Live And $sStdRead <> "" Then
 				If StringRight($sStdRead, 2) = @CRLF Then $sStdRead = StringTrimRight($sStdRead, 2)
 				If StringRight($sStdRead, 1) = @LF Then $sStdRead = StringTrimRight($sStdRead, 1)
-				_ConsoleWrite($sStdRead)
+				_Log($sStdRead)
 			EndIf
 		EndIf
 
