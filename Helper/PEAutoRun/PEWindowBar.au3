@@ -33,7 +33,7 @@ Global $TaskBarTop = @DesktopHeight - $TaskBarHeight
 Global $SpecialButtonWidth = 0
 Global $ButtonHSpace = 3
 Global $ButtonLeft = $ButtonHSpace + $SpecialButtonWidth + $ButtonHSpace
-Global $ButtonWidth = 150
+Global $ButtonWidth = 155
 Global $ButtonVSpace = 2
 Global $ButtonHeight = $TaskBarHeight - ($ButtonVSpace * 2)
 Global $aWindows
