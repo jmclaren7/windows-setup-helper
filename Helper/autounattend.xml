@@ -78,7 +78,6 @@
 		<component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
 			xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
 			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-			<!-- The helper script will only modifiy ComputerName if it's set to * here -->
 			<ComputerName>*</ComputerName>
 		</component>
 		<component name="Microsoft-Windows-UnattendedJoin" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
@@ -105,6 +104,7 @@
 		<component name="Microsoft-Windows-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
 			xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
 			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+			<!-- These commented sections must be present for the helper script to do formatting in it's own GUI -->
 			<!--FormatUEFI
 			<DiskConfiguration>
                 <Disk wcm:action="add">
@@ -205,10 +205,10 @@
                     <InstallToAvailablePartition>false</InstallToAvailablePartition>
 					FormatBIOS-->
 					<InstallFrom>
+						<Path></Path>
 						<MetaData wcm:action="add">
 							<Key>/IMAGE/NAME</Key>
-							<!--KeyPro<Value>Windows 11 Pro</Value>KeyPro-->
-							<!--KeyHome<Value>Windows 11 Home</Value>KeyHome-->
+							<Value>Windows 11 Pro</Value>
 						</MetaData>
 					</InstallFrom>
 				</OSImage>

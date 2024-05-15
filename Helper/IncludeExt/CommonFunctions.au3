@@ -20,6 +20,28 @@
 ;~ #include <WinAPISysWin.au3>
 ;~ #include <WindowsConstants.au3>
 ;===============================================================================
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _RandomString
+; Description ...: Generates a random string of numbers and characters
+; Syntax ........: _RandomString($Min, $Max[, $Chars = Default])
+; Parameters ....: $Min                 - Minimum string length.
+;                  $Max                 - Maximum string length.
+;                  $Chars               - [optional] String of characters to choose from. Default is all numbers and letters (upper and lower).
+; Return values .: A random string string
+; Author ........: JohnMC - JohnsCS.com
+; Modified ......: 05/11/2024
+; ===============================================================================================================================
+Func _RandomString($iMin, $iMax, $sChars = Default)
+	If $sChars = Default Then $sChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+	Local $sReturn, $aChars = StringSplit($sChars, '')
+
+	For $i = 1 To Random($iMin, $iMax, 1)
+		$sReturn &= $aChars[Random(1, $aChars[0], 1)]
+	Next
+
+	Return $sReturn
+EndFunc   ;==>_RandomString
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _ListSelect
 ; Description ...: Creates a list select box

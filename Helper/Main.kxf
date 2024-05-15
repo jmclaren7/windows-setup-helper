@@ -195,29 +195,13 @@
 					<properties>
 						<property name="Left" vt="Int16">176</property>
 						<property name="Top" vt="Int16">417</property>
-						<property name="Width" vt="Int16">131</property>
+						<property name="Width" vt="Int16">163</property>
 						<property name="Height" vt="Int8">25</property>
-						<property name="Hint" vt="String">Prompts for drive selection using Windows installer</property>
-						<property name="Caption" vt="String">Automated Install</property>
+						<property name="Hint" vt="String">Prompts for setup options before starting</property>
+						<property name="Caption" vt="String">Automated Install...</property>
 						<property name="TabOrder" vt="Int8">1</property>
 						<property name="Color" vt="Ident">clBtnFace</property>
 						<property name="CtrlStyle" vt="Int32">1342373889</property>
-						<property name="CtrlExStyle" vt="Int8">0</property>
-						<property name="Resizing" vt="Set">DockRight, DockBottom, DockWidth, DockHeight</property>
-					</properties>
-					<components/>
-				</object>
-				<object type="TALabel" name="Label4">
-					<properties>
-						<property name="Left" vt="Int8">87</property>
-						<property name="Top" vt="Int16">389</property>
-						<property name="Width" vt="Int8">80</property>
-						<property name="Height" vt="Int8">17</property>
-						<property name="AutoSize" vt="False">False</property>
-						<property name="Caption" vt="String">Computer Name</property>
-						<property name="TabOrder" vt="Int8">2</property>
-						<property name="HaveVariable" vt="False">False</property>
-						<property name="CtrlStyle" vt="Int32">1342308608</property>
 						<property name="CtrlExStyle" vt="Int8">0</property>
 						<property name="Resizing" vt="Set">DockRight, DockBottom, DockWidth, DockHeight</property>
 					</properties>
@@ -228,39 +212,11 @@
 						<property name="Left" vt="Int8">12</property>
 						<property name="Top" vt="Int8">24</property>
 						<property name="Width" vt="Int16">330</property>
-						<property name="Height" vt="Int16">350</property>
+						<property name="Height" vt="Int16">385</property>
 						<property name="CtrlStyle" vt="Int32">1342374199</property>
 						<property name="CtrlExStyle" vt="Int8">0</property>
 						<property name="Resizing" vt="Set">DockRight, DockTop, DockBottom</property>
-						<property name="TabOrder" vt="Int8">3</property>
-					</properties>
-					<components/>
-				</object>
-				<object type="TAInput" name="PEComputerNameInput">
-					<properties>
-						<property name="Left" vt="Int16">169</property>
-						<property name="Top" vt="Int16">385</property>
-						<property name="Width" vt="Int16">169</property>
-						<property name="Height" vt="Int8">21</property>
-						<property name="TabOrder" vt="Int8">4</property>
-						<property name="CtrlStyle" vt="Int32">1342374016</property>
-						<property name="CtrlExStyle" vt="Int16">512</property>
-						<property name="Resizing" vt="Set">DockRight, DockBottom, DockWidth, DockHeight</property>
-					</properties>
-					<components/>
-				</object>
-				<object type="TAButton" name="FormatButton">
-					<properties>
-						<property name="Left" vt="Int16">314</property>
-						<property name="Top" vt="Int16">417</property>
-						<property name="Width" vt="Int8">29</property>
-						<property name="Height" vt="Int8">25</property>
-						<property name="Hint" vt="String">Prompts for drive selection using Helper and skips Windows 11 requirements</property>
-						<property name="TabOrder" vt="Int8">5</property>
-						<property name="Color" vt="Ident">clBtnFace</property>
-						<property name="CtrlStyle" vt="Int32">1342373888</property>
-						<property name="CtrlExStyle" vt="Int8">0</property>
-						<property name="Resizing" vt="Set">DockRight, DockBottom, DockWidth, DockHeight</property>
+						<property name="TabOrder" vt="Int8">2</property>
 					</properties>
 					<components/>
 				</object>
@@ -293,6 +249,12 @@
 				<object type="TAMenuItem" name="AdvancedMenu">
 					<properties>
 						<property name="Caption" vt="String">&amp;Advanced</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAMenuItem" name="AboutMenuItem">
+					<properties>
+						<property name="Caption" vt="String">A&amp;bout</property>
 					</properties>
 					<components/>
 				</object>

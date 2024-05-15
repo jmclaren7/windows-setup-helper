@@ -1,3 +1,4 @@
+#RequireAdmin
 #include "include\AutoItConstants.au3"
 #include "include\ButtonConstants.au3"
 #include "include\ComboConstants.au3"
@@ -6,6 +7,7 @@
 #include "include\EditConstants.au3"
 #include "include\File.au3"
 #include "include\FileConstants.au3"
+#include "include\GuiComboBox.au3"
 #include "include\GuiConstantsEx.au3"
 #include "include\GuiEdit.au3"
 #include "include\GuiListBox.au3"
@@ -46,7 +48,7 @@ FileChangeDir(@ScriptDir)
 
 ; Miscellaneous global variables
 Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 6)
-Global $Version = "5.5"
+Global $Version = "5.6"
 Global $TitleShort = "Windows Setup Helper"
 Global $Title = $TitleShort & " v" & $Version & " (" & $Date & ")"
 Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
@@ -55,6 +57,15 @@ Global $SystemDrive = StringLeft(@SystemDir, 3)
 Global $IsPE = StringInStr(@SystemDir, "X:")
 Global $Debug = Not $IsPE
 Global $LaunchFiles = StringSplit("main.au3,main.bat,main.exe,a.bat", ",") ; Used by _RunFile & _PopulateScripts
+
+; Default values used for automatic setup if missing from autounattend.xml
+Global $DefaultComputerName = "WINDOWS-" & _RandomString(7, 7, "0123456789ABCDEFGHIJKLMNOPQRSTUV")
+Global $DefaultWIMPath = "D:\sources\install.wim"
+Global $DefaultAutounattend = @ScriptDir & "\autounattend.xml"
+Global $SelectedAutounattendFile = $DefaultAutounattend
+Global $DefaultEdition = "Windows 11 Pro"
+Global $DefaultAdminPassword = "1234"
+Global $DefaultLanguage = "en-US"
 
 ; Globals used by _Log function
 Global $LogFullPath = StringReplace(@TempDir & "\Helper_" & @ScriptName, ".au3", ".log")
@@ -74,7 +85,7 @@ _Log("@WindowsDir=" & @WindowsDir)
 _Log("@SystemDir=" & @SystemDir)
 _Log("@TempDir=" & @TempDir)
 _Log("@WorkingDir=" & @WorkingDir)
-_Log("PATH=" & EnvGet("PATH"))
+If $IsPE Then _Log("PATH=" & EnvGet("PATH"))
 
 ; Run automatic setup scripts
 If $IsPE Then _RunFolder("PEAutoRun")
@@ -83,53 +94,49 @@ If $IsPE Then _RunFolder("PEAutoRun")
 Global $GUIMain
 Global $StatusBar1
 Global $StatusbarTimer2
+Global $GUIMainWidth = 753
+Global $GUIMainHeight = 513
 
 ; Create main GUI
 #Region ### START Koda GUI section ###
-$GUIMain = GUICreate("Title", 753, 513, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_MAXIMIZEBOX, $WS_SIZEBOX, $WS_THICKFRAME, $WS_TABSTOP))
+$GUIMain = GUICreate("Title", $GUIMainWidth, $GUIMainHeight, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_MAXIMIZEBOX, $WS_SIZEBOX, $WS_THICKFRAME, $WS_TABSTOP))
 $FileMenu = GUICtrlCreateMenu("&File")
 $AdvancedMenu = GUICtrlCreateMenu("&Advanced")
+$AboutMenuItem = GUICtrlCreateMenu("A&bout")
 GUISetBkColor(0xF9F9F9)
 $Group5 = GUICtrlCreateGroup("WinPE Tools", 12, 7, 354, 452)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
 $PEScriptTreeView = GUICtrlCreateTreeView(24, 31, 330, 385)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
 $PERunButton = GUICtrlCreateButton("Run", 242, 424, 107, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Run the selected tool (you can also double click on the list item)")
 $TaskMgrButton = GUICtrlCreateButton("", 28, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Task Manager")
 $RegeditButton = GUICtrlCreateButton("", 68, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Registry Editor")
 $NotepadButton = GUICtrlCreateButton("", 108, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Notepad")
 $CMDButton = GUICtrlCreateButton("", 148, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Command Prompt")
 $ShellButton = GUICtrlCreateButton("", 188, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "File Explorer (Explorer++)")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 $Group6 = GUICtrlCreateGroup("First Logon Scripts", 384, 7, 354, 452)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
 $NormalInstallButton = GUICtrlCreateButton("Normal Install", 400, 424, 131, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "Starts the installer with no modifications or automations")
-$AutomatedInstallButton = GUICtrlCreateButton("Automated Install", 560, 424, 131, 25, $BS_DEFPUSHBUTTON)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-GUICtrlSetTip(-1, "Prompts for drive selection using Windows installer")
-$Label4 = GUICtrlCreateLabel("Computer Name", 471, 396, 80, 17)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-$PEInstallTreeView = GUICtrlCreateTreeView(396, 31, 330, 350, BitOR($GUI_SS_DEFAULT_TREEVIEW, $TVS_CHECKBOXES))
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
-$PEComputerNameInput = GUICtrlCreateInput("", 553, 392, 169, 21)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-$FormatButton = GUICtrlCreateButton("", 698, 424, 29, 25)
-GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKWIDTH + $GUI_DOCKHEIGHT)
-GUICtrlSetTip(-1, "(Experimental) Prompts for drive selection using Helper and skips Windows 11 requirements")
+$AutomatedInstallButton = GUICtrlCreateButton("Automated Install...", 560, 424, 163, 25, $BS_DEFPUSHBUTTON)
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
+GUICtrlSetTip(-1, "Prompts for setup options before starting")
+$PEInstallTreeView = GUICtrlCreateTreeView(396, 31, 330, 385, BitOR($GUI_SS_DEFAULT_TREEVIEW,$TVS_CHECKBOXES))
+GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
 GUICtrlCreateGroup("", -99, -99, 1, 1)
 $StatusBar1 = _GUICtrlStatusBar_Create($GUIMain)
 _GUICtrlStatusBar_SetSimple($StatusBar1)
@@ -151,8 +158,8 @@ If FileExists("Tools\.Explorer++.exe") Then
 Else
 	GUICtrlDelete($ShellButton)
 EndIf
-GUICtrlSetStyle($FormatButton, $BS_ICON)
-GUICtrlSetImage($FormatButton, @WindowsDir & "\System32\shell32.dll", 161, 0)
+;GUICtrlSetStyle($FormatButton, $BS_ICON)
+;GUICtrlSetImage($FormatButton, @WindowsDir & "\System32\shell32.dll", 161, 0)
 
 ; File Menu Items
 $MenuExitButton = GUICtrlCreateMenuItem("Exit", $FileMenu)
@@ -167,8 +174,8 @@ $SelectEdition = GUICtrlCreateMenuItem("Select Edition For Automated Install", $
 
 ; GUI Post Creation Setup
 WinSetTitle($GUIMain, "", $Title)
-GUICtrlSendMsg($PEComputerNameInput, $EM_SETCUEBANNER, False, "(Optional)")
-GUICtrlSetLimit($PEComputerNameInput, 15)
+;GUICtrlSendMsg($PEComputerNameInput, $EM_SETCUEBANNER, False, "(Optional)")
+;GUICtrlSetLimit($PEComputerNameInput, 15)
 
 ; Generate Script List
 _PopulateScripts($PEInstallTreeView, "Logon*")
@@ -267,7 +274,7 @@ While 1
 			$NormalInstallWait = True
 			$AutoInstallWait = False
 
-		Case $AutomatedInstallButton, $FormatButton
+		Case $AutomatedInstallButton
 			_Log("AutomatedInstallButton")
 			If ProcessExists($hSetup) Then
 				_Log("Setup is already running")
@@ -275,88 +282,240 @@ While 1
 				ContinueLoop
 			EndIf
 
-			If $nMsg = $FormatButton Then
-				; Get disks information
-				$aDiskInfo = _GetDisks()
+			GUISetState(@SW_DISABLE, $GUIMain)
 
-				; Build a formated list of disk and partition information
-				Local $aListItems[1]
-				For $i = UBound($aDiskInfo) - 1 To 0 Step -1
-					$ListItem = "Disk " & $aDiskInfo[$i][0] & " (" & $aDiskInfo[$i][4] & " Partitions)" & "  " & $aDiskInfo[$i][3] & "  " & $aDiskInfo[$i][1]
-					_ArrayAdd($aListItems, $ListItem)
-				Next
+			#Region ### START Koda GUI section ###
+			$AutoInstallForm = GUICreate("Install Options", 559, 409, -1, -1, -1, -1, $GUIMain)
+			GUISetBkColor(0xF9F9F9)
+			$CancelButton = GUICtrlCreateButton("Cancel", 446, 373, 91, 25)
+			$InstallButton = GUICtrlCreateButton("Install", 338, 373, 91, 25)
+			$LocalizationGroup = GUICtrlCreateGroup("Localization", 16, 292, 528, 69)
+			$TimezoneCombo = GUICtrlCreateCombo("", 92, 320, 233, 25, BitOR($GUI_SS_DEFAULT_COMBO,$CBS_SIMPLE))
+			$Label7 = GUICtrlCreateLabel("Timezone", 32, 324, 50, 17)
+			$LanguageInput = GUICtrlCreateInput("", 408, 320, 121, 21)
+			$Label8 = GUICtrlCreateLabel("Language", 348, 324, 52, 17)
+			GUICtrlCreateGroup("", -99, -99, 1, 1)
+			$SourcesGroup = GUICtrlCreateGroup("SourcesGroup", 16, 7, 528, 133)
+			$EditionCombo = GUICtrlCreateCombo("", 143, 101, 281, 25, BitOR($GUI_SS_DEFAULT_COMBO,$CBS_SIMPLE))
+			$Label3 = GUICtrlCreateLabel("Edition", 98, 105, 36, 17)
+			$WIMBrowseButton = GUICtrlCreateButton("Browse...", 427, 63, 75, 25)
+			$WIMInput = GUICtrlCreateInput("", 143, 65, 281, 21, BitOR($GUI_SS_DEFAULT_INPUT,$ES_READONLY))
+			$Label1 = GUICtrlCreateLabel("Image (WIM/ESD)", 42, 69, 92, 17)
+			$AutounattendBrowseButton = GUICtrlCreateButton("Browse...", 427, 24, 75, 25)
+			$AutounattendInput = GUICtrlCreateInput("", 143, 26, 281, 21, BitOR($GUI_SS_DEFAULT_INPUT,$ES_READONLY))
+			$Label2 = GUICtrlCreateLabel("Autounattend.xml", 48, 30, 86, 17)
+			GUICtrlCreateGroup("", -99, -99, 1, 1)
+			$GeneralGroup = GUICtrlCreateGroup("General", 16, 143, 528, 145)
+			$ComputerNameInput = GUICtrlCreateInput("", 116, 169, 133, 21)
+			$Label4 = GUICtrlCreateLabel("Computer Name", 28, 173, 80, 17)
+			$DiskList = GUICtrlCreateList("", 116, 205, 412, 45, BitOR($GUI_SS_DEFAULT_LIST,$LBS_NOINTEGRALHEIGHT), 0)
+			$AdminPasswordInput = GUICtrlCreateInput("", 396, 169, 133, 21)
+			$Label6 = GUICtrlCreateLabel("Administrator Password", 272, 173, 113, 17)
+			$WindowsDiskCheckbox = GUICtrlCreateCheckbox("Let Windows setup prompt for disk selection instead", 116, 260, 273, 17)
+			$Label5 = GUICtrlCreateLabel("Select Disk", 51, 204, 58, 17)
+			GUICtrlCreateGroup("", -99, -99, 1, 1)
+			$Bypass11Checkbox = GUICtrlCreateCheckbox("Bypass Windows 11 System Requirements Check", 16, 376, 265, 17)
+			#EndRegion ### END Koda GUI section ###
 
-				; Display a list select dialog so the user can select what disk to use for the install
-				$DefaultListItemIndex = _ArraySearch($aListItems, "Disk 0", 0, 0, 0, 1)
-				$TargetDisk = _ListSelect($aListItems, "Disk Select - " & $TitleShort, "Setup will use the disk highlighted below, data will be lost, continuing will start the installation.", $DefaultListItemIndex, @SystemDir & "\shell32.dll,-236")
-				If @error Then
-					ContinueLoop
-				Else
-					; Extract the disk ID from the returned string
-					$TargetDisk = StringMid($TargetDisk, StringLen("Disk X"), 2)
-					$TargetDisk = Int(StringStripWS($TargetDisk, 8))
-					If Not IsInt($TargetDisk) Or $TargetDisk < 0 Or $TargetDisk > 99 Then
-						MsgBox(0, "Select Disk - " & $TitleShort, "Error selecting disk")
-						ContinueLoop
-					EndIf
-				EndIf
+			_GUICtrlComboBox_SetDroppedWidth($TimezoneCombo, 400)
+			GUICtrlSetLimit($AdminPasswordInput, 15)
+			GUICtrlSetState($Bypass11Checkbox, $GUI_CHECKED)
+
+			; Add timezones
+			$sTimezones = FileRead("IncludeExt\tz.txt")
+			$sTimezones = StringReplace($sTimezones, @CRLF & "(" , "|(")
+			$sTimezones = StringReplace($sTimezones, " " & @CRLF , "^")
+			Global $aTimezones = _ArrayFromString($sTimezones, "^", "|", True)
+;~ 			Global $aTimezones = StringRegExp($sTimezones, "(.*)\r\n(.*)\r\n\r\n", 3) ; Returns a 1d array, alternating utc/windows tz name
+			If Not @error And IsArray($aTimezones) Then
+				$ComboString = _ArrayToString($aTimezones, " (", Default, Default, "|", 0, 1)
+				$ComboString = StringReplace($ComboString, "|", ")|") & ")"
+				GUICtrlSetData($TimezoneCombo, $ComboString)
 			EndIf
-
-			; Get the list of scripts that need to be copied later
-			$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
-			For $b = 0 To UBound($aAutoLogonCopy) - 1
-				_Log("TreeItem: " & $aAutoLogonCopy[$b])
-			Next
 
 			; Read the autounattend.xml file
-			$sFileData = FileRead(@ScriptDir & "\autounattend.xml")
+			$sAutounattendData = FileRead($SelectedAutounattendFile)
+			_UpdateXMLDependents($sAutounattendData)
 
-			; Start modifications to autounattend.xml ================
-			$ComputerName = GUICtrlRead($PEComputerNameInput)
-			If $ComputerName <> "" Then
-				_Log("$ComputerName=" & $ComputerName)
-				$sFileData = StringReplace($sFileData, "<ComputerName>*</ComputerName>", "<ComputerName>" & $ComputerName & "</ComputerName>")
-				_Log("StringReplace @extended=" & @extended)
-			EndIf
+			; Set Autounattend.xml path in GUI
+			GUICtrlSetData($AutounattendInput, $SelectedAutounattendFile)
 
-			If $nMsg = $FormatButton And $IsPE Then
-				If EnvGet("firmware_type") = "Legacy" Then
-					$sFileData = StringReplace($sFileData, "<!--FormatBIOS", "")
-					$sFileData = StringReplace($sFileData, "FormatBIOS-->", "")
-				Else
-					$sFileData = StringReplace($sFileData, "<!--FormatUEFI", "")
-					$sFileData = StringReplace($sFileData, "FormatUEFI-->", "")
-				EndIf
+			; Add disks to GUI
+			$aDiskInfo = _GetDisks()
+			Local $aDriveListItems[1]
+			For $i = UBound($aDiskInfo) - 1 To 0 Step -1
+				$ListItem = "Disk " & $aDiskInfo[$i][0] & " (" & $aDiskInfo[$i][4] & " Partitions)" & "  " & $aDiskInfo[$i][3] & "  " & $aDiskInfo[$i][1]
+				GUICtrlSetData($DiskList, $ListItem)
+				If $aDiskInfo[$i][0] = 0 Then _GUICtrlListBox_SelectString($DiskList, $ListItem)
+			Next
 
-				$sFileData = StringReplace($sFileData, "<DiskID></DiskID>", "<DiskID>" & $TargetDisk & "</DiskID>")
+			GUISetState(@SW_SHOW, $AutoInstallForm)
 
-				If @OSVersion = "WIN_11" Then _Win11Bypass()
-			EndIf
+			While 1
+				$nAutoInstallFormMsg = GUIGetMsg()
+				Switch $nAutoInstallFormMsg
+					Case $GUI_EVENT_CLOSE, $CancelButton
+						GUISetState(@SW_ENABLE, $GUIMain)
+						GUIDelete($AutoInstallForm)
+						ContinueLoop 2
 
-			If StringInStr($EdditionChoice, "Home") Then
-				$sFileData = StringReplace($sFileData, "<!--KeyHome", "")
-				$sFileData = StringReplace($sFileData, "KeyHome-->", "")
-			Else
-				$sFileData = StringReplace($sFileData, "<!--KeyPro", "")
-				$sFileData = StringReplace($sFileData, "KeyPro-->", "")
-			EndIf
+					; WIM Browse Button
+					Case $WIMBrowseButton
+						$SaveWorkingDir = @WorkingDir
+						$FileSelection = FileOpenDialog("Select Windows Install Image", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "Windows Images (*.wim;*.esd)|All (*.*)", $FD_FILEMUSTEXIST, "", $AutoInstallForm)
+						If FileExists($FileSelection) Then
+							GUICtrlSetData($WIMInput, $FileSelection)
+							_UpdateWIMDependents()
+						EndIf
+						FileChangeDir($SaveWorkingDir)
 
-			If @OSVersion = "WIN_10" Then $sFileData = StringReplace($sFileData, "Windows 11", "Windows 10")
+					; Autounattend.xml Browse Button
+					Case $AutounattendBrowseButton
+						$SaveWorkingDir = @WorkingDir
+						$FileSelection = FileOpenDialog("Select Windows Answer File", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "XML File (*.xml)|All (*.*)", $FD_FILEMUSTEXIST, "", $AutoInstallForm)
+						If FileExists($FileSelection) Then
+							$SelectedAutounattendFile = $FileSelection
+							GUICtrlSetData($AutounattendInput, $SelectedAutounattendFile)
+							; Read the autounattend.xml file
+							$sAutounattendData = FileRead($SelectedAutounattendFile)
+							_UpdateXMLDependents($sAutounattendData)
+							_UpdateWIMDependents()
+						EndIf
+						FileChangeDir($SaveWorkingDir)
 
-			; End modifications to autounattend.xml ================
+					; Disable/Enable Disk Selection
+					Case $WindowsDiskCheckbox
+						If GUICtrlRead($WindowsDiskCheckbox) = $GUI_UNCHECKED Then
+							GUICtrlSetState($DiskList, $GUI_ENABLE)
+						Else
+							GUICtrlSetState($DiskList, $GUI_DISABLE)
+						EndIf
 
-			; Save modifications to autounattend.xml in new location
-			$AutounattendPath = @TempDir & "\autounattend.xml"
-			_Log("$AutounattendPath=" & $AutounattendPath)
-			$hAutounattend = FileOpen($AutounattendPath, $FO_OVERWRITE)
-			FileWrite($hAutounattend, $sFileData)
-			_Log("FileWrite @error=" & @error)
-			FileClose($hAutounattend)
+					Case $InstallButton
+						GUISetState(@SW_DISABLE, $AutoInstallForm)
 
-			$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
+						; Get the list of scripts that need to be copied later
+						$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
+						For $b = 0 To UBound($aAutoLogonCopy) - 1
+							_Log("TreeItem: " & $aAutoLogonCopy[$b])
+						Next
 
-			$NormalInstallWait = False
-			$AutoInstallWait = True
+						; ================ Start modifications to autounattend.xml ================
+						; Read the answers file again in case the user had an error during modification and had to start over
+						$sAutounattendData = FileRead($SelectedAutounattendFile)
+
+						; WIM/ESD Path
+						; <InstallFrom>*<Path>?</Path>*</InstallFrom>
+						$WIMInputText = GUICtrlRead($WIMInput)
+						$WIMInputText = StringReplace($WIMInputText, "\", "\\")
+						_Log("$WIMInputText=" & $WIMInputText)
+												$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<InstallFrom>.*?<Path>).*?(</Path>.*?</InstallFrom>)", "${1}" & $WIMInputText & "${2}")
+						_Log("StringRegExpReplace @error=" & @error)
+
+						; Edition and key
+						$EdditionChoice = GUICtrlRead($EditionCombo)
+						$RegExReplacement = "${1}${2}" & $EdditionChoice & "${3}${4}"
+						If $EdditionChoice = "Not Specified" Then $RegExReplacement = "${1}${4}"
+						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<InstallFrom>.*?)(<Value>).*?(</Value>)(.*?</InstallFrom>)", $RegExReplacement)
+						If StringInStr($EdditionChoice, "Home") Then
+							$sAutounattendData = StringReplace($sAutounattendData, "<!--KeyHome", "")
+							$sAutounattendData = StringReplace($sAutounattendData, "KeyHome-->", "")
+						ElseIf StringInStr($EdditionChoice, "Pro") Then
+							$sAutounattendData = StringReplace($sAutounattendData, "<!--KeyPro", "")
+							$sAutounattendData = StringReplace($sAutounattendData, "KeyPro-->", "")
+						EndIf
+
+						; Computer name
+						; <ComputerName>?</ComputerName>
+						$ComputerName = GUICtrlRead($ComputerNameInput)
+						_Log("$ComputerName=" & $ComputerName)
+						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<ComputerName>).*?(</ComputerName>)", "${1}" & $ComputerName & "${2}")
+						_Log("StringRegExpReplace @error=" & @error)
+
+						; Administrator password
+						; <AdministratorPassword>*<Value>?</Value>*</AdministratorPassword>
+						$AdminPassword = GUICtrlRead($AdminPasswordInput)
+						_Log("$AdminPassword=" & $AdminPassword)
+						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<Password>.*?<Value>).*?(</Value>.*?</Password>)", "${1}" & $AdminPassword & "${2}")
+						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<AdministratorPassword>.*<Value>).*?(</Value>.*</AdministratorPassword>)", "${1}" & $AdminPassword & "${2}")
+						_Log("StringRegExpReplace @error=" & @error)
+
+						; Disk/format options
+						If GUICtrlRead($WindowsDiskCheckbox) = $GUI_UNCHECKED Then
+							If EnvGet("firmware_type") = "Legacy" Then
+								$sAutounattendData = StringReplace($sAutounattendData, "<!--FormatBIOS", "")
+								$sAutounattendData = StringReplace($sAutounattendData, "FormatBIOS-->", "")
+							Else
+								$sAutounattendData = StringReplace($sAutounattendData, "<!--FormatUEFI", "")
+								$sAutounattendData = StringReplace($sAutounattendData, "FormatUEFI-->", "")
+							EndIf
+
+							; Set the target disk
+							$DiskListIndex = _GUICtrlListBox_GetCurSel($DiskList)
+							$DiskListText = _GUICtrlListBox_GetText($DiskList, $DiskListIndex)
+							$aTargetDisk = StringRegExp($DiskListText, '(?i)Disk (\d{1}) ', $STR_REGEXPARRAYMATCH)
+							If @error Then
+								MsgBox(0, "Select Disk - " & $TitleShort, "Error selecting disk: " & @error)
+								GUISetState(@SW_ENABLE, $AutoInstallForm)
+								ContinueLoop
+							EndIf
+							$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<DiskID>).*?(</DiskID>)", "${1}" & $aTargetDisk[0] & "${2}")
+						EndIf
+
+						; Timezone
+						; <TimeZone>?</TimeZone>
+						$sTimezoneText = GUICtrlRead($TimezoneCombo)
+						_Log("$sTimezoneText=" & $sTimezoneText)
+						$aTimezoneText = StringRegExp($sTimezoneText, "\(([^)(]*(?:\((?:[^)(]+|\([^)(]*\))*\)[^)(]*)*)\)(?!.*\()", 1)
+						If Not @error Then
+							_Log("$aTimezoneText[0]=" & $aTimezoneText[0])
+							$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<TimeZone>).*?(</TimeZone>)", "${1}" & $aTimezoneText[0] & "${2}")
+							_Log("StringRegExpReplace @error=" & @error)
+						Else
+							_Log("$aTimezoneText @error=" & @error)
+						EndIf
+
+						; <SystemLocale>en-US</SystemLocale>
+						; <UILanguage>en-US</UILanguage>
+						; <UserLocale>en-US</UserLocale>
+						$LanguageText = GUICtrlRead($LanguageInput)
+						_Log("$LanguageText=" & $LanguageText)
+						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<SystemLocale>).*?(</SystemLocale>)", "${1}" & $LanguageText & "${2}")
+						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<UILanguage>).*?(</UILanguage>)", "${1}" & $LanguageText & "${2}")
+						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<UserLocale>).*?(</UserLocale>)", "${1}" & $LanguageText & "${2}")
+						_Log("StringRegExpReplace @error=" & @error)
+
+						; Windows 11 requirements bypass
+						If GUICtrlRead($Bypass11Checkbox) = $GUI_CHECKED And $IsPE And @OSVersion = "WIN_11" Then _Win11Bypass()
+
+						; (Legacy) Replace instances of Windows 11 if running a Windows 10 ISO
+						If @OSVersion = "WIN_10" Then $sAutounattendData = StringReplace($sAutounattendData, "Windows 11", "Windows 10")
+						; ================ End modifications to autounattend.xml ================
+
+
+						If $IsPE Then
+							; Save modifications to autounattend.xml in new location
+							$AutounattendPath = @TempDir & "\autounattend.xml"
+							_Log("$AutounattendPath=" & $AutounattendPath)
+							$hAutounattend = FileOpen($AutounattendPath, $FO_OVERWRITE)
+							FileWrite($hAutounattend, $sAutounattendData)
+							_Log("FileWrite @error=" & @error)
+							FileClose($hAutounattend)
+
+							$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
+
+							$NormalInstallWait = False
+							$AutoInstallWait = True
+						Else
+							_Log($sAutounattendData)
+						EndIf
+
+						GUISetState(@SW_ENABLE, $GUIMain)
+						GUIDelete($AutoInstallForm)
+						ContinueLoop 2
+				EndSwitch
+			WEnd
+
 
 		Case $TaskMgrButton
 			_RunFile("taskmgr.exe")
@@ -458,6 +617,11 @@ While 1
 		$RebootPrompt = False
 	EndIf
 
+	; Window minimum size
+	$GUIMainPos = WinGetPos($GUIMain)
+	If $GUIMainPos[2] < $GUIMainWidth Then WinMove($GUIMain, "", Default, Default, $GUIMainWidth, Default)
+	If $GUIMainPos[3] < $GUIMainHeight Then WinMove($GUIMain, "", Default, Default, Default, $GUIMainHeight)
+
 	Sleep(10)
 WEnd
 
@@ -484,6 +648,115 @@ Func _WM_SIZE($hWnd, $iMsg, $iwParam, $ilParam)
 	_GUICtrlStatusBar_Resize($StatusBar1)
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_WM_SIZE
+Func _UpdateWIMDependents()
+	Global $WIMInput
+
+	; Get editions from wim/esd
+	Local $sWIMPath = GUICtrlRead($WIMInput)
+	Local $sCommand = "dism /Get-ImageInfo /ImageFile:""" & $sWIMPath & """"
+	Local $sReturn = _RunWait(@ComSpec & " /c " & $sCommand)
+	Local $aEditions = StringRegExp($sReturn, "Name : (.*?)\R", $STR_REGEXPARRAYGLOBALMATCH)
+	If Not @error Then
+		GUICtrlSetData($EditionCombo, "|" & _ArrayToString($aEditions) & "|Not Specified")
+	Else
+		GUICtrlSetData($EditionCombo, "")
+	EndIf
+
+	; Preselect edition
+	; <InstallFrom>*<Value>?</Value>*</InstallFrom>
+	Local $aMatch = StringRegExp($sAutounattendData, '(?si)<InstallFrom>.*<Value>(.*?)</Value>.*</InstallFrom>', $STR_REGEXPARRAYMATCH)
+	If Not @error And $aMatch[0] <> "" Then
+		_GUICtrlComboBox_SelectString($EditionCombo, $aMatch[0])
+	Else
+		If _GUICtrlComboBox_SelectString($EditionCombo, $DefaultEdition) = -1 Then
+			_GUICtrlComboBox_SelectString($EditionCombo, "Not Specified")
+		EndIf
+	EndIf
+
+EndFunc
+Func _UpdateXMLDependents($sXML)
+	Local $aMatch
+
+	; WIM path
+	; <InstallFrom>*<Path>?</Path>*</InstallFrom>
+	$aMatch = StringRegExp($sAutounattendData, '(?si)<InstallFrom>.*<Path>(.*?)</Path>.*</InstallFrom>', $STR_REGEXPARRAYMATCH)
+	If Not @error And $aMatch[0] <> "" Then
+		$aMatch[0] = StringStripWS($aMatch[0], 1 + 2)
+		GUICtrlSetData($WIMInput, $aMatch[0])
+	Else
+		Local $aDrivesLetters = DriveGetDrive($DT_ALL)
+		For $i = 1 To $aDrivesLetters[0]
+			$aDrivesLetters[$i] = StringUpper($aDrivesLetters[$i])
+			_Log("  Drive: " & $aDrivesLetters[$i])
+			Local $TestWIMPath = $aDrivesLetters[$i] & "\sources\install.wim"
+			Local $TestESDPath = $aDrivesLetters[$i] & "\sources\install.esd"
+
+			If FileExists($TestWIMPath) Then
+				GUICtrlSetData($WIMInput, $TestWIMPath)
+				ExitLoop
+			ElseIf FileExists($TestESDPath) Then
+				GUICtrlSetData($WIMInput, $TestESDPath)
+				ExitLoop
+			EndIf
+		Next
+	EndIf
+	_UpdateWIMDependents()
+
+	; Computer name
+	; <ComputerName>?</ComputerName>
+	$aMatch = StringRegExp($sAutounattendData, '(?i)<ComputerName>(.*?)</ComputerName>', $STR_REGEXPARRAYMATCH)
+	If Not @error And $aMatch[0] <> "" And $aMatch[0] <> "*" Then
+		GUICtrlSetData($ComputerNameInput, $aMatch[0])
+	Else
+		GUICtrlSetData($ComputerNameInput, $DefaultComputerName)
+	EndIf
+
+	; Administrator password
+	; <AdministratorPassword>*<Value>?</Value>*</AdministratorPassword>
+	$aMatch = StringRegExp($sAutounattendData, '(?si)<AdministratorPassword>.*<Value>(.*?)</Value>.*</AdministratorPassword>', $STR_REGEXPARRAYMATCH)
+	If Not @error And $aMatch[0] <> "" Then
+		GUICtrlSetData($AdminPasswordInput, $aMatch[0])
+	Else
+		GUICtrlSetData($AdminPasswordInput, $DefaultAdminPassword)
+	EndIf
+
+	; Select timezone
+	; <TimeZone>?</TimeZone>
+	$aMatch = StringRegExp($sAutounattendData, '(?i)<TimeZone>(.*?)</TimeZone>', $STR_REGEXPARRAYMATCH)
+	If Not @error Then
+		$SearchIndex = _ArraySearch($aTimezones, $aMatch[0], Default, Default, 0, 0, 1, 1)
+		_GUICtrlComboBox_SetCurSel($TimezoneCombo,$SearchIndex)
+	EndIf
+
+	; Get language
+	; <SystemLocale>?</SystemLocale>
+	$aMatch = StringRegExp($sAutounattendData, '(?i)<SystemLocale>(.*?)</SystemLocale>', $STR_REGEXPARRAYMATCH)
+	If Not @error And $aMatch[0] <> "" Then
+		GUICtrlSetData($LanguageInput, $aMatch[0])
+	Else
+		GUICtrlSetData($LanguageInput, $DefaultLanguage)
+	EndIf
+EndFunc
+
+; Get indexes from WIM or ESD
+Func _GetImageNames($sPath)
+	Local $sCommand = "dism /Get-ImageInfo /ImageFile:""" & $sPath & """"
+	Local $sReturn = _RunWait(@ComSpec & " /c " & $sCommand)
+
+	Local $aImageNames = StringRegExp($sReturn, "Name : (.*?)\R", $STR_REGEXPARRAYGLOBALMATCH)
+
+	If Not @error and IsArray($aImageNames) Then
+		Return $aImageNames
+	Else
+		Return SetError(1, 0, 0)
+	EndIf
+
+EndFunc
+
+; Get timezone list
+Func _GetTimeZones()
+
+EndFunc
 
 ; Calculate the full path of an item from the GUI tree view
 Func _GetTreeItemFullPath($Parent, $Item)
@@ -774,25 +1047,34 @@ Func _StatusBarUpdate()
 	EndIf
 	$StatusbarToolTipText &= @CR & "Other IPs: " & @IPAddress1 & ", " & @IPAddress2 & ", " & @IPAddress3 & ", " & @IPAddress4
 
+	; Get Hostname
+	$StatusbarText &= "/" & @ComputerName
+
+	; Get memory information
+	If Not IsDeclared("_MemStats") Then
+		$MemStats = MemGetStats()
+		Static Local $_MemStatsText = $Delimiter & Round($MemStats[1] / 1024 / 1024) & "GB"
+	EndIf
+	If StringLen($_MemStatsText) > 2 Then $StatusbarText &= $_MemStatsText
+
+	; Get CPU information
+	If Not IsDeclared("_CPUStats") Then
+		$Win32_Processor = _WMI("SELECT NumberOfCores,NumberOfLogicalProcessors FROM Win32_Processor")
+		Static Local $_CPUStatsText = "/" & $Win32_Processor.NumberOfCores & "C/" & $Win32_Processor.NumberOfLogicalProcessors & "T"
+	EndIf
+	If StringLen($_CPUStatsText) > 4 Then $StatusbarText &= $_CPUStatsText
+
 	; Get firmware type
 	$Firmware_Type = EnvGet("firmware_type")
 	If $Firmware_Type = "Legacy" Then $Firmware_Type = "BIOS"
 	$StatusbarText &= $Delimiter & $Firmware_Type
 
-	; Get memory information
-	If Not IsDeclared("_MemStats") Then Global $_MemStats = MemGetStats()
-	$StatusbarText &= $Delimiter & Round($_MemStats[1] / 1024 / 1024) & "GB"
-
-	; Get CPU information
-	$Win32_Processor = _WMI("SELECT NumberOfCores,NumberOfLogicalProcessors FROM Win32_Processor")
-	If Not @error Then $StatusbarText &= $Delimiter & $Win32_Processor.NumberOfCores & "C/" & $Win32_Processor.NumberOfLogicalProcessors & "T"
-
 	; Get motherboard bios information
 	$Win32_BIOS = _WMI("SELECT SerialNumber,SMBIOSBIOSVersion,ReleaseDate FROM Win32_BIOS")
 	If Not @error Then
-		If $Win32_BIOS.SerialNumber <> "" And $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 10)
-		$StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.ReleaseDate, 8)
+		$StatusbarText &= "/" & StringLeft($Win32_BIOS.ReleaseDate, 8)
 		$StatusbarToolTipText &= @CR & "Firmware: " & StringLeft($Win32_BIOS.SMBIOSBIOSVersion, 20) & " Date: " & StringLeft($Win32_BIOS.ReleaseDate, 8)
+		If $Win32_BIOS.SerialNumber <> "" And $Win32_BIOS.SerialNumber <> "System Serial Number" Then $StatusbarText &= $Delimiter & StringLeft($Win32_BIOS.SerialNumber, 10)
 	EndIf
 
 	; Get time
