@@ -52,8 +52,8 @@ _Log("$Run=" & $Run & "  @error=" & @error & "  $Command=" & $Command)
 While 1
 	$Command = "netbird.exe status"
 	$Run = _RunWait($Command)
-	If StringInStr($Run, "Signal: Connected") Then _UpdateStatusBar("NetBird Connected")
-	Sleep(3000)
+	If StringInStr($Run, "Signal: Connected") Then _UpdateStatusBar("NetBird Up")
+	Sleep(2000)
 WEnd
 
 Exit
