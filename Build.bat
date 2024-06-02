@@ -53,7 +53,7 @@ echo.
 echo  Q^|1. %auto_extractiso%Extract ISO to media folder
 echo  W^|2. %auto_mountwim%Mount boot.wim from media folder
 echo  E^|3. %auto_copyfiles%Copy Helper files to mounted image
-echo  R^|4. %auto_addpackages%Add packages to mounted image (requires ADK)
+echo  R^|4. %auto_addpackages%Add packages to mounted image (requires matching version of ADK)
 echo  T^|5. %auto_disabledpi%Apply registry settings to disable DPI scaling in PE
 echo  Y^|6. %auto_unmountcommit%Unmount and commit changes to WIM
 echo  U^|7. %auto_setresolution%(Not Working) Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
