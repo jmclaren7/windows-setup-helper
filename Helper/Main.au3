@@ -102,7 +102,7 @@ Global $GUIMainHeight = 513
 $GUIMain = GUICreate("Title", $GUIMainWidth, $GUIMainHeight, -1, -1, BitOR($GUI_SS_DEFAULT_GUI, $WS_MAXIMIZEBOX, $WS_SIZEBOX, $WS_THICKFRAME, $WS_TABSTOP))
 $FileMenu = GUICtrlCreateMenu("&File")
 $AdvancedMenu = GUICtrlCreateMenu("&Advanced")
-$AboutMenuItem = GUICtrlCreateMenu("A&bout")
+$AboutMenuItem = GUICtrlCreateMenuItem("A&bout", -1)
 GUISetBkColor(0xF9F9F9)
 $Group5 = GUICtrlCreateGroup("WinPE Tools", 12, 7, 354, 452)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
@@ -150,16 +150,19 @@ GUICtrlSetStyle($RegeditButton, $BS_ICON)
 GUICtrlSetImage($RegeditButton, @WindowsDir & "\regedit.exe", 1, 0)
 GUICtrlSetStyle($NotepadButton, $BS_ICON)
 GUICtrlSetImage($NotepadButton, @WindowsDir & "\System32\notepad.exe", 1, 0)
-GUICtrlSetStyle($CMDButton, $BS_ICON)
-GUICtrlSetImage($CMDButton, @WindowsDir & "\System32\cmd.exe", 1, 0)
+If FileExists(@WindowsDir & "\System32\WindowsPowerShell\v1.0\powershell.exe") Then
+	GUICtrlSetStyle($CMDButton, $BS_ICON)
+	GUICtrlSetImage($CMDButton, @WindowsDir & "\System32\WindowsPowerShell\v1.0\powershell.exe", 1, 0)
+Else
+	GUICtrlSetStyle($CMDButton, $BS_ICON)
+	GUICtrlSetImage($CMDButton, @WindowsDir & "\System32\cmd.exe", 1, 0)
+EndIf
 If FileExists("Tools\.Explorer++.exe") Then
 	GUICtrlSetStyle($ShellButton, $BS_ICON)
 	GUICtrlSetImage($ShellButton, "Tools\.Explorer++.exe", 1, 0)
 Else
 	GUICtrlDelete($ShellButton)
 EndIf
-;GUICtrlSetStyle($FormatButton, $BS_ICON)
-;GUICtrlSetImage($FormatButton, @WindowsDir & "\System32\shell32.dll", 161, 0)
 
 ; File Menu Items
 $MenuExitButton = GUICtrlCreateMenuItem("Exit", $FileMenu)
@@ -170,12 +173,9 @@ $MenuOpenLog = GUICtrlCreateMenuItem("Open Log File", $AdvancedMenu)
 $MenuRunMain = GUICtrlCreateMenuItem("Run Main", $AdvancedMenu)
 $MenuRelistScripts = GUICtrlCreateMenuItem("Relist Tools && Scripts", $AdvancedMenu)
 $MenuListDebugTools = GUICtrlCreateMenuItem("List Debug && AutoRun Tools", $AdvancedMenu)
-$SelectEdition = GUICtrlCreateMenuItem("Select Edition For Automated Install", $AdvancedMenu)
 
 ; GUI Post Creation Setup
 WinSetTitle($GUIMain, "", $Title)
-;GUICtrlSendMsg($PEComputerNameInput, $EM_SETCUEBANNER, False, "(Optional)")
-;GUICtrlSetLimit($PEComputerNameInput, 15)
 
 ; Generate Script List
 _PopulateScripts($PEInstallTreeView, "Logon*")
@@ -527,21 +527,19 @@ While 1
 			_RunFile("notepad.exe")
 
 		Case $CMDButton
-			_RunFile("cmd.exe")
+			If FileExists(@WindowsDir & "\System32\WindowsPowerShell\v1.0\powershell.exe") Then
+				_RunFile("powershell.exe")
+			Else
+				_RunFile("cmd.exe")
+			EndIf
 
 		Case $ShellButton
 			_RunFile("Tools\.Explorer++.exe")
 
-		Case $SelectEdition
-			Local $aListItems = ["", "Windows 11 Home", "Windows 11 Pro"]
-			If @OSVersion = "WIN_10" Then Local $aListItems = ["", "Windows 10 Home", "Windows 10 Pro"]
+		Case $AboutMenuItem
+			_Log($AboutMenuItem)
+			_MsgBox($MB_ICONINFORMATION, "About - " & $TitleShort, "Windows Setup Helper" & @CRLF & "John Mclaren" & @CRLF & "https://github.com/jmclaren7/windows-setup-helper" & @CRLF & @CRLF & "Included 3rd party software is subject to its respective licensing")
 
-			$ListSelectReturn = _ListSelect($aListItems, "Edition Select - " & $TitleShort, "Select the Windows edition to use for automated install.", 2)
-			If @error Then
-				ContinueLoop
-			Else
-				$EdditionChoice = $ListSelectReturn
-			EndIf
 	EndSwitch
 
 	; If a double click is detected on the PE Tools treeview run the script
@@ -648,6 +646,8 @@ Func _WM_SIZE($hWnd, $iMsg, $iwParam, $ilParam)
 	_GUICtrlStatusBar_Resize($StatusBar1)
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>_WM_SIZE
+
+; Update installer GUI items based on WIM contents
 Func _UpdateWIMDependents()
 	Global $WIMInput
 
@@ -674,6 +674,8 @@ Func _UpdateWIMDependents()
 	EndIf
 
 EndFunc
+
+; Update installer GUI items based on XML contents
 Func _UpdateXMLDependents($sXML)
 	Local $aMatch
 
@@ -750,11 +752,6 @@ Func _GetImageNames($sPath)
 	Else
 		Return SetError(1, 0, 0)
 	EndIf
-
-EndFunc
-
-; Get timezone list
-Func _GetTimeZones()
 
 EndFunc
 
