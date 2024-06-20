@@ -321,6 +321,9 @@ While 1
 			GUICtrlSetLimit($AdminPasswordInput, 15)
 			GUICtrlSetState($Bypass11Checkbox, $GUI_CHECKED)
 
+			; Set GUI Icon
+			GUISetIcon($SystemDrive & "sources\setup.exe")
+
 			; Add timezones
 			$sTimezones = FileRead("IncludeExt\tz.txt")
 			$sTimezones = StringReplace($sTimezones, @CRLF & "(" , "|(")
