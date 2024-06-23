@@ -48,7 +48,7 @@ https://www.youtube.com/watch?v=NjPxmrIeGhw<br>
 
 ## Included Tools
 
-You can add any x64 executable, .bat, .au3, .ps1, .reg or any but here are some basic tools to get you started, closed source software that I've included is noted as such.
+You can add any x64 executable, .bat, .au3, .ps1, or .reg but here are some basic tools to get you started, closed source software that I've included is noted as such.
 
 * [AutoIt.exe](https://www.autoitscript.com/) (Closed source, required) For Running The Helper Script and It's Components
 * [7-Zip](https://www.7-zip.org/) For Working With Compressed Files
