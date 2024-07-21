@@ -54,8 +54,10 @@ Const $WindowContextRestoreIDIndex = 18
 Const $WindowContextKillIDIndex = 19
 
 If $IsPE Then
+	; Set the area windows are allowed to use when maximized
 	_WorkingArea(0, 0, @DesktopWidth, @DesktopHeight - $TaskBarHeight - 1)
 Else
+	; For testing outside of PE - move the taskbar up a little so it doesnt interfer with the normal taskbar
 	$TaskBarTop -= 45
 EndIf
 
@@ -418,7 +420,7 @@ Func __GetVisibleWindows($GetText = False)
 			; Might only help if the stars align
 			Local $aEnum = _WinAPI_EnumProcessModules($aWinList[$i][4])
 			If Not @error And UBound($aEnum) >= 2 Then
-				$TestPath = $aEnum[1]
+				$TestPath = $aEnum[1][1]
 				; The exe might be in the system folder (elevated cmd or task manager)
 			Else
 				$TestPath = @SystemDir & "\" & $aWinList[$i][5]
