@@ -402,6 +402,21 @@ pause
 goto mainmenu
 
 
+REM == Convert Install.wim to ESD ====================================
+:convertinstallesd
+
+echo.
+echo [96mConverting WIM to ESD[0m
+echo.
+
+Dism /Export-Image /SourceImageFile:"%mediapath%\sources\install.wim" /SourceIndex:1 /DestinationImageFile:"%mediapath%\sources\install.esd" /Compress:Max
+if %errorlevel% NEQ 0 ( echo [91mError converting install.wim, aborting[0m && pause && goto mainmenu )
+
+echo.
+pause 
+goto mainmenu
+
+
 REM == Mount Install.wim =============================================
 :mountinstallwim
 
