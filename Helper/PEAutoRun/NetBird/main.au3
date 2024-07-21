@@ -24,6 +24,8 @@ _Log("@ScriptDir=" & @ScriptDir)
 
 OnAutoItExitRegister("_Exit")
 
+_UpdateStatusBar("NetBird Wait")
+
 ; Wait for network
 For $i = 1 To 10
 	Ping("8.8.8.8", 1000)
@@ -34,6 +36,8 @@ Next
 $Command = "netbird.exe service install"
 $Run = _RunWait($Command)
 _Log("$Run=" & $Run & "  @error=" & @error & "  $Command=" & $Command)
+
+_UpdateStatusBar("NetBird Start")
 
 $Command = "netbird.exe service start"
 $Run = _RunWait($Command)

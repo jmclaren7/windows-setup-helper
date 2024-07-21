@@ -1,5 +1,6 @@
 Windows Registry Editor Version 5.00
-; This registry file adds an "Open in Explorer++" option to the right-click context menu for folders.
+; This registry file adds an "Open in Explorer++" option to the right-click context menu for folders
+; Useful when using a browse dialog in another program.
 
 [HKEY_CLASSES_ROOT\Directory\shell\openinexplorer++]
 @="Open In Explorer++"

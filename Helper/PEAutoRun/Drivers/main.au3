@@ -1,4 +1,4 @@
-; This script loads all driver inf files located in the same folder as the script or it's subdirectories
+; This script loads all driver inf files located in the same folder as this script or it's subdirectories
 
 #include <File.au3>
 
