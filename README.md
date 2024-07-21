@@ -59,7 +59,7 @@ You can add any x64 executable, .bat, .au3, .ps1, or .reg but here are some basi
 * [SeaMonkey](https://www.seamonkey-project.org/) Web Browser (Portable exe from my project [here](https://github.com/jmclaren7/seamonkey-sfx))
 * [Crystal DiskInfo & DiskMark](https://github.com/hiyohiyo) For Disk Benchmark and Viewing SMART Data (Portable exe from my project [here](https://github.com/jmclaren7/crystaldisk-sfx))
 * [GSmartControl](https://gsmartcontrol.shaduri.dev/) For Viewing SMART Data  (Portable exe from my project [here](https://github.com/jmclaren7/gsmartcontrol-sfx))
-* [ReactOS](https://reactos.org/) Paint For Viewing Images
+* [ReactOS Paint](https://reactos.org/) For Viewing Images
 * [TightVNC](https://www.tightvnc.com/) Server For Remote Access To WinPE
 * [NTPWEdit](https://github.com/jmclaren7/ntpwedit) Offline Password Reset
 
@@ -153,20 +153,22 @@ Running TightVNC server allows remote access to the WinPE instance from another 
 
 ### NetBird
 
-NetBird is an overlay/mesh network tool and the NetBird client happens to work well in WinPE, implemented correctly you can have your WinPE boot and be remotely accessible with VNC over the NetBird network automatically.
+NetBird is an overlay/mesh network tool and the NetBird client happens to work well in WinPE, implemented correctly you can have your WinPE boot and be remotely accessible with VNC over the NetBird network automatically. When a WinPE client is booted and online you'll see it apear in the Netbird dashboard along with its Netbird IP. Use your prefered VNC client to connect to that IP one the correct port (see TightVNC information above)
 
 * A startup script is provided in PEAutoRun\NetBird
-* Configure the script with a setup key, be sure you understand the security implications
-* Make sure netbird.exe and wintun.dll are in the same folder as the script, get them [here](https://github.com/netbirdio/netbird/releases) (netbird_x.x.x_windows_amd64_signed.tar.gz)
-* If the NetBird connection is active, "NetBird Connected" will appear in the status bar
+* Configure the script with a setup key generated via Netbird, be sure you understand the security implications
+* Copy netbird.exe and wintun.dll to the same location as the script, get them [here](https://github.com/netbirdio/netbird/releases) (netbird_x.x.x_windows_amd64_signed.tar.gz)
+* If the NetBird connection is active, "NetBird Up" will appear in the status bar of the main window
 
 #### NetBird settings
+
+The default settings Netbird uses would not be secure for this use case and would allow all traffic between all connected clients. These steps are for limiting that connectivity by allowing connections from an approved user group to the WinPE clients and blocking all connections coming from the WinPE clients. These instructions assume your Netbird account has a default configuration.
 
 * Generate a Setup Key
   * Enable "Make this key reusable" so the key will stay valid across multiple boots
   * Set a long expiration so you do not need to generate a new key and ISO any time soon
   * Enable "Ephemeral Peers" so that offline WinPE instances are removed
-  * Add a group to "Auto-assigned groups", call it "PE" so we can make a access rules for WinPE peers
+  * Add a group to "Auto-assigned groups", call it "PE" so we can make access rules for WinPE peers
 * Configure "Access Control Policies" to allow traffic to WinPE but not from WinPE
   * Remove the default rule that allows all traffic in all directions
   * Create a new rule with Source=Admin, Destination=PE, Port=5950
