@@ -376,8 +376,8 @@ While 1
 
 			; Add timezones
 			$sTimezones = FileRead("IncludeExt\tz.txt")
-			$sTimezones = StringReplace($sTimezones, @CRLF & "(" , "|(")
-			$sTimezones = StringReplace($sTimezones, " " & @CRLF , "^")
+			$sTimezones = StringReplace($sTimezones, @CRLF & "(", "|(")
+			$sTimezones = StringReplace($sTimezones, " " & @CRLF, "^")
 			Global $aTimezones = _ArrayFromString($sTimezones, "^", "|", True)
 ;~ 			Global $aTimezones = StringRegExp($sTimezones, "(.*)\r\n(.*)\r\n\r\n", 3) ; Returns a 1d array, alternating utc/windows tz name
 			If Not @error And IsArray($aTimezones) Then
@@ -462,7 +462,7 @@ While 1
 						$WIMInputText = GUICtrlRead($WIMInput)
 						$WIMInputText = StringReplace($WIMInputText, "\", "\\")
 						_Log("$WIMInputText=" & $WIMInputText)
-												$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<InstallFrom>.*?<Path>).*?(</Path>.*?</InstallFrom>)", "${1}" & $WIMInputText & "${2}")
+						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<InstallFrom>.*?<Path>).*?(</Path>.*?</InstallFrom>)", "${1}" & $WIMInputText & "${2}")
 						_Log("StringRegExpReplace @error=" & @error)
 
 						; Edition and key
@@ -726,7 +726,7 @@ Func _UpdateWIMDependents()
 		EndIf
 	EndIf
 
-EndFunc
+EndFunc   ;==>_UpdateWIMDependents
 
 ; Update installer GUI items based on XML contents
 Func _UpdateXMLDependents($sXML)
@@ -780,7 +780,7 @@ Func _UpdateXMLDependents($sXML)
 	$aMatch = StringRegExp($sAutounattendData, '(?i)<TimeZone>(.*?)</TimeZone>', $STR_REGEXPARRAYMATCH)
 	If Not @error Then
 		$SearchIndex = _ArraySearch($aTimezones, $aMatch[0], Default, Default, 0, 0, 1, 1)
-		_GUICtrlComboBox_SetCurSel($TimezoneCombo,$SearchIndex)
+		_GUICtrlComboBox_SetCurSel($TimezoneCombo, $SearchIndex)
 	EndIf
 
 	; Get language
@@ -791,7 +791,7 @@ Func _UpdateXMLDependents($sXML)
 	Else
 		GUICtrlSetData($LanguageInput, $DefaultLanguage)
 	EndIf
-EndFunc
+EndFunc   ;==>_UpdateXMLDependents
 
 ; Get indexes from WIM or ESD
 Func _GetImageNames($sPath)
@@ -800,13 +800,13 @@ Func _GetImageNames($sPath)
 
 	Local $aImageNames = StringRegExp($sReturn, "Name : (.*?)\R", $STR_REGEXPARRAYGLOBALMATCH)
 
-	If Not @error and IsArray($aImageNames) Then
+	If Not @error And IsArray($aImageNames) Then
 		Return $aImageNames
 	Else
 		Return SetError(1, 0, 0)
 	EndIf
 
-EndFunc
+EndFunc   ;==>_GetImageNames
 
 ; Calculate the full path of an item from the GUI tree view
 Func _GetTreeItemFullPath($Parent, $Item)
@@ -990,7 +990,7 @@ Func _RunFolder($Folder)
 
 	Local $aPaths = _GetSimilarPaths($Folder)
 	For $x = 1 To $aPaths[0]
-		_Log("  $Paths["&$x&"]=" & $aPaths[$x])
+		_Log("  $Paths[" & $x & "]=" & $aPaths[$x])
 		Local $aFiles = _FileListToArray($aPaths[$x], "*", $FLTA_FILESFOLDERS, True) ;switched from $FLTA_FILES for allowing main.au3 in folder
 		If Not @error Then
 			_Log("  Files: " & $aFiles[0])
@@ -1128,7 +1128,7 @@ Func _StatusBarUpdate()
 	EndIf
 
 	; Get time
-	$StatusbarText &= $Delimiter & Int(@MON) & "/" & Int(@MDAY) & "/" & StringRight(@YEAR, 2)  & " " & @HOUR  & ":" & @MIN
+	$StatusbarText &= $Delimiter & Int(@MON) & "/" & Int(@MDAY) & "/" & StringRight(@YEAR, 2) & " " & @HOUR & ":" & @MIN
 
 	; Get additional statusbar and tool tip text
 	$HelperStatusFiles = _FileListToArray(@TempDir, "Helper_Status_*.txt", $FLTA_FILES, True)
