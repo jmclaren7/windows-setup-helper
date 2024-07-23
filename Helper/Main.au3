@@ -1089,7 +1089,7 @@ Func _StatusBarUpdate()
 
 	; Get information for the first network adapter WMI provies (usually correct)
 	$Win32_NetworkAdapterConfiguration = _WMI("SELECT IPAddress,DefaultIPGateway,DNSServerSearchOrder FROM Win32_NetworkAdapterConfiguration WHERE IPEnabled = True and DHCPEnabled = True")
-	If Not @error Then
+	If Not @error And IsObj($Win32_NetworkAdapterConfiguration) Then
 		; If an IP hasn't been aquired it wont be an array
 		If IsArray($Win32_NetworkAdapterConfiguration.IPAddress) Then $StatusbarText &= $Delimiter & $Win32_NetworkAdapterConfiguration.IPAddress[0]
 		If IsArray($Win32_NetworkAdapterConfiguration.DefaultIPGateway) Then $StatusbarToolTipText &= "Gateway: " & $Win32_NetworkAdapterConfiguration.DefaultIPGateway[0] & "  "
