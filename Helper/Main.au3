@@ -48,7 +48,7 @@ FileChangeDir(@ScriptDir)
 
 ; Miscellaneous global variables
 Global $Date = StringTrimRight(FileGetTime(@ScriptFullPath, $FT_MODIFIED, $FT_STRING), 6)
-Global $Version = "5.6"
+Global $Version = "5.7"
 Global $TitleShort = "Windows Setup Helper"
 Global $Title = $TitleShort & " v" & $Version & " (" & $Date & ")"
 Global $oCommError = ObjEvent("AutoIt.Error", "_CommError")
