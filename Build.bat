@@ -121,10 +121,10 @@ goto addpackages
 goto disabledpi
 :: Y
 :option16
-goto setresolution
+goto unmountcommit
 :: U
 :option17
-goto unmountcommit
+goto setresolution
 :: I
 :option18
 goto trimimages
