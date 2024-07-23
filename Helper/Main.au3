@@ -57,6 +57,7 @@ Global $SystemDrive = StringLeft(@SystemDir, 3)
 Global $IsPE = StringInStr(@SystemDir, "X:")
 Global $Debug = Not $IsPE
 Global $LaunchFiles = StringSplit("main.au3,main.bat,main.exe,a.bat", ",") ; Used by _RunFile & _PopulateScripts
+Global $MainConfig = "Config.ini"
 
 ; Default values used for automatic setup if missing from autounattend.xml
 Global $DefaultComputerName = "WINDOWS-" & _RandomString(7, 7, "0123456789ABCDEFGHIJKLMNOPQRSTUV")
@@ -87,8 +88,60 @@ _Log("@TempDir=" & @TempDir)
 _Log("@WorkingDir=" & @WorkingDir)
 If $IsPE Then _Log("PATH=" & EnvGet("PATH"))
 
-; Run automatic setup scripts
-If $IsPE Then _RunFolder("PEAutoRun")
+; Access restriction
+Local $AccessSecret = IniRead($MainConfig, "Access", "Secret", "")
+Local $AccessSalt = IniRead($MainConfig, "Access", "Salt", "3b194da2")
+Local $AccessPasswordHash = IniRead($MainConfig, "Access", "PasswordSHA256", "")
+Local $AccessNetworking = IniRead($MainConfig, "Access", "PromptStage", "False")
+Local $AccessPEAutoRun = IniRead($MainConfig, "Access", "PEAutoRun", "False")
+Local $NetworkStarted = False
+Local $PEAutoRunStarted = False
+
+; Start PE networking before auth if configured
+If $IsPE And $AccessNetworking = "True" Then
+	Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
+	$NetworkStarted = True
+EndIf
+
+; Run automatic setup scripts before auth if configured
+If $IsPE And $AccessPEAutoRun = "True" Then
+	_RunFolder("PEAutoRun")
+	$PEAutoRunStarted = True
+EndIf
+
+; Prompt for password
+If $AccessPasswordHash <> "" Or $AccessSecret <> "" Then
+	Local $AccessChallenge = _RandomString(8, 8, "1234567890ABCDEFGHJKMNPQRSTUVWXYZ")
+	Local $AccessChallengeDisplay = StringLeft($AccessChallenge, 4) & "-" & StringRight($AccessChallenge, 4)
+	_Log("$AccessChallengeDisplay= " & $AccessChallengeDisplay)
+
+	Local $AccessCode = StringRight(_Crypt_HashData($AccessSecret & $AccessChallenge & $AccessSalt, $CALG_SHA_256), 8)
+	$Code = StringLeft($AccessCode, 4) & "-" & StringRight($AccessCode, 4)
+
+
+	Local $AccessResponseMessage = ""
+	While 1
+		Local $AccessInput = InputBox("Access Restricted - " & $TitleShort, "Enter the password to continue, canceling will restart the system, timeout in 10 minutes." & @CRLF & @CRLF & $AccessChallengeDisplay & $AccessResponseMessage, "", "*", 330, 170, Default, Default, 600, $_hLogWindow)
+		If @error = 1 Then Exit
+
+		Local $AccessCodeInput = StringStripWS($AccessInput, $STR_STRIPALL)
+		$AccessCodeInput = StringReplace($AccessInput, "-", "")
+		If $AccessSecret <> "" And $AccessCodeInput = $AccessCode Then ExitLoop
+
+		Local $AccessPasswordHashInput = StringTrimLeft(_Crypt_HashData($AccessInput & $AccessSalt, $CALG_SHA_256), 2)
+		_Log("$PasswordHashInput=" & $AccessPasswordHashInput)
+		If $AccessPasswordHash <> "" And $AccessPasswordHashInput = $AccessPasswordHash Then ExitLoop
+
+		$AccessResponseMessage = "     Response was invalid, try again."
+		Sleep(10)
+	WEnd
+EndIf
+
+; Start PE networking if it wasn't before auth
+If $IsPE And Not $NetworkStarted Then Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
+
+; Run automatic setup scripts if it wasn't before auth
+If $IsPE And Not $PEAutoRunStarted Then _RunFolder("PEAutoRun")
 
 ; Globals used by GUI
 Global $GUIMain
@@ -189,9 +242,6 @@ Local $NormalInstallWait = False
 Local $Reboot = False
 Local $EdditionChoice = "Windows 11 Pro"
 If @OSVersion = "WIN_10" Then $EdditionChoice = "Windows 10 Pro"
-
-; Start PE networking
-If $IsPE Then Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
 
 ; Set GUI Icon
 GUISetIcon($SystemDrive & "sources\setup.exe")
