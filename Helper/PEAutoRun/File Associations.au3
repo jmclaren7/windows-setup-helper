@@ -9,6 +9,8 @@ _FileRegister("au3", '"' & @AutoItExe & '" "%1" %*', "Run With AutoIt", True, @A
 _FileRegister("au3", '"' & @WindowsDir & '\notepad.exe" "%1"', "Edit")
 _FileRegister("a3x", '"' & @AutoItExe & '" "%1" %*', "Run With AutoIt", True, @AutoItExe & ",-99", "AutoIt Script")
 
+_FileRegister("ps1", '"' & @WindowsDir & '\notepad.exe" "%1"', "Edit", True)
+
 _FileRegister("txt", '"' & @WindowsDir & '\notepad.exe" "%1"', "Open with Notepad", True, @WindowsDir & "\System32\shell32.dll,-152", "Text Document")
 _FileRegister("log", '"' & @WindowsDir & '\notepad.exe" "%1"', "Open with Notepad", True, @WindowsDir & "\System32\shell32.dll,-152", "Text Document")
 _FileRegister("ini", '"' & @WindowsDir & '\notepad.exe" "%1"', "Open with Notepad", True, @WindowsDir & "\System32\shell32.dll,-151", "Text Document")
