@@ -30,6 +30,7 @@ set "auto_disabledpi=*"
 set "auto_unmountcommit=*"
 set "auto_setresolution= "
 set "auto_trimimages=*"
+set "auto_removeinstaller= "
 set "auto_makeiso=*"
 ::set "auto_setresolution_detail=Highest"
 set "auto_setresolution_detail=1024x768"
@@ -58,7 +59,8 @@ echo  T^|5. %auto_disabledpi%Apply registry settings to disable DPI scaling in P
 echo  Y^|6. %auto_unmountcommit%Unmount and commit changes to WIM
 echo  U^|7. %auto_setresolution%(Not Working) Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
 echo  I^|8. %auto_trimimages%Trim boot.wim (Trims other indexes and removes unused files)
-echo  O^|9. %auto_makeiso%Make ISO from media folder (requires ADK)
+echo  O^|9. %auto_removeinstaller%Remove Install.wim and Related Install Components from Media
+echo  P^|0. %auto_makeiso%Make ISO from media folder (requires ADK)
 echo.
 echo  F. Automatically run the * steps (enter a step # to toggle its inclusion)
 echo.
@@ -70,7 +72,7 @@ REM echo  E. Convert install.esd to install.wim
 REM echo  R. Mount and browse install.wim
 echo.  
 echo  Select letter of the function to run...
-choice /C 1234567890QWERTYUIOPFBXAG /N
+choice /C 1234567890QWERTYUIOPFBXAGH /N
 goto option%errorlevel%
 
 :option1
@@ -98,10 +100,10 @@ goto mainmenu
 if "%auto_trimimages%"=="*" ( set "auto_trimimages= " ) else ( set "auto_trimimages=*" )
 goto mainmenu
 :option9
-if "%auto_makeiso%"=="*" ( set "auto_makeiso= " ) else ( set "auto_makeiso=*" )
+if "%auto_removeinstaller%"=="*" ( set "auto_removeinstaller= " ) else ( set "auto_removeinstaller=*" )
 goto mainmenu
 :option10
-REM Not used
+if "%auto_makeiso%"=="*" ( set "auto_makeiso= " ) else ( set "auto_makeiso=*" )
 goto mainmenu
 
 :: Q
@@ -133,8 +135,7 @@ goto trimimages
 goto makeiso
 :: P
 :option20
-REM Not used
-goto mainmenu
+goto removeinstaller
 :: F
 :option21
 goto automatic
@@ -176,6 +177,7 @@ if "%auto_disabledpi%"=="*" ( call :disabledpi )
 if "%auto_unmountcommit%"=="*" ( call :unmountcommit )
 if "%auto_setresolution%"=="*" ( call :setresolution )
 if "%auto_trimimages%"=="*" ( call :trimimages )
+if "%auto_removeinstaller%"=="*" ( call :removeinstaller )
 if "%auto_makeiso%"=="*" ( call :makeiso )
 
 echo.
@@ -280,17 +282,17 @@ mkdir "%mountpath%\Helper"
 
 REM Copy files from repository to mounted image
 echo Copying "%helperrepo%\Helper"
-xcopy /y /e /q "%helperrepo%\Helper" "%mountpath%\Helper"
+xcopy /y /e /q /i "%helperrepo%\Helper" "%mountpath%\Helper"
 echo.
 
 echo Copying "%helperrepo%\Windows"
-xcopy /y /e /q "%helperrepo%\Windows" "%mountpath%\Windows"
+xcopy /y /e /q /i "%helperrepo%\Windows" "%mountpath%\Windows"
 echo.
 
 REM Copy extra files to the mounted image
 for /D %%A in ("%extrafiles%*") do (
    echo Copying "%%~fA"
-   xcopy /y /e /q "%%~fA" "%mountpath%"
+   xcopy /y /e /q /i /h /c "%%~fA" "%mountpath%"
    echo.
 )
 
@@ -486,6 +488,26 @@ reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v LogPixels /t REG_DWORD /d
 reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v Win8DpiScaling /t REG_DWORD /d 0x00000001 /f
 reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v DpiScalingVer /t REG_DWORD /d 0x00001018 /f
 reg unload HKLM\_WinPE_Default
+
+echo.
+if %pauseafter%==true ( pause )
+if %returnafter%==true ( exit /B )
+goto mainmenu
+
+REM == Remove Installer and Related =================================
+:removeinstaller
+
+echo.
+echo [Remove Installer WIM and Related[0m
+echo.
+
+rmdir /s /q "%mediapath%\support"
+del "%mediapath%\setup.exe"
+del "%mediapath%\autorun.inf"
+move /Y "%mediapath%\Sources\boot.wim" "%mediapath%\"
+rmdir /s /q "%mediapath%\Sources"
+mkdir "%mediapath%\Sources"
+move /Y "%mediapath%\boot.wim" "%mediapath%\Sources\boot.wim"
 
 echo.
 if %pauseafter%==true ( pause )
