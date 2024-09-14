@@ -1,7 +1,8 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=icon.ico
+#AutoIt3Wrapper_Outfile_x64=VNCHelper.exe
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.48
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.49
 #AutoIt3Wrapper_Res_Fileversion_AutoIncrement=y
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -16,7 +17,7 @@
 #include <StaticConstants.au3>
 #include <WindowsConstants.au3>
 
-Global $Title = "VNCScan"
+Global $Title = "VNCHelper"
 Global $ViewerFullPath = @TempDir & "\tvnviewer.exe"
 
 ConsoleWrite(@CRLF&"Start"&@CRLF)
