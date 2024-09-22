@@ -4,11 +4,11 @@ The source WinPE version you use must match the version of the ADK or you won't 
 
 Here are some direct links for specific versions, the version that works with the most recent official Microsoft ISO is listed as current.
 
-Windows ADK for Windows 11 version 23H2 - 10.1.25398.1 (Current)
+Windows ADK for Windows 11 version 23H2 - 10.1.25398.1
 - ADK: https://go.microsoft.com/fwlink/?linkid=2243390
 - WinPE Addon: https://go.microsoft.com/fwlink/?linkid=2243391
 
-Windows ADK for Windows 11 version 22H2 - 10.1.22621.1
+Windows ADK for Windows 11 version 22H2 - 10.1.22621.1 (Current - The latest 23H2 ISO still uses 22621 for PE and even the install images show 22621 for some reason)
 - ADK: https://go.microsoft.com/fwlink/?linkid=2196127
 - WinPE Addon: https://go.microsoft.com/fwlink/?linkid=2196224
 
