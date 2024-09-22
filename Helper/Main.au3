@@ -86,6 +86,8 @@ _Log("@WindowsDir=" & @WindowsDir)
 _Log("@SystemDir=" & @SystemDir)
 _Log("@TempDir=" & @TempDir)
 _Log("@WorkingDir=" & @WorkingDir)
+_Log("@OSBuild=" & @OSBuild)
+_Log("@ComputerName=" & @ComputerName)
 If $IsPE Then _Log("PATH=" & EnvGet("PATH"))
 
 ; Access restriction
