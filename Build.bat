@@ -132,10 +132,10 @@ goto setresolution
 goto trimimages
 :: O
 :option19
-goto makeiso
+goto removeinstaller
 :: P
 :option20
-goto removeinstaller
+goto makeiso
 :: F
 :option21
 goto automatic
