@@ -1,7 +1,7 @@
 @ECHO OFF
 REM == Settings You Need To Change =================================
 REM Path of the ISO file to extract
-set sourceiso=D:\Windows Images\Windows 11 23H2 MCT 2403.iso
+set sourceiso=D:\Windows Images\Windows 11 24H2 MCT 2410.iso
 
 REM Directory to extract the ISO to (no trailing slash)
 set mediapath=D:\Windows Images\11
@@ -483,7 +483,7 @@ echo.
 echo [96mEdit Registry[0m
 echo.
 
-reg load HKLM\_WinPE_Default %mountpath%\Windows\System32\config\default
+reg load HKLM\_WinPE_Default "%mountpath%\Windows\System32\config\default"
 reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v LogPixels /t REG_DWORD /d 96 /f
 reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v Win8DpiScaling /t REG_DWORD /d 0x00000001 /f
 reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v DpiScalingVer /t REG_DWORD /d 0x00001018 /f
