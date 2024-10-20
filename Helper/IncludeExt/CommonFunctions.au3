@@ -825,8 +825,11 @@ EndFunc   ;==>_FileInUseWait
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		01/16/2016  --  v1.1
 ;===============================================================================
-Func _RunWait($sProgram, $Working = "", $Show = @SW_HIDE, $Opt = $STDERR_MERGED, $Live = False, $Diag = False)
+Func _RunWait($sProgram, $Working = "", $Show = Default, $Opt = Default, $Live = False, $Diag = False)
 	Local $sData, $iPid
+
+	If $Show = Default Then $Show = @SW_HIDE
+	If $Opt = Default Then $Opt = $STDERR_MERGED
 
 	$iPid = Run($sProgram, $Working, $Show, $Opt)
 	If @error Then
@@ -849,8 +852,11 @@ EndFunc   ;==>_RunWait
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		09/8/2023  --  v1.3
 ;===============================================================================
-Func _ProcessWaitClose($iPid, $Live = False, $Diag = False)
+Func _ProcessWaitClose($iPid, $Live = Default, $Diag = Default)
 	Local $sData, $sStdRead
+
+	If $Live = Default Then $Live = False
+	If $Diag = Default Then $Diag = False
 
 	While 1
 		$sStdRead = StdoutRead($iPid)
@@ -1068,14 +1074,16 @@ Func _Log($sMessage, $iLevel = Default, $bOverWriteLast = Default, $iCallingLine
 	If $iLevel > $LogLevel Then Return ""
 
 	; Send to console
+	Local $ExternalConsoleFunction = "_Console_Write" ; From Console.au3
+
 	If $bOverWriteLast And Not @Compiled Then
 		; Do Nothing
 	ElseIf $bOverWriteLast Then
 		ConsoleWrite(@CR & $sLogLine)
-		Call("_Console_Write", @CR & $sLogLine)
+		Call($ExternalConsoleFunction, @CR & $sLogLine)
 	Else
 		ConsoleWrite(@CRLF & $sLogLine)
-		Call("_Console_Write", @CRLF & $sLogLine)
+		Call($ExternalConsoleFunction, @CRLF & $sLogLine)
 	EndIf
 
 	; Append message to custom GUI if $LogTitle is set
