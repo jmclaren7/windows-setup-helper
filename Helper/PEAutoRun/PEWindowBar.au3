@@ -290,11 +290,11 @@ Func _UpdateTaskBar()
 	Return 1
 EndFunc
 
-
 Func _GenerateLabelText($Text)
-	If StringLen($Text) > 32 Then
-		$Text = StringLeft($Text, 12) & "..." & StringRight($Text, 10)
-	ElseIf StringLen($Text) > 22 Then
+	;If StringLen($Text) > 32 Then
+	;	$Text = StringLeft($Text, 12) & "..." & StringRight($Text, 10)
+	;Else
+	If StringLen($Text) > 22 Then
 		$Text = StringLeft($Text, 22)
 	EndIf
 
