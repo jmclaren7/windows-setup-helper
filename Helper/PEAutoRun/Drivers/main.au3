@@ -14,7 +14,7 @@ EndIf
 For $i = 1 To $aFiles[0]
 	$Command = 'drvload "' & $aFiles[$i] & '"'
 	ConsoleWrite(@CRLF & $Command)
-	If $IsPE Then Run(@ComSpec & " /c " & $Command, @SystemDir)
+	If $IsPE Then Run(@ComSpec & " /c " & $Command, @SystemDir, @SW_HIDE)
 Next
 
 
