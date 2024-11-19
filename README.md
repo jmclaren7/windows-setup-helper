@@ -62,6 +62,7 @@ You can add any x64 executable, .bat, .au3, .ps1, or .reg but here are some basi
 * [ReactOS Paint](https://reactos.org/) For Viewing Images
 * [TightVNC](https://www.tightvnc.com/) Server For Remote Access To WinPE
 * [NTPWEdit](https://github.com/jmclaren7/ntpwedit) Offline Password Reset
+* [Rufus](https://github.com/pbatard/rufus) USB Formatting Utility
 
 A number of useful example scripts are included as well, each script has comments in it describing its purpose.
 
