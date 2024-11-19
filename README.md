@@ -81,7 +81,7 @@ Using DISM is the recommended way to update Windows images (wim), it's more adva
 ### Prerequisites
 
 * Download a [Windows installer ISO](https://www.microsoft.com/software-download/windows11)
-* Download and install [Windows ADK](https://go.microsoft.com/fwlink/?linkid=2243390) and the [PE add-on](https://go.microsoft.com/fwlink/?linkid=2243391). Using the correct version for your ISO version is required, [Read this](https://github.com/jmclaren7/windows-setup-helper/blob/master/Extra/ADK-Versions.md) for more information.
+* Download and install Windows ADK and the ADK PE add-on. Using the correct version for your ISO version is critical, [Read this](https://github.com/jmclaren7/windows-setup-helper/blob/master/Extra/ADK-Versions.md) for more information and direct links to the installers.
 
 ### Running Build.bat
 
