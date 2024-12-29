@@ -511,6 +511,11 @@ While 1
 							; Set the target disk
 							$DiskListIndex = _GUICtrlListBox_GetCurSel($DiskList)
 							$DiskListText = _GUICtrlListBox_GetText($DiskList, $DiskListIndex)
+
+							If StringInStr($DiskListText, "USB", 0) Then
+								If MsgBox($MB_OK + $MB_ICONWARNING, $TitleShort, "The selected drive might be a USB drive and not the intended target disk") <> $MB_OK Then ContinueLoop
+							EndIf
+
 							$aTargetDisk = StringRegExp($DiskListText, '(?i)Disk (\d{1}) ', $STR_REGEXPARRAYMATCH)
 							If @error Then
 								MsgBox(0, "Select Disk - " & $TitleShort, "Error selecting disk: " & @error)
