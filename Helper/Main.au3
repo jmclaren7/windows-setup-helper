@@ -679,8 +679,12 @@ While 1
 	; Reboot
 	If $RebootPrompt Then
 		_Log("Reboot")
+		Local $RebootTimeout = IniRead($MainConfig, "General", "RebootAfterInstallTimeout", "15")
+		Local $RebootMessage = "Program finished"
+		If $RebootTimeout Then $RebootMessage &= ", rebooting in " & $RebootTimeout & " seconds"
+
 		Beep(500, 1000)
-		$Return = MsgBox(1 + 48 + 262144, $Title, "Rebooting in 15 seconds", 15)
+		$Return = MsgBox($MB_OKCANCEL + $MB_ICONWARNING + $MB_TOPMOST, $Title, $RebootMessage, $RebootTimeout)
 		If $Return = $IDTIMEOUT Or $Return = $IDOK Then Exit
 		$RebootPrompt = False
 	EndIf
