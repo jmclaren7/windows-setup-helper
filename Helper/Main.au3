@@ -182,7 +182,7 @@ $ShellButton = GUICtrlCreateButton("", 188, 424, 29, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKLEFT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
 GUICtrlSetTip(-1, "File Explorer (Explorer++)")
 GUICtrlCreateGroup("", -99, -99, 1, 1)
-$Group6 = GUICtrlCreateGroup("First Logon Scripts", 384, 7, 354, 452)
+$Group6 = GUICtrlCreateGroup("Install Scripts", 384, 7, 354, 452)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKTOP+$GUI_DOCKBOTTOM)
 $NormalInstallButton = GUICtrlCreateButton("Normal Install", 400, 424, 131, 25)
 GUICtrlSetResizing(-1, $GUI_DOCKRIGHT+$GUI_DOCKBOTTOM+$GUI_DOCKWIDTH+$GUI_DOCKHEIGHT)
@@ -233,7 +233,7 @@ $MenuListDebugTools = GUICtrlCreateMenuItem("List Debug && AutoRun Tools", $Adva
 WinSetTitle($GUIMain, "", $Title)
 
 ; Generate Script List
-_PopulateScripts($PEInstallTreeView, "Logon*")
+_PopulateScripts($PEInstallTreeView, "Scripts*")
 _PopulateScripts($PEScriptTreeView, "Tools*")
 
 ; Variables used in GUI loop
@@ -290,7 +290,7 @@ While 1
 		Case $MenuRelistScripts
 			_GUICtrlTreeView_DeleteAll($PEInstallTreeView)
 			_GUICtrlTreeView_DeleteAll($PEScriptTreeView)
-			_PopulateScripts($PEInstallTreeView, "Logon*")
+			_PopulateScripts($PEInstallTreeView, "Scripts*")
 			_PopulateScripts($PEScriptTreeView, "Tools*")
 
 		Case $MenuListDebugTools
@@ -448,12 +448,6 @@ While 1
 
 					Case $InstallButton
 						GUISetState(@SW_DISABLE, $AutoInstallForm)
-
-						; Get the list of scripts that need to be copied later
-						$aAutoLogonCopy = _RunTreeView($GUIMain, $PEInstallTreeView, True)
-						For $b = 0 To UBound($aAutoLogonCopy) - 1
-							_Log("TreeItem: " & $aAutoLogonCopy[$b])
-						Next
 
 						; ================ Start modifications to autounattend.xml ================
 						; Read the answers file again in case the user had an error during modification and had to start over
@@ -614,6 +608,13 @@ While 1
 	; Wait for auotmatic install to finish
 	If $AutoInstallWait And Not ProcessExists($hSetup) Then
 		_Log("Copy AutoLogon Files")
+
+		; Get the list of install scripts that need to be copied, exclude scripts with [PE]
+		$aInstallScriptsCopy = _RunTreeView($GUIMain, $PEInstallTreeView, 0, Default, "[PE]")
+		For $b = 0 To UBound($aInstallScriptsCopy) - 1
+			_Log("TreeItem: " & $aInstallScriptsCopy[$b])
+		Next
+
 		For $i = 65 To 90 ; 65=A 90=Z
 			$Drive = Chr($i) & ":"
 			$TestFile = $Drive & "\Windows\System32\Config\SYSTEM"
@@ -624,14 +625,14 @@ While 1
 				_Log("Test file found on drive " & $Drive)
 
 				; Add autorun script that's executed on first logon
-				_ArrayAdd($aAutoLogonCopy, @ScriptDir & "\Logon\.Autorun.ps1")
+				_ArrayAdd($aInstallScriptsCopy, @ScriptDir & "\Logon\.Autorun.ps1")
 
 				; Add log file for diagnostics
-				_ArrayAdd($aAutoLogonCopy, $LogFullPath)
+				_ArrayAdd($aInstallScriptsCopy, $LogFullPath)
 
 				; Copy files to new Windows installation
-				For $iFile = 0 To UBound($aAutoLogonCopy) - 1
-					$ThisFile = $aAutoLogonCopy[$iFile]
+				For $iFile = 0 To UBound($aInstallScriptsCopy) - 1
+					$ThisFile = $aInstallScriptsCopy[$iFile]
 					If StringInStr(FileGetAttrib($ThisFile), "D") > 0 Then
 						$DirName = StringTrimLeft($ThisFile, StringInStr($ThisFile, "\", 0, -1))
 						$Return = DirCopy($ThisFile, $Target & "\" & $DirName, 1)
