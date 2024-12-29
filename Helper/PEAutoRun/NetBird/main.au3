@@ -12,7 +12,10 @@ $NetBirdPSK = ""
 
 ;==============================================================================
 
+#include <CommonFunctions.au3>
+
 Global $Title = "PENetBird"
+Global $LogFullPath = StringTrimRight(@ScriptFullPath, 3) & "log"
 Global $IsPE = StringInStr(@WindowsDir, "X:")
 If Not $IsPE Then Exit
 FileChangeDir(@ScriptDir)
@@ -77,53 +80,3 @@ Func _UpdateStatusBar($Text)
 
 	FileClose($hFile)
 EndFunc   ;==>_UpdateStatusBar
-
-Func _Log($Data)
-	ConsoleWrite(@CRLF & $Title & ": " & $Data)
-	FileWriteLine($Title & "_Log.txt", $Data)
-EndFunc   ;==>_Log
-
-Func _RunWait($sProgram, $Working = "", $Show = @SW_HIDE, $Opt = 8, $Live = False)
-	Local $sData, $iPid
-
-	$iPid = Run($sProgram, $Working, $Show, $Opt)
-	If @error Then
-		_Log("_RunWait: Couldn't Run " & $sProgram)
-		Return SetError(1, 0, 0)
-	EndIf
-
-	$sData = _ProcessWaitClose($iPid, $Live)
-
-	Return SetError(0, $iPid, $sData)
-EndFunc   ;==>_RunWait
-
-Func _ProcessWaitClose($iPid, $Live = False, $Diag = False)
-	Local $sData, $sStdRead
-
-	While 1
-		$sStdRead = StdoutRead($iPid)
-		If @error Or $sStdRead = "" Then StderrRead($iPid)
-		If @error And Not ProcessExists($iPid) Then ExitLoop
-		$sStdRead = StringReplace($sStdRead, @CR & @LF & @CR & @LF, @CR & @LF)
-
-		If $Diag Then
-			$sStdRead = StringReplace($sStdRead, @CRLF, "_@CRLF")
-			$sStdRead = StringReplace($sStdRead, @CR, "@CR" & @CR)
-			$sStdRead = StringReplace($sStdRead, @LF, "@LF" & @LF)
-			$sStdRead = StringReplace($sStdRead, "_@CRLF", "@CRLF" & @CRLF)
-		EndIf
-
-		If $sStdRead <> @CRLF Then
-			$sData &= $sStdRead
-			If $Live And $sStdRead <> "" Then
-				If StringRight($sStdRead, 2) = @CRLF Then $sStdRead = StringTrimRight($sStdRead, 2)
-				If StringRight($sStdRead, 1) = @LF Then $sStdRead = StringTrimRight($sStdRead, 1)
-				_Log($sStdRead)
-			EndIf
-		EndIf
-
-		Sleep(5)
-	WEnd
-
-	Return $sData
-EndFunc   ;==>_ProcessWaitClose

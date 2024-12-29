@@ -1,11 +1,13 @@
 ; This script starts a VNC server and updates the status bar in Windows Setup Helper GUI
 
-#include <WinAPIProc.au3>
+#include "WinAPIProc.au3"
+#Include "CommonFunctions.au3"
 
 Global $Title = "PEVNCServer"
 Global $Settings = @ScriptDir & "\Settings.ini"
 Global $VNCRegPath = "HKEY_CURRENT_USER\SOFTWARE\TightVNC\Server"
 Global $VNCExe = "tvnserver.exe"
+Global $LogFullPath = StringTrimRight(@ScriptFullPath, 3) & "log"
 Global $IsPE = StringInStr(@WindowsDir, "X:")
 If Not $IsPE Then Exit
 FileChangeDir(@ScriptDir)
@@ -96,10 +98,6 @@ Func _UpdateStatusBar()
 	FileWrite($hFile, "VNC Up" & @CRLF & "VNC Port: " & $Port & " VNC Password: " & $SetPass)
 
 	FileClose($hFile)
-EndFunc
-
-Func _Log($Data)
-	ConsoleWrite($Title & ": " & $Data & @CRLF)
 EndFunc
 
 Func _ProcessGetParent($i_pid)

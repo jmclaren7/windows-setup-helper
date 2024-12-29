@@ -4,22 +4,19 @@
 ; https://github.com/jmclaren7/autoit-scripts/blob/master/CommonFunctions.au3
 ;===============================================================================
 ; If these files have already been included using a custom path, you may need to remove them here
-;~ #include <Array.au3>
-;~ #include <AutoItConstants.au3>
-;~ #include <Date.au3>
-;~ #include <EditConstants.au3>
-;~ #include <File.au3>
-;~ #include <GUIConstantsEx.au3>
-;~ #include <GuiEdit.au3>
-;~ #include <GuiListBox.au3>
-;~ #include <APIFilesConstants.au3>
-;~ #include <Security.au3>
-;~ #include <String.au3>
-;~ #include <WinAPIFiles.au3>
-;~ #include <WinAPIProc.au3>
-;~ #include <WinAPIShPath.au3>
-;~ #include <WinAPISysWin.au3>
-;~ #include <WindowsConstants.au3>
+#include <Array.au3>
+#include <AutoItConstants.au3>
+#include <Date.au3>
+#include <File.au3>
+#include <GUIConstantsEx.au3>
+#include <GuiEdit.au3>
+#include <GuiListBox.au3>
+#include <String.au3>
+#include <WinAPIFiles.au3>
+#include <WinAPIProc.au3>
+#include <WinAPIShPath.au3>
+#include <WinAPISysWin.au3>
+#include <WindowsConstants.au3>
 ;===============================================================================
 
 ; #FUNCTION# ====================================================================================================================
@@ -120,7 +117,6 @@ EndFunc   ;==>_Timer
 ; Author ........: JohnMC - JohnsCS.com, based on AdamUL's _GetVisibleWindows
 ; Modified ......: 03/29/2024  --  v2.1
 ; ===============================================================================================================================
-;_ArrayDisplay(_GetVisibleWindows(), @extended)
 Func _GetVisibleWindows($GetText = False)
 	Local $NewCol, $TotalTime, $Timer
 
