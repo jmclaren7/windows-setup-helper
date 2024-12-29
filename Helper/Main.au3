@@ -395,14 +395,22 @@ While 1
 			; Set Autounattend.xml path in GUI
 			GUICtrlSetData($AutounattendInput, $SelectedAutounattendFile)
 
+			; Determine if format GUI is allowed
+			$EnableFormatGUI = IniRead($MainConfig, "General", "EnableFormatGUI", "False")
+
 			; Add disks to GUI
 			$aDiskInfo = _GetDisks()
 			Local $aDriveListItems[1]
 			For $i = UBound($aDiskInfo) - 1 To 0 Step -1
 				$ListItem = "Disk " & $aDiskInfo[$i][0] & " (" & $aDiskInfo[$i][4] & " Partitions)" & "  " & $aDiskInfo[$i][3] & "  " & $aDiskInfo[$i][1]
 				GUICtrlSetData($DiskList, $ListItem)
-				If $aDiskInfo[$i][0] = 0 Then _GUICtrlListBox_SelectString($DiskList, $ListItem)
+				If $aDiskInfo[$i][0] = 0 And $EnableFormatGUI = "True" Then _GUICtrlListBox_SelectString($DiskList, $ListItem)
 			Next
+
+			If $EnableFormatGUI <> "True" Then
+				GUICtrlSetState($WindowsDiskCheckbox, $GUI_CHECKED + $GUI_DISABLE)
+				GUICtrlSetState($DiskList, $GUI_DISABLE)
+			EndIf
 
 			GUISetState(@SW_SHOW, $AutoInstallForm)
 
@@ -490,7 +498,8 @@ While 1
 						_Log("StringRegExpReplace @error=" & @error)
 
 						; Disk/format options
-						If GUICtrlRead($WindowsDiskCheckbox) = $GUI_UNCHECKED Then
+
+						If GUICtrlRead($WindowsDiskCheckbox) = $GUI_UNCHECKED And $EnableFormatGUI = "True" Then
 							If EnvGet("firmware_type") = "Legacy" Then
 								$sAutounattendData = StringReplace($sAutounattendData, "<!--FormatBIOS", "")
 								$sAutounattendData = StringReplace($sAutounattendData, "FormatBIOS-->", "")
