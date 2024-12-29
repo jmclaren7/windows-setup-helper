@@ -665,6 +665,8 @@ While 1
 			ContinueLoop
 		EndIf
 
+		_RunTreeView($GUIMain, $PEInstallTreeView, 2, "[PE]")
+
 		$RebootPrompt = True ; Will trigger a prompt that will reboot on timeout
 		$AutoInstallWait = False
 	EndIf
@@ -976,8 +978,12 @@ Func _PopulateScripts($TreeID, $Folder)
 EndFunc   ;==>_PopulateScripts
 
 ; Run the slected items from a tree view or return a list of the selected items
-Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
+Func _RunTreeView($hWindow, $hTreeView, $Mode = Default, $Include = Default, $Exclude = Default)
 	_Log("_RunTreeView")
+
+	If $Mode = Default Then $Mode = 0 ; 0=List only, 1=Run, 2=Runwait
+	If $Include = Default Then $Include = ""
+	If $Exclude = Default Then $Exclude = ""
 
 	Local $aList[0]
 
@@ -989,11 +995,14 @@ Func _RunTreeView($hWindow, $hTreeView, $ListOnly = False)
 			$FileChecked = ControlTreeView($hWindow, "", $hTreeView, "IsChecked", "#" & $iTop & "|#" & $iSub)
 
 			If $FileChecked Then
+				If $Exclude <> "" And StringInStr($File, $Exclude) Then ContinueLoop
+				If $Include <> "" And Not StringInStr($File, $Include) Then ContinueLoop
+
 				$RunFullPath = @ScriptDir & "\" & $Folder & "\" & $File
 				_Log("  Checked: $RunFullPath=" & $RunFullPath)
-				If $ListOnly = False Then
+				If $Mode Then
 					ControlTreeView($hWindow, "", $hTreeView, "Uncheck", "#" & $iTop & "|#" & $iSub)
-					_RunFile($RunFullPath)
+					_RunFile($RunFullPath, Default, Default, $Mode)
 				EndIf
 				_ArrayAdd($aList, $RunFullPath)
 			EndIf
@@ -1031,8 +1040,12 @@ Func _RunFolder($Folder)
 EndFunc   ;==>_RunFolder
 
 ; Runs a file, automaticly handling file type and sub folders
-Func _RunFile($File, $Params = "", $WorkingDir = "")
+Func _RunFile($File, $Params = Default, $WorkingDir = Default, $Mode = Default)
 	_Log("_RunFile " & $File & " " & $Params)
+
+	If $Params = Default Then $Params = ""
+	If $WorkingDir = Default Then $WorkingDir = ""
+	If $Mode = Default Then $Mode = 1 ; 1=Run, 2=RunWait
 
 	If StringInStr(FileGetAttrib($File), "D") Then
 		; Folders that contain specific files can be executed
@@ -1054,13 +1067,23 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 			_Log("  au3")
 			$RunLine = @AutoItExe & " /AutoIt3ExecuteScript """ & $File & """ " & $Params
 			_Log("  $RunLine=" & $RunLine)
-			Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDIO_INHERIT_PARENT)
+
+			If $Mode = 1 Then
+				Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDIO_INHERIT_PARENT)
+			ElseIf $Mode = 2 Then
+				Return RunWait($RunLine, $WorkingDir, @SW_SHOW, $STDIO_INHERIT_PARENT)
+			EndIf
 
 		Case "ps1"
 			_Log("  ps1")
 			$RunLine = @ComSpec & " /c " & "powershell.exe -ExecutionPolicy Bypass -File """ & $File & """ " & $Params
 			_Log("  $RunLine=" & $RunLine)
-			Return Run($RunLine, $WorkingDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+
+			If $Mode = 1 Then
+				Return Run($RunLine, $WorkingDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+			ElseIf $Mode = 2 Then
+				Return RunWait($RunLine, $WorkingDir, @SW_HIDE, $STDERR_CHILD + $STDOUT_CHILD)
+			EndIf
 
 		Case "reg"
 			_Log("  reg")
@@ -1076,11 +1099,21 @@ Func _RunFile($File, $Params = "", $WorkingDir = "")
 			EndIf
 
 			_Log("  $RunLine=" & $RunLine)
-			Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+
+			If $Mode = 1 Then
+				Return Run($RunLine, $WorkingDir, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+			ElseIf $Mode = 2 Then
+				Return RunWait($RunLine, $WorkingDir, @SW_SHOW, $STDERR_CHILD + $STDOUT_CHILD)
+			EndIf
 
 		Case Else
 			_Log("  Other file type")
-			Return ShellExecute($File, $Params, $WorkingDir)
+
+			If $Mode = 1 Then
+				Return ShellExecute($File, $Params, $WorkingDir)
+			ElseIf $Mode = 2 Then
+				Return ShellExecuteWait($File, $Params, $WorkingDir)
+			EndIf
 
 	EndSwitch
 
