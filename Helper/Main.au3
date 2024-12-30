@@ -513,7 +513,10 @@ While 1
 							$DiskListText = _GUICtrlListBox_GetText($DiskList, $DiskListIndex)
 
 							If StringInStr($DiskListText, "USB", 0) Then
-								If MsgBox($MB_OK + $MB_ICONWARNING, $TitleShort, "The selected drive might be a USB drive and not the intended target disk") <> $MB_OK Then ContinueLoop
+								If MsgBox($MB_OK + $MB_ICONWARNING, $TitleShort, "The selected drive might be a USB drive and not the intended target disk") <> $MB_OK Then
+									GUISetState(@SW_ENABLE, $AutoInstallForm)
+									ContinueLoop
+								EndIf
 							EndIf
 
 							$aTargetDisk = StringRegExp($DiskListText, '(?i)Disk (\d{1}) ', $STR_REGEXPARRAYMATCH)
