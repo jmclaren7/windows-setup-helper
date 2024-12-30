@@ -642,7 +642,7 @@ While 1
 				_Log("Test file found on drive " & $Drive)
 
 				; Add autorun script that's executed on first logon
-				_ArrayAdd($aInstallScriptsCopy, @ScriptDir & "\Logon\.Autorun.ps1")
+				_ArrayAdd($aInstallScriptsCopy, @ScriptDir & "\Scripts\.Autorun.ps1")
 
 				; Add log file for diagnostics
 				_ArrayAdd($aInstallScriptsCopy, $LogFullPath)
