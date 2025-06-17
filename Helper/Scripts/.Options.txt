@@ -1,3 +1,4 @@
 Power Settings.bat
 Dell Command Update (Online).ps1
 Start Windows Updates.bat
+Debloat[system].bat
