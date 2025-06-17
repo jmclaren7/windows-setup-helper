@@ -22,7 +22,7 @@ if ($args[0] -ne 'system' -and $installAge.Days -gt 1) {
 }
 
 # Set the file types to run
-$FileTypes = ('*.bat', '*.ps1', '*.exe', '*.reg', '*.cmd')
+$FileTypes = ('*.bat', '*.ps1', '*.exe', '*.reg', '*.cmd', '*.msi')
 $LaunchFiles = ('main.ps1', 'main.bat', 'main.exe', 'a.bat')
 
 # Get a list of files from the working directory
@@ -68,10 +68,12 @@ $Run | ForEach-Object {
         elseif ($_.Extension -eq ".ps1") {
             $Proc = Start-Process powershell.exe -ArgumentList "-file `"$($_.FullName)`"" -PassThru
         }
+        elseif ($_.Extension -eq ".msi") {
+            $Proc = Start-Process msiexec.exe -ArgumentList "/i `"$($_.FullName)`" /passive" -PassThru
+        }
         else {
             $Proc = Start-Process $_.FullName -PassThru
         }
-
 
         # If the file name noes not have [background] in it, wait for it to finish, 20 second timeout
         if ($_.Name -inotlike '*`[background`]*') { 
