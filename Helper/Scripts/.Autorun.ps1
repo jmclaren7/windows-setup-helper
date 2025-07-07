@@ -42,6 +42,8 @@ else {
 # Run each file in the list
 $Run | ForEach-Object {
     _Log($_.Name)
+
+    Unblock-File -Path $_.FullName
     
     Start-Sleep 2
 
