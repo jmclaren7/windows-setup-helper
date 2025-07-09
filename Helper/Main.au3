@@ -370,7 +370,7 @@ While 1
 			#EndRegion ### END Koda GUI section ###
 
 			_GUICtrlComboBox_SetDroppedWidth($TimezoneCombo, 400)
-			GUICtrlSetLimit($AdminPasswordInput, 15)
+			GUICtrlSetLimit($ComputerNameInput, 15, 2)
 			GUICtrlSetState($Bypass11Checkbox, $GUI_CHECKED)
 
 			; Set GUI Icon
