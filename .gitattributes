@@ -1,3 +1,3 @@
 *.au3 diff eol=crlf
 *.a3x binary
-*.reg text working-tree-encoding=UTF-16 eol=crlf
+*.reg text working-tree-encoding=UTF-16LE-BOM eol=crlf
