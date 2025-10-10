@@ -1,10 +1,8 @@
 #include-once
 
-#include "StructureConstants.au3"
-
 ; #INDEX# =======================================================================================================================
 ; Title .........: Pipes
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with Named Pipes.
 ;                  A named pipe is a named, one-way or duplex pipe for communication between the pipe server and one or more pipe

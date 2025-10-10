@@ -2,11 +2,12 @@
 
 #include "APIThemeConstants.au3"
 #include "StructureConstants.au3"
-#include "WinAPIInternals.au3"
+
+#include "WinAPIGdiInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPITheme.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -87,7 +88,7 @@ Global Const $tagDTTOPTS = 'dword Size;dword Flags;dword clrText;dword clrBorder
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_BeginBufferedPaint($hDC, $tTarget, ByRef $hNewDC, $iFormat = 0, $iFlags = 0, $tExclude = 0, $iAlpha = -1)
+Func _WinAPI_BeginBufferedPaint($hDC, $tTarget, ByRef $hNewDC, $iFormat = $BPBF_COMPATIBLEBITMAP, $iFlags = 0, $tExclude = 0, $iAlpha = -1)
 	Local Const $tagBP_PAINTPARAMS = 'dword cbSize;dword dwFlags;ptr prcExclude;ptr pBlendFunction'
 	Local $tPP = DllStructCreate($tagBP_PAINTPARAMS)
 
@@ -384,7 +385,7 @@ EndFunc   ;==>_WinAPI_GetThemeBackgroundRegion
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_GetThemeBitmap($hTheme, $iPartID, $iStateID, $iPropID, $iFlag = 0x01)
+Func _WinAPI_GetThemeBitmap($hTheme, $iPartID, $iStateID, $iPropID, $iFlag = $GBF_DIRECT)
 	Local $sResult = DllCall('uxtheme.dll', 'long', 'GetThemeBitmap', 'handle', $hTheme, 'int', $iPartID, 'int', $iStateID, _
 			'int', $iPropID, 'ulong', $iFlag, 'handle*', 0)
 	If @error Then Return SetError(@error, @extended, -1)

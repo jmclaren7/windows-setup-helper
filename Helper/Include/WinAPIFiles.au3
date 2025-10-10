@@ -3,15 +3,19 @@
 #include "APIFilesConstants.au3"
 #include "FileConstants.au3"
 #include "MemoryConstants.au3" ; For $PAGE_ * constants
+#include "StringConstants.au3"
+#include "StructureConstants.au3"
 #include "WinAPIConv.au3"
 #include "WinAPIError.au3"
+
+#include "WinAPIInternals.au3"
 #include "WinAPIMem.au3"
 #include "WinAPIMisc.au3"
 #include "WinAPIShPath.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIFiles.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -263,11 +267,11 @@ EndFunc   ;==>_WinAPI_CreateDirectoryEx
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_CreateFileEx($sFilePath, $iCreation, $iAccess = 0, $iShare = 0, $iFlagsAndAttributes = 0, $tSecurity = 0, $hTemplate = 0)
+Func _WinAPI_CreateFileEx($sFilePath, $iCreation, $iAccess = 0, $iShare = 0, $iFlagsAndAttributes = $SECURITY_ANONYMOUS, $tSecurity = 0, $hTemplate = 0)
 	Local $aCall = DllCall('kernel32.dll', 'handle', 'CreateFileW', 'wstr', $sFilePath, 'dword', $iAccess, 'dword', $iShare, _
 			'struct*', $tSecurity, 'dword', $iCreation, 'dword', $iFlagsAndAttributes, 'handle', $hTemplate)
 	If @error Then Return SetError(@error, @extended, 0)
-	If $aCall[0] = Ptr(-1) Then Return SetError(10, _WinAPI_GetLastError(), 0) ; $INVALID_HANDLE_VALUE
+	If $aCall[0] = Ptr(-1) Then Return SetError(10, _WinAPI_GetLastError(), 0) ; Ptr(-1) $INVALID_HANDLE_VALUE
 
 	Return $aCall[0]
 EndFunc   ;==>_WinAPI_CreateFileEx
@@ -276,7 +280,7 @@ EndFunc   ;==>_WinAPI_CreateFileEx
 ; Author.........: Yashied
 ; Modified.......: JPM
 ; ===============================================================================================================================
-Func _WinAPI_CreateFileMapping($hFile, $iSize = 0, $sName = '', $iProtect = 0x0004, $tSecurity = 0)
+Func _WinAPI_CreateFileMapping($hFile, $iSize = 0, $sName = '', $iProtect = $PAGE_READWRITE, $tSecurity = 0)
 	If Not StringStripWS($sName, $STR_STRIPLEADING + $STR_STRIPTRAILING) Then $sName = Null
 
 	Local $aCall = DllCall('kernel32.dll', 'handle', 'CreateFileMappingW', 'handle', $hFile, 'struct*', $tSecurity, _
@@ -305,12 +309,11 @@ EndFunc   ;==>_WinAPI_CreateHardLink
 ; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_CreateObjectID($sFilePath)
-	; Local Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 	Local $hFile = _WinAPI_CreateFileEx($sFilePath, $OPEN_EXISTING, 0, $FILE_SHARE_READWRITE, $FILE_FLAG_BACKUP_SEMANTICS)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
 	Local $tFOID = DllStructCreate('byte[16];byte[48]')
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x000900C0, 'ptr', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $FSCTL_CREATE_OR_GET_OBJECT_ID, 'ptr', 0, _
 			'dword', 0, 'struct*', $tFOID, 'dword', DllStructGetSize($tFOID), 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, 0)
 
@@ -380,11 +383,10 @@ EndFunc   ;==>_WinAPI_DeleteFile
 ; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_DeleteObjectID($sFilePath)
-	; Local Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 	Local $hFile = _WinAPI_CreateFileEx($sFilePath, $OPEN_EXISTING, $GENERIC_WRITE, $FILE_SHARE_READWRITE, $FILE_FLAG_BACKUP_SEMANTICS)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x000900A0, 'ptr', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $FSCTL_DELETE_OBJECT_ID, 'ptr', 0, _
 			'dword', 0, 'ptr', 0, 'dword', 0, 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, 0)
 
@@ -421,7 +423,7 @@ EndFunc   ;==>_WinAPI_DeviceIoControl
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_DuplicateEncryptionInfoFile($sSrcFilePath, $sDestFilePath, $iCreation = 2, $iAttributes = 0, $tSecurity = 0)
+Func _WinAPI_DuplicateEncryptionInfoFile($sSrcFilePath, $sDestFilePath, $iCreation = $CREATE_ALWAYS, $iAttributes = 0, $tSecurity = 0)
 	Local $aCall = DllCall('advapi32.dll', 'dword', 'DuplicateEncryptionInfoFile', 'wstr', $sSrcFilePath, 'wstr', $sDestFilePath, _
 			'dword', $iCreation, 'dword', $iAttributes, 'struct*', $tSecurity)
 	If @error Then Return SetError(@error, @extended, 0)
@@ -438,7 +440,7 @@ Func _WinAPI_EjectMedia($sDrive)
 	Local $hFile = _WinAPI_CreateFileEx('\\.\' & $sDrive, $OPEN_EXISTING, $GENERIC_READ, $FILE_SHARE_READWRITE)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x002D4808, 'ptr', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_STORAGE_EJECT_MEDIA, 'ptr', 0, _
 			'dword', 0, 'ptr', 0, 'dword', 0, 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, 0)
 
@@ -477,8 +479,7 @@ Func _WinAPI_EnumFiles($sDir, $iFlag = 0, $sTemplate = '', $bExclude = False)
 	Local $aCall, $iError = 0
 	Local $aData[501][7] = [[0]]
 
-	; Local Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
-	Local $hDir = _WinAPI_CreateFileEx($sDir, $OPEN_EXISTING, 0x00000001, $FILE_SHARE_ANY, $FILE_FLAG_BACKUP_SEMANTICS)
+	Local $hDir = _WinAPI_CreateFileEx($sDir, $OPEN_EXISTING, $FILE_SHARE_READ, $FILE_SHARE_ANY, $FILE_FLAG_BACKUP_SEMANTICS)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
 	Local $pBuffer = __HeapAlloc($__g_iHeapSize)
@@ -515,7 +516,7 @@ Func _WinAPI_EnumFiles($sDir, $iFlag = 0, $sTemplate = '', $bExclude = False)
 			Case Else
 				Switch $iFlag
 					Case 1, 2
-						If BitAND($iAttrib, 0x00000010) Then
+						If BitAND($iAttrib, $FILE_ATTRIBUTE_DIRECTORY) Then
 							If $iFlag = 1 Then
 								ContinueLoop
 							EndIf
@@ -555,7 +556,6 @@ Func _WinAPI_EnumFileStreams($sFilePath)
 	Local $pData = DllStructGetPtr($tData)
 	Local $aData[101][2] = [[0]]
 
-	; Local Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 	Local $hFile = _WinAPI_CreateFileEx($sFilePath, $OPEN_EXISTING, 0, $FILE_SHARE_READWRITE, $FILE_FLAG_BACKUP_SEMANTICS)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
@@ -702,7 +702,7 @@ EndFunc   ;==>_WinAPI_FindCloseChangeNotification
 Func _WinAPI_FindFirstChangeNotification($sDirectory, $iFlags, $bSubtree = False)
 	Local $aCall = DllCall('kernel32.dll', 'handle', 'FindFirstChangeNotificationW', 'wstr', $sDirectory, 'bool', $bSubtree, _
 			'dword', $iFlags)
-	If @error Or ($aCall[0] = Ptr(-1)) Then Return SetError(@error + 10, @extended, 0) ; $INVALID_HANDLE_VALUE
+	If @error Or ($aCall[0] = Ptr(-1)) Then Return SetError(@error + 10, @extended, 0) ; Ptr(-1) $INVALID_HANDLE_VALUE
 
 	Return $aCall[0]
 EndFunc   ;==>_WinAPI_FindFirstChangeNotification
@@ -714,7 +714,7 @@ EndFunc   ;==>_WinAPI_FindFirstChangeNotification
 Func _WinAPI_FindFirstFile($sFilePath, $tData)
 	Local $aCall = DllCall('kernel32.dll', 'handle', 'FindFirstFileW', 'wstr', $sFilePath, 'struct*', $tData)
 	If @error Then Return SetError(@error, @extended, 0)
-	If $aCall[0] = Ptr(-1) Then Return SetError(10, _WinAPI_GetLastError(), 0) ; $INVALID_HANDLE_VALUE
+	If $aCall[0] = Ptr(-1) Then Return SetError(10, _WinAPI_GetLastError(), 0) ; Ptr(-1) $INVALID_HANDLE_VALUE
 
 	Return $aCall[0]
 EndFunc   ;==>_WinAPI_FindFirstFile
@@ -727,7 +727,7 @@ Func _WinAPI_FindFirstFileName($sFilePath, ByRef $sLink)
 	$sLink = ''
 
 	Local $aCall = DllCall('kernel32.dll', 'handle', 'FindFirstFileNameW', 'wstr', $sFilePath, 'dword', 0, 'dword*', 4096, 'wstr', '')
-	If @error Or ($aCall[0] = Ptr(-1)) Then Return SetError(@error + 10, @extended, 0) ; $INVALID_HANDLE_VALUE
+	If @error Or ($aCall[0] = Ptr(-1)) Then Return SetError(@error + 10, @extended, 0) ; Ptr(-1) $INVALID_HANDLE_VALUE
 
 	$sLink = $aCall[4]
 	Return $aCall[0]
@@ -740,7 +740,7 @@ EndFunc   ;==>_WinAPI_FindFirstFileName
 Func _WinAPI_FindFirstStream($sFilePath, $tData)
 	Local $aCall = DllCall('kernel32.dll', 'handle', 'FindFirstStreamW', 'wstr', $sFilePath, 'uint', 0, 'struct*', $tData, 'dword', 0)
 	If @error Then Return SetError(@error, @extended, 0)
-	If $aCall[0] = Ptr(-1) Then Return SetError(10, _WinAPI_GetLastError(), 0) ; $INVALID_HANDLE_VALUE
+	If $aCall[0] = Ptr(-1) Then Return SetError(10, _WinAPI_GetLastError(), 0) ; Ptr(-1) $INVALID_HANDLE_VALUE
 
 	Return $aCall[0]
 EndFunc   ;==>_WinAPI_FindFirstStream
@@ -868,7 +868,7 @@ Func _WinAPI_GetCDType($sDrive)
 	DllStructSetData($tCDB, 7, 0, 1)
 	DllStructSetData($tCDB, 7, 0, 2)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x0004D004, 'struct*', $tSPT, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_SCSI_PASS_THROUGH, 'struct*', $tSPT, _
 			'dword', $iSize, 'struct*', $tSPT, 'dword', DllStructGetSize($tSPT), 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, 0)
 
@@ -896,11 +896,10 @@ EndFunc   ;==>_WinAPI_GetCompressedFileSize
 ; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_GetCompression($sFilePath)
-	; Local Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 	Local $hFile = _WinAPI_CreateFileEx($sFilePath, $OPEN_EXISTING, $GENERIC_READ, $FILE_SHARE_READWRITE, $FILE_FLAG_BACKUP_SEMANTICS)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x0009003C, 'ptr', 0, 'dword', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $FSCTL_GET_COMPRESSION, 'ptr', 0, 'dword', 0, _
 			'ushort*', 0, 'dword', 2, 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, -1)
 
@@ -949,7 +948,7 @@ Func _WinAPI_GetDriveBusType($sDrive)
 	DllStructSetData($tSPQ, 'PropertyId', 0)
 	DllStructSetData($tSPQ, 'QueryType', 0)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x002D1400, 'struct*', $tSPQ, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_STORAGE_QUERY_PROPERTY, 'struct*', $tSPQ, _
 			'dword', DllStructGetSize($tSPQ), 'struct*', $tSDD, 'dword', DllStructGetSize($tSDD), _
 			'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, -1)
@@ -966,7 +965,7 @@ Func _WinAPI_GetDriveGeometryEx($iDrive)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
 	Local $tDGEX = DllStructCreate('uint64;dword;dword;dword;dword;uint64')
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x000700A0, 'ptr', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, 'ptr', 0, _
 			'dword', 0, 'struct*', $tDGEX, 'dword', DllStructGetSize($tDGEX), 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, 0)
 
@@ -986,7 +985,7 @@ Func _WinAPI_GetDriveNumber($sDrive)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
 	Local $tSDN = DllStructCreate('dword;dword;dword')
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x002D1080, 'ptr', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_STORAGE_GET_DEVICE_NUMBER, 'ptr', 0, _
 			'dword', 0, 'struct*', $tSDN, 'dword', DllStructGetSize($tSDN), 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, 0)
 
@@ -1203,12 +1202,11 @@ EndFunc   ;==>_WinAPI_GetLogicalDrives
 ; Modified.......: Jpm
 ; ===============================================================================================================================
 Func _WinAPI_GetObjectID($sFilePath)
-	; Local Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 	Local $hFile = _WinAPI_CreateFileEx($sFilePath, $OPEN_EXISTING, 0, $FILE_SHARE_READWRITE, $FILE_FLAG_BACKUP_SEMANTICS)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
 	Local $tFOID = DllStructCreate('byte[16];byte[48]')
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x0009009C, 'ptr', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $FSCTL_GET_OBJECT_ID, 'ptr', 0, _
 			'dword', 0, 'struct*', $tFOID, 'dword', DllStructGetSize($tFOID), 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, 0)
 
@@ -1255,7 +1253,7 @@ Func _WinAPI_GetPEType($sFilePath)
 			$iError = 3
 			ExitLoop
 		EndIf
-		If Not _WinAPI_SetFilePointerEx($hFile, 0x0000003C) Then
+		If Not _WinAPI_SetFilePointerEx($hFile, 0x0000003C) Then ; offset 3C
 			$iError = @error + 40
 			ExitLoop
 		EndIf
@@ -1409,7 +1407,7 @@ Func _WinAPI_IsDoorOpen($sDrive)
 	DllStructSetData($tCDB, 5, 0)
 	DllStructSetData($tCDB, 6, 0)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x0004D004, 'struct*', $tSPT, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_SCSI_PASS_THROUGH, 'struct*', $tSPT, _
 			'dword', $iSize, 'struct*', $tSPT, 'dword', DllStructGetSize($tSPT), 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, False)
 
@@ -1441,7 +1439,7 @@ Func _WinAPI_IsWritable($sDrive)
 	Local $hFile = _WinAPI_CreateFileEx('\\.\' & $sDrive, $OPEN_EXISTING, 0, $FILE_SHARE_READWRITE)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x00070024, 'ptr', 0, 'dword', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_DISK_IS_WRITABLE, 'ptr', 0, 'dword', 0, _
 			'ptr', 0, 'dword', 0, 'dword*', 0, 'ptr', 0)
 	Local Const $ERROR_WRITE_PROTECT = 19 ; The media is write protected.
 	If __CheckErrorCloseHandle($aCall, $hFile, 1) <> 10 And @extended = $ERROR_WRITE_PROTECT Then Return SetError(@error, @extended, 0)
@@ -1457,7 +1455,7 @@ Func _WinAPI_LoadMedia($sDrive)
 	Local $hFile = _WinAPI_CreateFileEx('\\.\' & $sDrive, $OPEN_EXISTING, $GENERIC_READ, $FILE_SHARE_READWRITE)
 	If @error Then Return SetError(@error + 20, @extended, False)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x002D480C, 'ptr', 0, 'dword', 0, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_STORAGE_LOAD_MEDIA, 'ptr', 0, 'dword', 0, _
 			'ptr', 0, 'dword', 0, 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, False)
 
@@ -1472,7 +1470,7 @@ Func _WinAPI_LockDevice($sDrive, $bLock)
 	Local $hFile = _WinAPI_CreateFileEx('\\.\' & $sDrive, $OPEN_EXISTING, $GENERIC_READWRITE, $FILE_SHARE_READWRITE)
 	If @error Then Return SetError(@error + 20, @extended, False)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x002D4804, 'boolean*', $bLock, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $IOCTL_STORAGE_MEDIA_REMOVAL, 'boolean*', $bLock, _
 			'dword', 1, 'ptr', 0, 'dword', 0, 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, False)
 
@@ -1541,6 +1539,7 @@ Func _WinAPI_OpenFileById($hFile, $vID, $iAccess = 0, $iShare = 0, $iFlags = 0)
 			EndIf
 			$iType = 1
 		Case IsDllStruct($vID)
+		Case IsDllStruct($vID)
 			If Not _WinAPI_MoveMemory(DllStructGetPtr($tFIDD, 3), DllStructGetPtr($vID), 16) Then
 				Return SetError(@error + 40, 0, 0)
 			EndIf
@@ -1552,7 +1551,6 @@ Func _WinAPI_OpenFileById($hFile, $vID, $iAccess = 0, $iShare = 0, $iFlags = 0)
 	DllStructSetData($tFIDD, 1, DllStructGetSize($tFIDD))
 	DllStructSetData($tFIDD, 2, $iType)
 	If IsString($hFile) Then
-		; Local Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 		$hObj = _WinAPI_CreateFileEx($hFile, $OPEN_EXISTING, 0, $FILE_SHARE_READWRITE, $FILE_FLAG_BACKUP_SEMANTICS)
 		If @error Then Return SetError(@error + 20, @extended, 0)
 	Else
@@ -1560,7 +1558,7 @@ Func _WinAPI_OpenFileById($hFile, $vID, $iAccess = 0, $iShare = 0, $iFlags = 0)
 	EndIf
 	$aCall = DllCall('kernel32.dll', 'handle', 'OpenFileById', 'handle', $hObj, 'struct*', $tFIDD, 'dword', $iAccess, _
 			'dword', $iShare, 'ptr', 0, 'dword', $iFlags)
-	If @error Or ($aCall[0] = Ptr(-1)) Then $iError = @error + 10 ; $INVALID_HANDLE_VALUE
+	If @error Or ($aCall[0] = Ptr(-1)) Then $iError = @error + 10 ; Ptr(-1) $INVALID_HANDLE_VALUE
 	If IsString($hFile) Then
 		DllCall("kernel32.dll", "bool", "CloseHandle", "handle", $hObj)
 	EndIf
@@ -1573,7 +1571,7 @@ EndFunc   ;==>_WinAPI_OpenFileById
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_OpenFileMapping($sName, $iAccess = 0x0006, $bInherit = False)
+Func _WinAPI_OpenFileMapping($sName, $iAccess = $FILE_MAP_READWRITE, $bInherit = False)
 	Local $aCall = DllCall('kernel32.dll', 'handle', 'OpenFileMappingW', 'dword', $iAccess, 'bool', $bInherit, 'wstr', $sName)
 	If @error Then Return SetError(@error, @extended, 0)
 	; If Not $aCall[0] Then Return SetError(1000, 0, 0)
@@ -1653,7 +1651,7 @@ EndFunc   ;==>_WinAPI_RemoveDirectory
 ; ===============================================================================================================================
 Func _WinAPI_ReOpenFile($hFile, $iAccess, $iShare, $iFlags = 0)
 	Local $aCall = DllCall('kernel32.dll', 'handle', 'ReOpenFile', 'handle', $hFile, 'dword', $iAccess, 'dword', $iShare, 'dword', $iFlags)
-	If @error Or ($aCall[0] = Ptr(-1)) Then Return SetError(@error, @extended, 0) ; $INVALID_HANDLE_VALUE
+	If @error Or ($aCall[0] = Ptr(-1)) Then Return SetError(@error, @extended, 0) ; Ptr(-1) $INVALID_HANDLE_VALUE
 	; If $aCall[0] = Ptr(-1) Then Return SetError(1000, 0, 0)
 
 	Return $aCall[0]
@@ -1693,11 +1691,10 @@ EndFunc   ;==>_WinAPI_SearchPath
 ; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_SetCompression($sFilePath, $iCompression)
-	; Local Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 	Local $hFile = _WinAPI_CreateFileEx($sFilePath, $OPEN_EXISTING, $GENERIC_READWRITE, $FILE_SHARE_READWRITE, $FILE_FLAG_BACKUP_SEMANTICS)
 	If @error Then Return SetError(@error + 20, @extended, 0)
 
-	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', 0x0009C040, _
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'DeviceIoControl', 'handle', $hFile, 'dword', $FSCTL_SET_COMPRESSION, _
 			'ushort*', $iCompression, 'dword', 2, 'ptr', 0, 'dword', 0, 'dword*', 0, 'ptr', 0)
 	If __CheckErrorCloseHandle($aCall, $hFile) Then Return SetError(@error, @extended, 0)
 
@@ -1767,7 +1764,7 @@ EndFunc   ;==>_WinAPI_SetFilePointer
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_SetFilePointerEx($hFile, $iPos, $iMethod = 0)
+Func _WinAPI_SetFilePointerEx($hFile, $iPos, $iMethod = $FILE_BEGIN)
 	Local $aCall = DllCall('kernel32.dll', 'bool', 'SetFilePointerEx', 'handle', $hFile, 'int64', $iPos, 'int64*', 0, 'dword', $iMethod)
 	If @error Then Return SetError(@error, @extended, False)
 	; If Not $aCall[0] Then Return SetError(1000, 0, 0)

@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPIFiles Constants UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants that can be used with UDF library
 ; Author(s) .....: Yashied, Jpm
@@ -43,16 +43,7 @@ Global Const $PROGRESS_STOP = 2
 Global Const $PROGRESS_QUIET = 3
 
 ; _WinAPI_CreateFileEx(), _WinAPI_SetFileAttributes(), _WinAPI_SetFileAttributes()
-; Global Const $CREATE_NEW = 1
-; Global Const $CREATE_ALWAYS = 2
-; Global Const $OPEN_EXISTING = 3
-; Global Const $OPEN_ALWAYS = 4
-; Global Const $TRUNCATE_EXISTING = 5
-
-; Global Const $GENERIC_ALL = 0x10000000
-; Global Const $GENERIC_EXECUTE = 0x20000000
-; Global Const $GENERIC_WRITE = 0x40000000
-; Global Const $GENERIC_READ = 0x80000000
+; Moved in FileConstants.au3
 
 Global Const $FILE_APPEND_DATA = 0x0004
 Global Const $FILE_DELETE_CHILD = 0x0040
@@ -70,25 +61,7 @@ Global Const $FILE_LIST_DIRECTORY = $FILE_READ_DATA
 Global Const $FILE_TRAVERSE = $FILE_EXECUTE
 Global Const $FILE_ALL_ACCESS = 0x001F01FF ;  BitOR($STANDARD_RIGHTS_ALL, $FILE_APPEND_DATA, $FILE_DELETE_CHILD, $FILE_EXECUTE, $FILE_READ_ATTRIBUTES, $FILE_READ_DATA, $FILE_READ_EA, $FILE_WRITE_ATTRIBUTES, $FILE_WRITE_DATA, $FILE_WRITE_EA)
 
-; Global Const $FILE_SHARE_READ = 0x01
-; Global Const $FILE_SHARE_WRITE = 0x02
-; Global Const $FILE_SHARE_DELETE = 0x04
-
-; Global Const $FILE_ATTRIBUTE_READONLY = 0x00000001
-; Global Const $FILE_ATTRIBUTE_HIDDEN = 0x00000002
-; Global Const $FILE_ATTRIBUTE_SYSTEM = 0x00000004
-; Global Const $FILE_ATTRIBUTE_DIRECTORY = 0x00000010
-; Global Const $FILE_ATTRIBUTE_ARCHIVE = 0x00000020
-; Global Const $FILE_ATTRIBUTE_DEVICE = 0x00000040
-; Global Const $FILE_ATTRIBUTE_NORMAL = 0x00000080
-; Global Const $FILE_ATTRIBUTE_TEMPORARY = 0x00000100
-; Global Const $FILE_ATTRIBUTE_SPARSE_FILE = 0x00000200
-; Global Const $FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400
-; Global Const $FILE_ATTRIBUTE_COMPRESSED = 0x00000800
-; Global Const $FILE_ATTRIBUTE_OFFLINE = 0x00001000
-; Global Const $FILE_ATTRIBUTE_NOT_CONTENT_INDEXED = 0x00002000
-; Global Const $FILE_ATTRIBUTE_ENCRYPTED = 0x00004000
-
+; Moved in *.au3
 Global Const $FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 Global Const $FILE_FLAG_DELETE_ON_CLOSE = 0x04000000
 Global Const $FILE_FLAG_NO_BUFFERING = 0x20000000
@@ -109,17 +82,6 @@ Global Const $SECURITY_IMPERSONATION = 0x00020000
 
 ; _WinAPI_CreateFileMapping(), _WinAPI_OpenFileMapping()
 ; Moved in MemoryConstants.au3
-; Global Const $PAGE_EXECUTE = 0x0010
-; Global Const $PAGE_EXECUTE_READ = 0x0020
-; Global Const $PAGE_EXECUTE_READWRITE = 0x0040
-; Global Const $PAGE_EXECUTE_WRITECOPY = 0x0080
-; Global Const $PAGE_GUARD = 0x0100
-; Global Const $PAGE_NOACCESS = 0x0001
-; Global Const $PAGE_NOCACHE = 0x0200
-; Global Const $PAGE_READONLY = 0x0002
-; Global Const $PAGE_READWRITE = 0x0004
-; Global Const $PAGE_WRITECOMBINE = 0x0400
-; Global Const $PAGE_WRITECOPY = 0x0008
 
 Global Const $SEC_COMMIT = 0x08000000
 Global Const $SEC_IMAGE = 0x01000000
@@ -139,6 +101,7 @@ Global Const $FILE_MAP_COPY = 0x0001
 Global Const $FILE_MAP_EXECUTE = 0x0020
 Global Const $FILE_MAP_READ = 0x0004
 Global Const $FILE_MAP_WRITE = 0x0002
+Global Const $FILE_MAP_READWRITE = 0x0006 ; BitOR($FILE_MAP_READ, $FILE_MAP_WRITE)
 Global Const $FILE_MAP_ALL_ACCESS = $SECTION_ALL_ACCESS
 
 ; _WinAPI_DefineDosDevice()

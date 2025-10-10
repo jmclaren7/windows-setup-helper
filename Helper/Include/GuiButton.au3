@@ -1,16 +1,18 @@
 #include-once
 
-#include "APIResConstants.au3"
+#include "GuiCtrlInternals.au3"
+
 #include "ButtonConstants.au3"
 #include "SendMessage.au3"
-#include "UDFGlobalID.au3"
+#include "StructureConstants.au3"
 #include "WinAPIConv.au3"
+#include "WinAPIHObj.au3"
 #include "WinAPIIcons.au3"
-#include "WinAPISysInternals.au3"
+#include "WinAPISys.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Button
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with Button control management.
 ;                  A button is a control the user can click to provide input to an application.
@@ -119,7 +121,7 @@ Func _GUICtrlButton_Create($hWnd, $sText, $iX, $iY, $iWidth, $iHeight, $iStyle =
 		Return SetError(2, 0, 0)
 	EndIf
 
-	Local $iForcedStyle = BitOR($__UDFGUICONSTANT_WS_TABSTOP, $__UDFGUICONSTANT_WS_VISIBLE, $__UDFGUICONSTANT_WS_CHILD, $BS_NOTIFY)
+	Local $iForcedStyle = BitOR($__GUICTRLCONSTANT_WS_TABSTOP, $__GUICTRLCONSTANT_WS_VISIBLE, $__GUICTRLCONSTANT_WS_CHILD, $BS_NOTIFY)
 
 	If $iStyle = -1 Then
 		$iStyle = $iForcedStyle
@@ -127,7 +129,7 @@ Func _GUICtrlButton_Create($hWnd, $sText, $iX, $iY, $iWidth, $iHeight, $iStyle =
 		$iStyle = BitOR($iStyle, $iForcedStyle)
 	EndIf
 	If $iExStyle = -1 Then $iExStyle = 0
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 	Local $hButton = _WinAPI_CreateWindowEx($iExStyle, $__BUTTONCONSTANT_ClassName, $sText, $iStyle, $iX, $iY, $iWidth, $iHeight, $hWnd, $nCtrlID)
 	_SendMessage($hButton, $__BUTTONCONSTANT_WM_SETFONT, _WinAPI_GetStockObject($__BUTTONCONSTANT_DEFAULT_GUI_FONT), True)
@@ -147,7 +149,7 @@ Func _GUICtrlButton_Destroy(ByRef $hWnd)
 			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 			Local $hParent = _WinAPI_GetParent($hWnd)
 			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+			Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 			If Not $iRet Then
 				; can check for errors here if needed, for debug
 			EndIf

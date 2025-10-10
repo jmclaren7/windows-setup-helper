@@ -2,14 +2,18 @@
 
 #include "APILocaleConstants.au3"
 #include "APIResConstants.au3"
+#include "StringConstants.au3"
+#include "StructureConstants.au3"
 #include "WinAPIConv.au3"
 #include "WinAPIError.au3"
 #include "WinAPIIcons.au3"
+
 #include "WinAPIInternals.au3"
+#include "WinAPIMem.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIRes.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -45,6 +49,7 @@ Global Const $tagVS_FIXEDFILEINFO = 'dword Signature;dword StrucVersion;dword Fi
 ; _WinAPI_GetCaretPos
 ; _WinAPI_GetClipCursor
 ; _WinAPI_GetCursor
+; _WinAPI_GetCursorSize
 ; _WinAPI_GetFileVersionInfo
 ; _WinAPI_HideCaret
 ; _WinAPI_LoadBitmap
@@ -59,9 +64,9 @@ Global Const $tagVS_FIXEDFILEINFO = 'dword Signature;dword StrucVersion;dword Fi
 ; _WinAPI_SetCaretBlinkTime
 ; _WinAPI_SetCaretPos
 ; _WinAPI_SetCursor
+; _WinAPI_SetCursorSize
 ; _WinAPI_SetSystemCursor
 ; _WinAPI_ShowCaret
-; _WinAPI_ShowCursor
 ; _WinAPI_SizeOfResource
 ; _WinAPI_UpdateResource
 ; _WinAPI_VerQueryRoot
@@ -366,6 +371,18 @@ Func _WinAPI_GetCursor()
 EndFunc   ;==>_WinAPI_GetCursor
 
 ; #FUNCTION# ====================================================================================================================
+; Author.........: Jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_GetCursorSize()
+	; Validated under Win10
+	Local $iSize = RegRead("HKCU\Software\Microsoft\Accessibility", "CursorSize")
+	If @error Then Return SetError(@error, @extended, 0)
+
+	Return $iSize
+EndFunc   ;==>_WinAPI_GetCursorSize
+
+; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
@@ -578,6 +595,25 @@ Func _WinAPI_SetCursor($hCursor)
 EndFunc   ;==>_WinAPI_SetCursor
 
 ; #FUNCTION# ====================================================================================================================
+; Author ........: Jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_SetCursorSize($iSize)
+	Static Local $SPI_SETCURSORSIZE = 0x2029
+	Static Local $SPIF_UPDATEINIFILE = 0x0001
+	If ($iSize < 1) Or ($iSize > 15) Then Return SetError(10, 0, 0)
+
+	If RegWrite("HKCU\Software\Microsoft\Accessibility", "CursorSize", "REG_DWORD", $iSize) Then
+		Local $aCall = DllCall("user32.dll", "bool", "SystemParametersInfoW", "uint", $SPI_SETCURSORSIZE, "uint", 0, "struct*", ($iSize + 1) * 16, "uint", $SPIF_UPDATEINIFILE)
+		If @error Then Return SetError(@error, @extended, 0)
+
+		Return $aCall[0]
+	Else
+		Return SetError(@error + 20, @extended, 0)
+	EndIf
+EndFunc   ;==>_WinAPI_SetCursorSize
+
+; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
@@ -604,17 +640,6 @@ Func _WinAPI_ShowCaret($hWnd)
 
 	Return $aCall[0]
 EndFunc   ;==>_WinAPI_ShowCaret
-
-; #FUNCTION# ====================================================================================================================
-; Author ........: Paul Campbell (PaulIA)
-; Modified.......:
-; ===============================================================================================================================
-Func _WinAPI_ShowCursor($bShow)
-	Local $aCall = DllCall("user32.dll", "int", "ShowCursor", "bool", $bShow)
-	If @error Then Return SetError(@error, @extended, 0)
-
-	Return $aCall[0]
-EndFunc   ;==>_WinAPI_ShowCursor
 
 ; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
@@ -704,7 +729,7 @@ EndFunc   ;==>_WinAPI_VerQueryValue
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_VerQueryValueEx($hModule, $sValues = '', $iLanguage = 0x0400)
+Func _WinAPI_VerQueryValueEx($hModule, $sValues = '', $iLanguage = $LOCALE_USER_DEFAULT)
 	$__g_vVal = StringRegExpReplace($sValues, '\A[\s\|]*|[\s\|]*\Z', '')
 	If Not $__g_vVal Then
 		$__g_vVal = 'Comments|CompanyName|FileDescription|FileVersion|InternalName|LegalCopyright|LegalTrademarks|OriginalFilename|ProductName|ProductVersion|PrivateBuild|SpecialBuild'

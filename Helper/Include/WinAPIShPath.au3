@@ -1,13 +1,16 @@
 #include-once
 
 #include "APIShPathConstants.au3"
+#include "AutoItConstants.au3"
 #include "StringConstants.au3"
 #include "StructureConstants.au3"
+
 #include "WinAPIInternals.au3"
+#include "WindowsNotifsConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIShPath.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -790,7 +793,7 @@ EndFunc   ;==>_WinAPI_ShellGetImageList
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_UrlApplyScheme($sUrl, $iFlags = 1)
+Func _WinAPI_UrlApplyScheme($sUrl, $iFlags = $URL_APPLY_DEFAULT)
 	Local $aCall = DllCall('shlwapi.dll', 'long', 'UrlApplySchemeW', 'wstr', $sUrl, 'wstr', '', 'dword*', 4096, 'dword', $iFlags)
 	If @error Then Return SetError(@error, @extended, '')
 	If $aCall[0] Then Return SetError(10, $aCall[0], '')
@@ -893,7 +896,7 @@ EndFunc   ;==>_WinAPI_UrlHash
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_UrlIs($sUrl, $iType = 0)
+Func _WinAPI_UrlIs($sUrl, $iType = $URLIS_URL)
 	Local $aCall = DllCall('shlwapi.dll', 'bool', 'UrlIsW', 'wstr', $sUrl, 'uint', $iType)
 	If @error Then Return SetError(@error, @extended, False)
 

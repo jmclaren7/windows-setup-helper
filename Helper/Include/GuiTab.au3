@@ -1,17 +1,18 @@
 #include-once
 
 #include "GuiCtrlInternals.au3"
-#include "Memory.au3"
 #include "SendMessage.au3"
-#include "TabConstants.au3"
-#include "UDFGlobalID.au3"
-#include "WinAPIConv.au3"
-#include "WinAPIHObj.au3"
-#include "WinAPISysInternals.au3"
+#include "StructureConstants.au3"            ; $tagPOINT
+#include "TabConstants.au3"                  ; $TCS_HOTTRACK
+#include "WinAPIConv.au3"                    ; _WinAPI_GetXYFromPoint()
+#include "WinAPIHObj.au3"                    ; _WinAPI_GetStockObject()
+
+#include "WinAPIInternals.au3"               ; _WinAPI_GetDlgCtrlID()
+#include "WinAPISysInternals.au3"            ; _WinAPI_InvalidateRect()
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Tab_Control
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with Tab control management.
 ;                  A tab control is analogous to the dividers in a notebook or the labels in a  file  cabinet.  By  using  a  tab
@@ -215,19 +216,16 @@ EndFunc   ;==>_GUICtrlTab_ClickTab
 ; Modified.......: Gary Frost
 ; ===============================================================================================================================
 Func _GUICtrlTab_Create($hWnd, $iX, $iY, $iWidth = 150, $iHeight = 150, $iStyle = 0x00000040, $iExStyle = 0x00000000)
-	If Not IsHWnd($hWnd) Then
-		; Invalid Window handle for _GUICtrlTab_Create 1st parameter
-		Return SetError(1, 0, 0)
-	EndIf
+	If Not IsHWnd($hWnd) Then Return SetError(1, 0, 0) ; Invalid Window handle for _GUICtrlTab_Create 1st parameter
 
 	If $iWidth = -1 Then $iWidth = 150
 	If $iHeight = -1 Then $iHeight = 150
 	If $iStyle = -1 Then $iStyle = $TCS_HOTTRACK
 	If $iExStyle = -1 Then $iExStyle = 0x00000000
 
-	$iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_CHILD, $__TABCONSTANT_WS_CLIPSIBLINGS, $__UDFGUICONSTANT_WS_VISIBLE)
+	$iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_CHILD, $__TABCONSTANT_WS_CLIPSIBLINGS, $__GUICTRLCONSTANT_WS_VISIBLE)
 
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GUICtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	Local $hTab = _WinAPI_CreateWindowEx($iExStyle, $__TABCONSTANT_ClassName, "", $iStyle, $iX, $iY, $iWidth, $iHeight, $hWnd, $nCtrlID)
@@ -277,28 +275,9 @@ EndFunc   ;==>_GUICtrlTab_DeselectAll
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlTab_Destroy(ByRef $hWnd)
-	If Not _WinAPI_IsClassName($hWnd, $__TABCONSTANT_ClassName) Then Return SetError(2, 2, False)
+	Local $bDestroyed = __GUICtrl_Destroy($hWnd, $__TABCONSTANT_ClassName)
 
-	Local $iDestroyed = 0
-	If IsHWnd($hWnd) Then
-		If _WinAPI_InProcess($hWnd, $__g_hGUICtrl_LastWnd) Then
-			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
-			Local $hParent = _WinAPI_GetParent($hWnd)
-			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
-			If Not $iRet Then
-				; can check for errors here if needed, for debug
-			EndIf
-		Else
-			; Not Allowed to Destroy Other Applications Control(s)
-			Return SetError(1, 1, False)
-		EndIf
-	Else
-		$iDestroyed = GUICtrlDelete($hWnd)
-	EndIf
-	If $iDestroyed Then $hWnd = 0
-
-	Return $iDestroyed <> 0
+	Return SetError(@error, @extended, $bDestroyed)
 EndFunc   ;==>_GUICtrlTab_Destroy
 
 ; #FUNCTION# ====================================================================================================================
@@ -403,8 +382,12 @@ EndFunc   ;==>_GUICtrlTab_GetImageList
 Func _GUICtrlTab_GetItem($hWnd, $iIndex)
 	If Not IsHWnd($hWnd) Then $hWnd = GUICtrlGetHandle($hWnd)
 
-;~ 	Local $tagTCITEMEx = $tagTCITEM & ";ptr Filler" ; strange the Filler is erased by TCM_GETITEM : MS Bug!!!
-	Local $tItem = DllStructCreate($tagTCITEM)
+	Local $tagTCITEMEx = $tagTCITEM
+	If IsHWnd($hWnd) And DllCall("user32.dll", "dword", "GetWindowThreadProcessId", "hwnd", $hWnd, "dword*", 0)[2] <> @AutoItPID Then ; Not _WinAPI_InProcess
+		__GUICtrl_TagOutProcess($hWnd, $tagTCITEMEx)
+	EndIf
+	Local $tItem = DllStructCreate($tagTCITEMEx)
+
 	DllStructSetData($tItem, "Mask", $TCIF_ALLDATA)
 	DllStructSetData($tItem, "StateMask", BitOR($TCIS_HIGHLIGHTED, $TCIS_BUTTONPRESSED))
 	Local $tBuffer, $iMsg
@@ -415,7 +398,8 @@ Func _GUICtrlTab_GetItem($hWnd, $iIndex)
 		$tBuffer = $__g_tTabBufferANSI
 		$iMsg = $TCM_GETITEMA
 	EndIf
-	Local $iRet = __GUICtrl_SendMsg($hWnd, $iMsg, $iIndex, $tItem, $tBuffer, True, 4, True)
+
+	Local $iRet = __GUICtrl_SendMsg($hWnd, $iMsg, $iIndex, $tItem, $tBuffer, True, 4, True) ; will set "TextMax"
 
 	Local $aItem[4]
 	$aItem[0] = DllStructGetData($tItem, "State")
@@ -589,7 +573,13 @@ Func _GUICtrlTab_InsertItem($hWnd, $iIndex, $sText, $iImage = -1, $iParam = 0)
 		$tBuffer = $__g_tTabBufferANSI
 		$iMsg = $TCM_INSERTITEMA
 	EndIf
-	Local $tItem = DllStructCreate($tagTCITEM)
+
+	Local $tagTCITEMEx = $tagTCITEM
+	If IsHWnd($hWnd) And DllCall("user32.dll", "dword", "GetWindowThreadProcessId", "hwnd", $hWnd, "dword*", 0)[2] <> @AutoItPID Then ; Not _WinAPI_InProcess
+		__GUICtrl_TagOutProcess($hWnd, $tagTCITEMEx)
+	EndIf
+	Local $tItem = DllStructCreate($tagTCITEMEx)
+
 	DllStructSetData($tBuffer, "Text", $sText)
 	DllStructSetData($tItem, "Mask", BitOR($TCIF_TEXT, $TCIF_IMAGE, $TCIF_PARAM))
 	DllStructSetData($tItem, "Image", $iImage)
@@ -667,7 +657,12 @@ EndFunc   ;==>_GUICtrlTab_SetImageList
 Func _GUICtrlTab_SetItem($hWnd, $iIndex, $sText = -1, $iState = -1, $iImage = -1, $iParam = -1)
 	If Not IsHWnd($hWnd) Then $hWnd = GUICtrlGetHandle($hWnd)
 
-	Local $tItem = DllStructCreate($tagTCITEM)
+	Local $tagTCITEMEx = $tagTCITEM
+	If IsHWnd($hWnd) And DllCall("user32.dll", "dword", "GetWindowThreadProcessId", "hwnd", $hWnd, "dword*", 0)[2] <> @AutoItPID Then ; Not _WinAPI_InProcess
+		__GUICtrl_TagOutProcess($hWnd, $tagTCITEMEx)
+	EndIf
+	Local $tItem = DllStructCreate($tagTCITEMEx)
+
 	Local $tBuffer, $iMask = 0, $iMsg
 	If _GUICtrlTab_GetUnicodeFormat($hWnd) Then
 		$tBuffer = $__g_tTabBuffer

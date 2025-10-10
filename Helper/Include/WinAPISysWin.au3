@@ -1,11 +1,14 @@
 #include-once
 
+#include "APISysConstants.au3"
+#include "StructureConstants.au3"
 #include "WinAPIError.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Windows API
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Windows API calls that have been translated to AutoIt functions.
 ; Author(s) .....: Paul Campbell (PaulIA), gafrost, Siao, Zedna, arcker, Prog@ndy, PsaltyDS, Raik, jpm
 ; Dll ...........: kernel32.dll, user32.dll, gdi32.dll, comdlg32.dll, shell32.dll, ole32.dll, winspool.drv
@@ -184,7 +187,7 @@ EndFunc   ;==>_WinAPI_BringWindowToTop
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_BroadcastSystemMessage($iMsg, $wParam = 0, $lParam = 0, $iFlags = 0, $iRecipients = 0)
+Func _WinAPI_BroadcastSystemMessage($iMsg, $wParam = 0, $lParam = 0, $iFlags = 0, $iRecipients = $BSM_ALLCOMPONENTS)
 	Local $aCall = DllCall('user32.dll', 'long', 'BroadcastSystemMessageW', 'dword', $iFlags, 'dword*', $iRecipients, _
 			'uint', $iMsg, 'wparam', $wParam, 'lparam', $lParam)
 	If @error Or ($aCall[0] = -1) Then Return SetError(@error, @extended, -1)
@@ -266,7 +269,7 @@ EndFunc   ;==>_WinAPI_ChangeWindowMessageFilterEx
 ; Author.........: Yashied
 ; Modified.......: JPM
 ; ===============================================================================================================================
-Func _WinAPI_ChildWindowFromPointEx($hWnd, $tPOINT, $iFlags = 0)
+Func _WinAPI_ChildWindowFromPointEx($hWnd, $tPOINT, $iFlags = $CWP_ALL)
 	Local $aCall = DllCall('user32.dll', 'hwnd', 'ChildWindowFromPointEx', 'hwnd', $hWnd, 'struct', $tPOINT, 'uint', $iFlags)
 	If @error Then Return SetError(@error, @extended, 0)
 
@@ -480,7 +483,7 @@ EndFunc   ;==>_WinAPI_FlashWindowEx
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......:
 ; ===============================================================================================================================
-Func _WinAPI_GetAncestor($hWnd, $iFlags = 1)
+Func _WinAPI_GetAncestor($hWnd, $iFlags = $GA_PARENT)
 	Local $aCall = DllCall("user32.dll", "hwnd", "GetAncestor", "hwnd", $hWnd, "uint", $iFlags)
 	If @error Then Return SetError(@error, @extended, 0)
 
@@ -874,7 +877,7 @@ EndFunc   ;==>_WinAPI_SetForegroundWindow
 ; Modified.......: PsaltyDS
 ; ===============================================================================================================================
 Func _WinAPI_SetLayeredWindowAttributes($hWnd, $iTransColor, $iTransGUI = 255, $iFlags = 0x03, $bColorRef = False)
-	If $iFlags = Default Or $iFlags = "" Or $iFlags < 0 Then $iFlags = 0x03
+	If $iFlags = Default Or $iFlags = "" Or $iFlags < 0 Then $iFlags = BitOR($LWA_ALPHA, $LWA_COLORKEY) ; 0x03
 	If Not $bColorRef Then
 		$iTransColor = Int(BinaryMid($iTransColor, 3, 1) & BinaryMid($iTransColor, 2, 1) & BinaryMid($iTransColor, 1, 1))
 	EndIf
@@ -1013,7 +1016,7 @@ EndFunc   ;==>_WinAPI_SwitchToThisWindow
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_TileWindows($aWnds, $tRECT = 0, $hParent = 0, $iFlags = 0, $iStart = 0, $iEnd = -1)
+Func _WinAPI_TileWindows($aWnds, $tRECT = 0, $hParent = 0, $iFlags = $MDITILE_VERTICAL, $iStart = 0, $iEnd = -1)
 	If __CheckErrorArrayBounds($aWnds, $iStart, $iEnd) Then Return SetError(@error + 10, @extended, 0)
 
 	Local $iCount = $iEnd - $iStart + 1

@@ -2,11 +2,12 @@
 
 #include "APILocaleConstants.au3"
 #include "StringConstants.au3"
+
 #include "WinAPIInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPILocale.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -156,8 +157,8 @@ EndFunc   ;==>_WinAPI_EnumUILanguages
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_GetDateFormat($iLCID = 0, $tSYSTEMTIME = 0, $iFlags = 0, $sFormat = '')
-	If Not $iLCID Then $iLCID = 0x0400
+Func _WinAPI_GetDateFormat($iLCID = 0, $tSYSTEMTIME = 0, $iFlags = $DATE_SHORTDATE, $sFormat = '')
+	If Not $iLCID Then $iLCID = $LOCALE_USER_DEFAULT
 
 	If Not StringStripWS($sFormat, $STR_STRIPLEADING + $STR_STRIPTRAILING) Then $sFormat = Null
 
@@ -174,7 +175,7 @@ EndFunc   ;==>_WinAPI_GetDateFormat
 ; Modified.......: Jpm
 ; ===============================================================================================================================
 Func _WinAPI_GetDurationFormat($iLCID, $iDuration, $sFormat = '')
-	If Not $iLCID Then $iLCID = 0x0400
+	If Not $iLCID Then $iLCID = $LOCALE_USER_DEFAULT
 
 	Local $pST, $iVal
 	If IsDllStruct($iDuration) Then
@@ -223,7 +224,7 @@ EndFunc   ;==>_WinAPI_GetLocaleInfo
 ; Modified.......: Jpm
 ; ===============================================================================================================================
 Func _WinAPI_GetNumberFormat($iLCID, $sNumber, $tNUMBERFMT = 0)
-	If Not $iLCID Then $iLCID = 0x0400 ; LOCALE_USER_DEFAULT
+	If Not $iLCID Then $iLCID = $LOCALE_USER_DEFAULT
 
 	Local $aCall = DllCall('kernel32.dll', 'int', 'GetNumberFormatW', 'dword', $iLCID, 'dword', 0, 'wstr', $sNumber, _
 			'struct*', $tNUMBERFMT, 'wstr', '', 'int', 2048)
@@ -293,7 +294,7 @@ EndFunc   ;==>_WinAPI_GetThreadUILanguage
 ; Modified.......: Jpm
 ; ===============================================================================================================================
 Func _WinAPI_GetTimeFormat($iLCID = 0, $tSYSTEMTIME = 0, $iFlags = 0, $sFormat = '')
-	If Not $iLCID Then $iLCID = 0x0400
+	If Not $iLCID Then $iLCID = $LOCALE_USER_DEFAULT
 
 	If Not StringStripWS($sFormat, $STR_STRIPLEADING + $STR_STRIPTRAILING) Then $sFormat = Null
 

@@ -1,15 +1,19 @@
 #include-once
 
 #include "APIShellExConstants.au3"
+#include "AutoItConstants.au3"
 #include "StringConstants.au3"
+#include "StructureConstants.au3"
 #include "WinAPICom.au3"
+
+#include "WinAPIInternals.au3"
 #include "WinAPIMem.au3"
 #include "WinAPIMisc.au3"
 #include "WinAPIShPath.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIShellEx.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -659,7 +663,7 @@ EndFunc   ;==>_WinAPI_ShellNotifyIconGetRect
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_ShellObjectProperties($sFilePath, $iType = 2, $sProperty = '', $hParent = 0)
+Func _WinAPI_ShellObjectProperties($sFilePath, $iType = $SHOP_FILEPATH, $sProperty = '', $hParent = 0)
 	If Not StringStripWS($sProperty, $STR_STRIPLEADING + $STR_STRIPTRAILING) Then $sProperty = Null
 
 	Local $aCall = DllCall('shell32.dll', 'bool', 'SHObjectProperties', 'hwnd', $hParent, 'dword', $iType, 'wstr', $sFilePath, _

@@ -1,20 +1,22 @@
 #include-once
 
 #include "GuiCtrlInternals.au3"
+
 #include "GuiImageList.au3"
-#include "Memory.au3"
 #include "SendMessage.au3"
+#include "StringConstants.au3"
 #include "StructureConstants.au3"
 #include "TreeViewConstants.au3"
-#include "UDFGlobalID.au3"
 #include "WinAPIConv.au3"
 #include "WinAPIGdi.au3"
+#include "WinAPIHObj.au3"
 #include "WinAPIRes.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: TreeView
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with TreeView control management.
 ;                  A TreeView control is a window that displays a hierarchical list of items, such as the headings in a document,
@@ -391,9 +393,9 @@ Func _GUICtrlTreeView_Create($hWnd, $iX, $iY, $iWidth = 150, $iHeight = 150, $iS
 	If $iStyle = -1 Then $iStyle = BitOR($TVS_SHOWSELALWAYS, $TVS_DISABLEDRAGDROP, $TVS_LINESATROOT, $TVS_HASLINES, $TVS_HASBUTTONS)
 	If $iExStyle = -1 Then $iExStyle = 0x00000000
 
-	$iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_CHILD, $__UDFGUICONSTANT_WS_VISIBLE)
+	$iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_CHILD, $__GUICTRLCONSTANT_WS_VISIBLE)
 
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	Local $hTree = _WinAPI_CreateWindowEx($iExStyle, $__TREEVIEWCONSTANT_ClassName, "", $iStyle, $iX, $iY, $iWidth, $iHeight, $hWnd, $nCtrlID)
@@ -433,7 +435,6 @@ Func _GUICtrlTreeView_Delete($hWnd, $hItem = Null)
 			Return False
 		Else
 			If Not IsHWnd($hItem) Then $hItem = _GUICtrlTreeView_GetItemHandle($hWnd, $hItem)
-			If GUICtrlDelete($hItem) Then Return True
 			Return _SendMessage($hWnd, $TVM_DELETEITEM, 0, $hItem, 0, "wparam", "handle", "hwnd") <> 0
 		EndIf
 	Else
@@ -502,7 +503,7 @@ Func _GUICtrlTreeView_Destroy(ByRef $hWnd)
 			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 			Local $hParent = _WinAPI_GetParent($hWnd)
 			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+			Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 			If Not $iRet Then
 				; can check for errors here if needed, for debug
 			EndIf
@@ -777,12 +778,16 @@ EndFunc   ;==>_GUICtrlTreeView_GetChildCount
 Func _GUICtrlTreeView_GetChildren($hWnd, $hItem)
 	If Not IsHWnd($hItem) Then $hItem = _GUICtrlTreeView_GetItemHandle($hWnd, $hItem)
 
+	Local $iCount = _GUICtrlTreeView_GetChildCount($hWnd, $hItem)
+	If $iCount = -1 Then $iCount = 0
+
 	Local $tItem = $__g_tTVItemEx
 	DllStructSetData($tItem, "Mask", $TVIF_CHILDREN)
 	DllStructSetData($tItem, "hItem", $hItem)
 	__GUICtrlTreeView_GetItem($hWnd, $tItem)
 
-	Return DllStructGetData($tItem, "Children") <> 0
+	Local $iRet = DllStructGetData($tItem, "Children") <> 0
+	Return SetExtended($iCount, $iRet)
 EndFunc   ;==>_GUICtrlTreeView_GetChildren
 
 ; #FUNCTION# ====================================================================================================================
@@ -1893,18 +1898,18 @@ EndFunc   ;==>_GUICtrlTreeView_SetCheckedByIndex
 ; Modified.......: Gary Frost (gafrost), Jpm
 ; ===============================================================================================================================
 Func _GUICtrlTreeView_SetChildren($hWnd, $hItem, $bFlag = True)
-	Local $iCount = _GUICtrlTreeView_GetChildCount($hWnd, $hItem)
-	If $iCount = -1 And $bFlag Then Return False
-	If $iCount And Not $bFlag Then Return False
-
 	If Not IsHWnd($hItem) Then $hItem = _GUICtrlTreeView_GetItemHandle($hWnd, $hItem)
+
+	Local $iCount = _GUICtrlTreeView_GetChildCount($hWnd, $hItem)
+	If $iCount = -1 Then $iCount = 0
 
 	Local $tItem = $__g_tTVItemEx
 	DllStructSetData($tItem, "Mask", BitOR($TVIF_HANDLE, $TVIF_CHILDREN))
 	DllStructSetData($tItem, "hItem", $hItem)
 	DllStructSetData($tItem, "Children", $bFlag)
 
-	Return __GUICtrlTreeView_SetItem($hWnd, $tItem)
+	Local $iRet = __GUICtrlTreeView_SetItem($hWnd, $tItem)
+	Return SetExtended($iCount, $iRet)
 EndFunc   ;==>_GUICtrlTreeView_SetChildren
 
 ; #FUNCTION# ====================================================================================================================

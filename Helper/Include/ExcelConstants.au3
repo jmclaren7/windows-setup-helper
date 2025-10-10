@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: ExcelConstants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants to be included in an AutoIt script when using the Excel UDF.
 ; Author(s) .....: water
@@ -183,8 +183,8 @@ Global Const $xlQualityMinimum = 1 ; Minimum quality
 Global Const $xlQualityStandard = 0 ; Standard quality
 
 ; XlFixedFormatType Enumeration. Specifies the type of file format.
-Global Const $xlTypePDF = 0 ; "PDF" — Portable Document Format file (.pdf)
-Global Const $xlTypeXPS = 1 ; "XPS" — XPS Document (.xps)
+Global Const $xlTypePDF = 0 ; "PDF" - Portable Document Format file (.pdf)
+Global Const $xlTypeXPS = 1 ; "XPS" - XPS Document (.xps)
 
 ; XlFormatConditionOperator Enumeration. Specifies the operator to use to compare a formula against the value in a cell or, for xlBetween and xlNotBetween, to compare two formulas.
 Global Const $xlBetween = 1 ; Between. Can be used only if two formulas are provided

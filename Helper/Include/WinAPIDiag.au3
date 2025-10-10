@@ -1,18 +1,23 @@
 #include-once
 
 #include "APIDiagConstants.au3"
+#include "MsgBoxConstants.au3"
 #include "StringConstants.au3"
+#include "WinAPIError.au3"
 #include "WinAPIFiles.au3"
 #include "WinAPIHObj.au3"
+
+#include "WinAPIInternals.au3"
 #include "WinAPIMem.au3"
 #include "WinAPIProc.au3"
 #include "WinAPIRes.au3"
 #include "WinAPIShellEx.au3"
 #include "WinAPITheme.au3"
+#include "WindowsStylesConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIDiag.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -52,8 +57,10 @@ Global $__g_hFRDlg = 0, $__g_hFRDll = 0
 ; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_DisplayStruct($tStruct, $sStruct = '', $sTitle = '', $iItem = 0, $iSubItem = 0, $iFlags = 0, $bTop = True, $hParent = 0)
+	Local Const $WS_EX_DLGMODALFRAME = 0x00000001
+	Local Const $WS_EX_TOPMOST = 0x00000008
 	If Not StringStripWS($sTitle, $STR_STRIPLEADING + $STR_STRIPTRAILING) Then
-		$sTitle = 'Structure: ListView Display'
+		$sTitle = 'Structure: ListView Display - v' & @AutoItVersion
 	EndIf
 	$sStruct = StringRegExpReplace(StringStripWS($sStruct, $STR_STRIPLEADING + $STR_STRIPTRAILING + $STR_STRIPSPACES), ';+\Z', '')
 	Local $pData
@@ -65,9 +72,10 @@ Func _WinAPI_DisplayStruct($tStruct, $sStruct = '', $sTitle = '', $iItem = 0, $i
 		EndIf
 	Else
 		$pData = $tStruct
-		If Not $sStruct Then Return SetError(10, 0, 0)
+		If Not $sStruct Then Return SetError(10, 0, 0) ; The $tStruct is not a DllStruct
 	EndIf
 	Local $tData = DllStructCreate($sStruct, $pData)
+	If @error Then Return SetError(@error, @extended, 0) ; Error Invalid $sStruct
 
 	Local $iData = DllStructGetSize($tData)
 	If (Not BitAND($iFlags, 512)) And (_WinAPI_IsBadReadPtr($pData, $iData)) Then
@@ -77,21 +85,25 @@ Func _WinAPI_DisplayStruct($tStruct, $sStruct = '', $sTitle = '', $iItem = 0, $i
 					@CRLF & @CRLF & 'Press OK to exit.')
 			Exit -1073741819
 		EndIf
-		Return SetError(15, 0, 0)
+		Return SetError(15, 0, 0) ; Error accessing memory to read data.
 	EndIf
 
-	Local $sOpt1 = Opt('GUIDataSeparatorChar', '|')
+	Local $iExtended = 0
+	Local $sSep = '|'
+	Local $sOpt1 = Opt('GUIDataSeparatorChar', $sSep)
 	Local $iOpt2 = Opt('GUIOnEventMode', 0)
 	Local $iOpt3 = Opt('GUICloseOnESC', 1)
 
 	If $hParent Then
 		GUISetState(@SW_DISABLE, $hParent)
 	EndIf
-	Local $iStyle = 0x00000001
+	Local $iExStyle = $WS_EX_DLGMODALFRAME ; + 0x100 $WS_EX_WINDOWEDGE forced at creation
 	If $bTop Then
-		$iStyle = BitOR($iStyle, 0x00000008)
+		$iExStyle = BitOR($iExStyle, $WS_EX_TOPMOST)
 	EndIf
-	$__g_hFRDlg = GUICreate($sTitle, 570, 620, -1, -1, 0x80C70000, $iStyle, $hParent)
+	Local Static $iStyle = 0x80CF0000 ; BitOR($WS_POPUP + $WS_CAPTION + $WS_SIZEBOX + $WS_GROUP + $WS_TABSTOP + $WS_MAXIMIZEBOX + $WS_MINIMIZEBOX)
+	; Forced  0x1408000000 $WS_VISIBLE + $WS_CLIPSIBLINGS + $WS_SYSMENU
+	$__g_hFRDlg = GUICreate($sTitle, 570, 620, -1, -1, $iStyle, $iExStyle, $hParent)
 	Local $idLV = GUICtrlCreateListView('#|Member|Offset|Type|Size|Value', 0, 0, 570, 620, 0x0000800D, ((_WinAPI_GetVersion() < 6.0) ? 0x00010031 : 0x00010030))
 	Local $hLV = GUICtrlGetHandle($idLV)
 	If _WinAPI_GetVersion() >= 6.0 Then
@@ -110,8 +122,8 @@ Func _WinAPI_DisplayStruct($tStruct, $sStruct = '', $sTitle = '', $iItem = 0, $i
 	Local $aData = StringSplit($sStruct, ';')
 	Local $aItem, $vItem, $sItem, $iMode, $iIndex, $iCount = 0, $iPrev = 0
 	Local $aSel[2] = [0, 0]
-	Local $aType[28][2] = _
-			[['BYTE', 1], _
+	Local $aType[28][2] = [ _
+			['BYTE', 1], _
 			['BOOLEAN', 1], _
 			['CHAR', 1], _
 			['WCHAR', 2], _
@@ -138,7 +150,8 @@ Func _WinAPI_DisplayStruct($tStruct, $sStruct = '', $sTitle = '', $iItem = 0, $i
 			['UINT_PTR', (@AutoItX64 ? 8 : 4)], _
 			['ULONG_PTR', (@AutoItX64 ? 8 : 4)], _
 			['DWORD_PTR', (@AutoItX64 ? 8 : 4)], _
-			['WPARAM', (@AutoItX64 ? 8 : 4)]]
+			['WPARAM', (@AutoItX64 ? 8 : 4)] _
+			]
 
 	For $i = 1 To $aData[0]
 		$aItem = StringSplit(StringStripWS($aData[$i], $STR_STRIPLEADING + $STR_STRIPTRAILING), ' ')
@@ -248,6 +261,11 @@ Func _WinAPI_DisplayStruct($tStruct, $sStruct = '', $sTitle = '', $iItem = 0, $i
 				If BitAND($iFlags, 128) Then
 					$aVal[$aVal[0]] = __WinAPIDiag_Hex($aVal[$aVal[0]], $aItem[1])
 				EndIf
+				If StringInStr($aVal[$aVal[0]], $sSep) Then
+					$aVal[$aVal[0]] = StringReplace($aVal[$aVal[0]], $sSep, "¦")
+					$iExtended = 1
+				EndIf
+
 				$idLVItem = GUICtrlCreateListViewItem($sItem & StringFormat($sPattern, $j) & $aVal[$aVal[0]], $idLV)
 				If ($aSel[0] = $iCount) And (Not $aSel[1]) Then
 					If ($iSubItem < 1) Or ($iSubItem > $iIndex) Or ($iSubItem = $j) Then
@@ -274,6 +292,11 @@ Func _WinAPI_DisplayStruct($tStruct, $sStruct = '', $sTitle = '', $iItem = 0, $i
 				If BitAND($iFlags, 128) Then
 					$aVal[$aVal[0]] = __WinAPIDiag_Hex($aVal[$aVal[0]], $aItem[1])
 				EndIf
+				If StringInStr($aVal[$aVal[0]], $sSep) Then
+					$aVal[$aVal[0]] = StringReplace($aVal[$aVal[0]], $sSep, "¦")
+					$iExtended = 1
+				EndIf
+
 				$idLVItem = GUICtrlCreateListViewItem($sItem & $aVal[$aVal[0]], $idLV)
 			Else
 				$aVal[$aVal[0]] = ''
@@ -359,7 +382,7 @@ Func _WinAPI_DisplayStruct($tStruct, $sStruct = '', $sTitle = '', $iItem = 0, $i
 	Opt('GUIOnEventMode', $iOpt2)
 	Opt('GUICloseOnESC', $iOpt3)
 
-	Return 1
+	Return SetExtended($iExtended, 1)
 EndFunc   ;==>_WinAPI_DisplayStruct
 
 ; #FUNCTION# ====================================================================================================================
@@ -428,7 +451,7 @@ EndFunc   ;==>_WinAPI_EnumDllProc
 Func _WinAPI_GetApplicationRestartSettings($iPID = 0)
 	If Not $iPID Then $iPID = @AutoItPID
 
-	Local $hProcess = DllCall('kernel32.dll', 'handle', 'OpenProcess', 'dword', ((_WinAPI_GetVersion() < 6.0) ? 0x00000410 : 0x00001010), _
+	Local $hProcess = DllCall('kernel32.dll', 'handle', 'OpenProcess', 'dword', __ConvProcesDesiredAccess(), _
 			'bool', 0, 'dword', $iPID)
 	If @error Or Not $hProcess[0] Then Return SetError(@error + 20, @extended, 0)
 
@@ -541,7 +564,7 @@ EndFunc   ;==>_WinAPI_SetErrorMode
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_UniqueHardwareID($iFlags = 0)
+Func _WinAPI_UniqueHardwareID($iFlags = $UHID_MB)
 	Local $oService = ObjGet('winmgmts:\\.\root\cimv2')
 	If Not IsObj($oService) Then Return SetError(1, 0, '')
 
@@ -561,7 +584,7 @@ Func _WinAPI_UniqueHardwareID($iFlags = 0)
 	If Not $sHw Then Return SetError(3, 0, '')
 
 	Local $sText
-	If BitAND($iFlags, 0x0001) Then
+	If BitAND($iFlags, $UHID_BIOS) Then
 		$oItems = $oService.ExecQuery('SELECT * FROM Win32_BIOS')
 		If Not IsObj($oItems) Then Return SetError(3, 0, '')
 
@@ -577,11 +600,11 @@ Func _WinAPI_UniqueHardwareID($iFlags = 0)
 		Next
 		$sText = StringStripWS($sText, $STR_STRIPALL)
 		If $sText Then
-			$iExtended += 0x0001
+			$iExtended += $UHID_BIOS
 			$sHw &= $sText
 		EndIf
 	EndIf
-	If BitAND($iFlags, 0x0002) Then
+	If BitAND($iFlags, $UHID_CPU) Then
 		$oItems = $oService.ExecQuery('SELECT * FROM Win32_Processor')
 		If Not IsObj($oItems) Then Return SetError(4, 0, '')
 
@@ -598,11 +621,11 @@ Func _WinAPI_UniqueHardwareID($iFlags = 0)
 		Next
 		$sText = StringStripWS($sText, $STR_STRIPALL)
 		If $sText Then
-			$iExtended += 0x0002
+			$iExtended += $UHID_CPU
 			$sHw &= $sText
 		EndIf
 	EndIf
-	If BitAND($iFlags, 0x0004) Then
+	If BitAND($iFlags, $UHID_HDD) Then
 		$oItems = $oService.ExecQuery('SELECT * FROM Win32_PhysicalMedia')
 		If Not IsObj($oItems) Then Return SetError(5, 0, '')
 
@@ -617,7 +640,7 @@ Func _WinAPI_UniqueHardwareID($iFlags = 0)
 		Next
 		$sText = StringStripWS($sText, $STR_STRIPALL)
 		If $sText Then
-			$iExtended += 0x0004
+			$iExtended += $UHID_HDD
 			$sHw &= $sText
 		EndIf
 	EndIf

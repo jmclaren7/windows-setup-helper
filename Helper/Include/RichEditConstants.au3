@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: RichEdit_Constants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: <a href="../appendix/GUIStyles.htm#Edit">GUI control Edit/Input styles</a> and much more constants.
 ; Author(s) .....: Gary Frost, ...
@@ -160,8 +160,9 @@ Global Const $CFU_UNDERLINEWORD = 2
 Global Const $CFU_UNDERLINEDOUBLE = 3
 Global Const $CFU_UNDERLINEDOTTED = 4
 ; code pages
-Global Const $CP_ACP = 0 ; use system default
-Global Const $CP_UNICODE = 1200
+; in WinAPIConv.au3
+;~ Global Const $CP_ACP = 0 ; use system default
+;~ Global Const $CP_UNICODE = 1200
 
 Global Const $CFE_SUBSCRIPT = 0x00010000
 Global Const $CFE_SUPERSCRIPT = 0x00020000

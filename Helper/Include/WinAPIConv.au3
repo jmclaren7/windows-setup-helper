@@ -1,24 +1,15 @@
 #include-once
 
+#include "APIConvConstants.au3"
 #include "StringConstants.au3"
 #include "StructureConstants.au3"
-#include "WinAPIInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIConv.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
-
-#Region Global Variables and Constants
-
-; #VARIABLES# ===================================================================================================================
-; ===============================================================================================================================
-
-; #CONSTANTS# ===================================================================================================================
-; ===============================================================================================================================
-#EndRegion Global Variables and Constants
 
 #Region Functions list
 
@@ -354,15 +345,16 @@ EndFunc   ;==>_WinAPI_MakeWord
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......: JPM, Alexander Samuelsson (AdmiralAlkex)
 ; ===============================================================================================================================
-Func _WinAPI_MultiByteToWideChar($vText, $iCodePage = 0, $iFlags = 0, $bRetString = False)
+Func _WinAPI_MultiByteToWideChar($vText, $iCodePage = $CP_ACP, $iFlags = 0, $bRetString = False)
 	Local $sTextType = ""
 	If IsString($vText) Then $sTextType = "str"
 	If (IsDllStruct($vText) Or IsPtr($vText)) Then $sTextType = "struct*"
 	If $sTextType = "" Then Return SetError(1, 0, 0) ; invalid input parameter type
+	Local $iTextLen = IsDllStruct($vText) ? DllStructGetSize($vText) : -1
 
 	; compute size for the output WideChar
 	Local $aCall = DllCall("kernel32.dll", "int", "MultiByteToWideChar", "uint", $iCodePage, "dword", $iFlags, _
-			$sTextType, $vText, "int", -1, "ptr", 0, "int", 0)
+			$sTextType, $vText, "int", $iTextLen, "ptr", 0, "int", 0)
 	If @error Or Not $aCall[0] Then Return SetError(@error + 10, @extended, 0)
 
 	; allocate space for output WideChar
@@ -370,7 +362,7 @@ Func _WinAPI_MultiByteToWideChar($vText, $iCodePage = 0, $iFlags = 0, $bRetStrin
 	Local $tOut = DllStructCreate("wchar[" & $iOut & "]")
 
 	$aCall = DllCall("kernel32.dll", "int", "MultiByteToWideChar", "uint", $iCodePage, "dword", $iFlags, $sTextType, $vText, _
-			"int", -1, "struct*", $tOut, "int", $iOut)
+			"int", $iTextLen, "struct*", $tOut, "int", $iOut)
 	If @error Or Not $aCall[0] Then Return SetError(@error + 20, @extended, 0)
 
 	If $bRetString Then Return DllStructGetData($tOut, 1)
@@ -381,7 +373,7 @@ EndFunc   ;==>_WinAPI_MultiByteToWideChar
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......:
 ; ===============================================================================================================================
-Func _WinAPI_MultiByteToWideCharEx($sText, $pText, $iCodePage = 0, $iFlags = 0)
+Func _WinAPI_MultiByteToWideCharEx($sText, $pText, $iCodePage = $CP_ACP, $iFlags = 0)
 	Local $aCall = DllCall("kernel32.dll", "int", "MultiByteToWideChar", "uint", $iCodePage, "dword", $iFlags, "STR", $sText, _
 			"int", -1, "struct*", $pText, "int", (StringLen($sText) + 1) * 2)
 	If @error Then Return SetError(@error, @extended, False)
@@ -391,19 +383,20 @@ EndFunc   ;==>_WinAPI_MultiByteToWideCharEx
 
 ; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
-; Modified.......: jpm, argumentum
+; Modified.......: jpm, argumentum, AspirinJunkie
 ; ===============================================================================================================================
 Func _WinAPI_OemToChar($sStr)
-	Local $aCall, $sRetStr = "", $nLen = StringLen($sStr) + 1, $iStart = 1
+	; input string
+	Local $tIn = DllStructCreate("char[" & StringLen($sStr) + 1 & "]")
+	DllStructSetData($tIn, 1, $sStr)
 
-	While $iStart < $nLen
-		$aCall = DllCall('user32.dll', 'bool', 'OemToCharA', 'str', StringMid($sStr, $iStart, 65536), 'str', '')
-		If @error Or Not $aCall[0] Then Return SetError(@error + 10, @extended, '')
-		$sRetStr &= $aCall[2]
-		$iStart += 65536
-	WEnd
+	; output buffer
+	Local $tOut = DllStructCreate("char[" & StringLen($sStr) + 1 & "]")
 
-	Return $sRetStr
+	Local $aCall = DllCall("user32.dll", "bool", "OemToCharA", "ptr", DllStructGetPtr($tIn), "ptr", DllStructGetPtr($tOut))
+	If @error Or Not $aCall[0] Then Return SetError(@error + 10, @extended, '')
+
+	Return DllStructGetData($tOut, 1)
 EndFunc   ;==>_WinAPI_OemToChar
 
 ; #FUNCTION# ====================================================================================================================
@@ -568,7 +561,7 @@ EndFunc   ;==>_WinAPI_SwapWord
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......: JPM, Alexander Samuelsson (AdmiralAlkex), Melba23
 ; ===============================================================================================================================
-Func _WinAPI_WideCharToMultiByte($vUnicode, $iCodePage = 0, $bRetNoStruct = True, $bRetBinary = False)
+Func _WinAPI_WideCharToMultiByte($vUnicode, $iCodePage = $CP_ACP, $bRetNoStruct = True, $bRetBinary = False)
 	Local $sUnicodeType = "wstr"
 	If Not IsString($vUnicode) Then $sUnicodeType = "struct*"
 	Local $aCall = DllCall("kernel32.dll", "int", "WideCharToMultiByte", "uint", $iCodePage, "dword", 0, $sUnicodeType, $vUnicode, "int", -1, _

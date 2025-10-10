@@ -1,10 +1,12 @@
 #include-once
+
 #include "Array.au3"
 #include "ExcelConstants.au3"
+#include "StringConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Microsoft Excel Function Library
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: A collection of functions for accessing and manipulating Microsoft Excel files
 ; Author(s) .....: SEO (Locodarwin), DaLiMan, Stanley Lim, MikeOsdx, MRDev, big_daddy, PsaltyDS, litlmike, water, spiff59, golfinhu, bowmore, GMX, Andreu, danwilli
@@ -1105,11 +1107,11 @@ Func _Excel_SheetCopyMove($oSourceBook, $vSourceSheet = Default, $oTargetBook = 
 	If $bCopy = Default Then $bCopy = True
 	If Not IsObj($vSourceSheet) Then
 		$vSourceSheet = $oSourceBook.Sheets($vSourceSheet)
-		If @error Or Not IsObj($vSourceSheet) Then SetError(3, @error, 0)
+		If @error Or Not IsObj($vSourceSheet) Then Return SetError(3, @error, 0)
 	EndIf
 	If Not IsObj($vTargetSheet) Then
 		$vTargetSheet = $oTargetBook.Sheets($vTargetSheet)
-		If @error Or Not IsObj($vTargetSheet) Then SetError(4, @error, 0)
+		If @error Or Not IsObj($vTargetSheet) Then Return SetError(4, @error, 0)
 	EndIf
 	If $bBefore Then
 		$vBefore = $vTargetSheet

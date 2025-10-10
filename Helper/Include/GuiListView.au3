@@ -1,24 +1,26 @@
 #include-once
 
-#include "Array.au3"
 #include "GuiCtrlInternals.au3"
+
+#include "Array.au3"
+#include "AutoItConstants.au3"
 #include "GuiHeader.au3"
 #include "ListViewConstants.au3"
-#include "Memory.au3"
 #include "SendMessage.au3"
+#include "StringConstants.au3"
 #include "StructureConstants.au3"
-#include "UDFGlobalID.au3"
 #include "WinAPIConv.au3"
 #include "WinAPIGdi.au3"
 #include "WinAPIGdiDC.au3"
 #include "WinAPIHObj.au3"
 #include "WinAPIMisc.au3"
 #include "WinAPIRes.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: ListView
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with ListView control management.
 ;                  A ListView control is a window that displays a collection of items; each item consists of an icon and a label.
@@ -754,7 +756,7 @@ Func _GUICtrlListView_Create($hWnd, $sHeaderText, $iX, $iY, $iWidth = 150, $iHei
 	Local $iStr_len = StringLen($sHeaderText)
 	If $iStr_len Then $sHeaderText = StringSplit($sHeaderText, $sSeparatorChar)
 
-	$iStyle = BitOR($__UDFGUICONSTANT_WS_CHILD, $__UDFGUICONSTANT_WS_VISIBLE, $iStyle)
+	$iStyle = BitOR($__GUICTRLCONSTANT_WS_CHILD, $__GUICTRLCONSTANT_WS_VISIBLE, $iStyle)
 
 	;=========================================================================================================
 	If $bCoInit Then
@@ -771,7 +773,7 @@ Func _GUICtrlListView_Create($hWnd, $sHeaderText, $iX, $iY, $iWidth = 150, $iHei
 		EndSwitch
 	EndIf
 	;=========================================================================================================
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	Local $hList = _WinAPI_CreateWindowEx($iExStyle, $__LISTVIEWCONSTANT_ClassName, "", $iStyle, $iX, $iY, $iWidth, $iHeight, $hWnd, $nCtrlID)
@@ -827,7 +829,7 @@ Func _GUICtrlListView_DeleteAllItems($hWnd)
 		$hWnd = GUICtrlGetHandle($hWnd)
 	EndIf
 	; If native ListView - could be either type of item
-	If $vCID < $_UDF_STARTID Then
+	If $vCID < $__GUICTRL_STARTID Then
 		; Try deleting as native items
 		Local $iParam = 0
 		For $iIndex = _GUICtrlListView_GetItemCount($hWnd) - 1 To 0 Step -1
@@ -873,7 +875,7 @@ Func _GUICtrlListView_DeleteItem($hWnd, $iIndex)
 		$hWnd = GUICtrlGetHandle($hWnd)
 	EndIf
 	; If native ListView - could be either type of item
-	If $vCID < $_UDF_STARTID Then
+	If $vCID < $__GUICTRL_STARTID Then
 		; Try deleting as native item
 		Local $iParam = _GUICtrlListView_GetItemParam($hWnd, $iIndex)
 		; Check if LV item
@@ -915,7 +917,7 @@ Func _GUICtrlListView_DeleteItemsSelected($hWnd)
 		; Loop through items
 		For $iIndex = $aSelected[0] To 1 Step -1
 			; If native ListView - could be either type of item
-			If $vCID < $_UDF_STARTID Then
+			If $vCID < $__GUICTRL_STARTID Then
 				; Try deleting as native item
 				Local $iParam = _GUICtrlListView_GetItemParam($hWnd, $aSelected[$iIndex])
 				; Check if LV item
@@ -952,7 +954,7 @@ Func _GUICtrlListView_Destroy(ByRef $hWnd)
 			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 			Local $hParent = _WinAPI_GetParent($hWnd)
 			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+			Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 			If Not $iRet Then
 				; can check for errors here if needed, for debug
 			EndIf

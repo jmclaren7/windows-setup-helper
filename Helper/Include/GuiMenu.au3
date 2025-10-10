@@ -2,13 +2,13 @@
 
 #include "MenuConstants.au3"
 #include "StructureConstants.au3"
-#include "WinAPIConv.au3"
 #include "WinAPIMisc.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Menu
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with Menu control management.
 ;                  A menu is a list of items that specify options or groups of options (a submenu) for an application. Clicking a

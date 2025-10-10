@@ -21,10 +21,11 @@
 #include "WinAPIRes.au3"
 #include "WinAPIShellEx.au3"
 #include "WinAPISys.au3"
+#include "WinAPISysWin.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Windows API
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Windows API calls that have been translated to AutoIt functions (doc in  WinAPIEX).
 ; Author(s) .....: Paul Campbell (PaulIA), gafrost, Siao, Zedna, arcker, Prog@ndy, PsaltyDS, Raik, jpm
 ; Dll ...........: kernel32.dll, user32.dll, gdi32.dll, comdlg32.dll, shell32.dll, ole32.dll, winspool.drv

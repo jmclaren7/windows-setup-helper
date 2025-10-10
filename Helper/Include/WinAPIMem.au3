@@ -1,10 +1,10 @@
 #include-once
 
-#include "WinAPIInternals.au3"
+#include "MsgBoxConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIMem.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -49,6 +49,7 @@ Global $__g_hHeap = 0
 ; __HeapReAlloc
 ; __HeapSize
 ; __HeapValidate
+; __FatalExit
 ; ===============================================================================================================================
 
 #EndRegion Functions list
@@ -437,5 +438,10 @@ Func __HeapValidate($pMemory)
 	If @error Then Return SetError(@error, @extended, False)
 	Return $aCall[0]
 EndFunc   ;==>__HeapValidate
+
+Func __FatalExit($iCode, $sText = '')
+	If $sText Then MsgBox($MB_SYSTEMMODAL, 'AutoIt', $sText)
+	DllCall('kernel32.dll', 'none', 'FatalExit', 'int', $iCode) ; _WinAPI_FatalExit($iCode)
+EndFunc   ;==>__FatalExit
 
 #EndRegion Internal Functions

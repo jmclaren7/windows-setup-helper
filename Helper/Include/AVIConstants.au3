@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: AVI_Constants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants for <a href="../appendix/GUIStyles.htm#Avi">GUI control AVI styles</a>.
 ; Author(s) .....: Valik

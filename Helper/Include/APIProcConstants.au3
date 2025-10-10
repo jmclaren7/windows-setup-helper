@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPIProc Constants UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants that can be used with UDF library
 ; Author(s) .....: Yashied, Jpm
@@ -22,6 +22,21 @@ Global Const $CREATE_SEPARATE_WOW_VDM = 0x00000800
 Global Const $CREATE_SHARED_WOW_VDM = 0x00001000
 Global Const $CREATE_SUSPENDED = 0x00000004
 Global Const $CREATE_UNICODE_ENVIRONMENT = 0x00000400
+
+; Flags for $tagSTARTUPINFO structure (Process and Thread structures)
+Global Const $STARTF_FORCEOFFFEEDBACK = 0x80
+Global Const $STARTF_FORCEONFEEDBACK = 0x40
+Global Const $STARTF_PREVENTPINNING = 0x00002000
+Global Const $STARTF_RUNFULLSCREEN = 0x20
+Global Const $STARTF_TITLEISAPPID = 0x00001000
+Global Const $STARTF_TITLEISLINKNAME = 0x00000800
+Global Const $STARTF_USECOUNTCHARS = 0x8
+Global Const $STARTF_USEFILLATTRIBUTE = 0x10
+Global Const $STARTF_USEHOTKEY = 0x200
+Global Const $STARTF_USEPOSITION = 0x4
+Global Const $STARTF_USESHOWWINDOW = 0x1
+Global Const $STARTF_USESIZE = 0x2
+Global Const $STARTF_USESTDHANDLES = 0x100
 
 ; move in SecurityConstants.au3
 ; Global Const $LOGON_WITH_PROFILE = 0x01
@@ -43,6 +58,11 @@ Global Const $REALTIME_PRIORITY_CLASS = 0x00000100
 
 Global Const $PROCESS_MODE_BACKGROUND_BEGIN = 0x00100000
 Global Const $PROCESS_MODE_BACKGROUND_END = 0x00200000
+
+; _WinAPI_OpenEvent()
+Global Const $EVENT_MODIFY_STATE = 0x0002
+Global Const $EVENT_QUERY_STATE = 0x0001
+Global Const $EVENT_ALL_ACCESS = 0x001F0003 ; BitOR($STANDARD_RIGHTS_ALL, $OPEN_MODIFY_STATE, $EVENT_QUERY_STATE, $OPEN_MODIFY_STATE)
 
 ; _WinAPI_OpenMutex()
 Global Const $MUTEX_MODIFY_STATE = 0x0001

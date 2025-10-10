@@ -1,19 +1,21 @@
 #include-once
 
 #include "GUICtrlInternals.au3"
+
 #include "IPAddressConstants.au3"
-#include "Memory.au3"
 #include "SendMessage.au3"
 #include "StructureConstants.au3"
-#include "UDFGlobalID.au3"
 #include "WinAPIConv.au3"
-#include "WinAPIGdi.au3"
+#include "WinAPIGdiDC.au3"
+
+#include "WinAPIGdiInternals.au3"
 #include "WinAPIHObj.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: IPAddress
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with IPAddress control management.
 ; Author(s) .....: Gary Frost (gafrost)
@@ -57,7 +59,7 @@ Func _GUICtrlIpAddress_Create($hWnd, $iX, $iY, $iWidth = 125, $iHeight = 25, $iS
 	If $iStyles = -1 Then $iStyles = 0x00000000
 	If $iExstyles = -1 Then $iExstyles = 0x00000000
 
-	Local $iStyle = BitOR($__UDFGUICONSTANT_WS_CHILD, $__UDFGUICONSTANT_WS_VISIBLE, $__UDFGUICONSTANT_WS_TABSTOP, $iStyles)
+	Local $iStyle = BitOR($__GUICTRLCONSTANT_WS_CHILD, $__GUICTRLCONSTANT_WS_VISIBLE, $__GUICTRLCONSTANT_WS_TABSTOP, $iStyles)
 
 	Local Const $ICC_INTERNET_CLASSES = 0x0800
 	Local $tICCE = DllStructCreate('dword dwSize;dword dwICC')
@@ -66,7 +68,7 @@ Func _GUICtrlIpAddress_Create($hWnd, $iX, $iY, $iWidth = 125, $iHeight = 25, $iS
 	DllCall('comctl32.dll', 'bool', 'InitCommonControlsEx', 'struct*', $tICCE)
 	If @error Then Return SetError(@error, @extended, 0)
 
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	Local $hIPAddress = _WinAPI_CreateWindowEx($iExstyles, $__IPADDRESSCONSTANT_ClassName, "", $iStyle, $iX, $iY, $iWidth, $iHeight, $hWnd, $nCtrlID)
@@ -95,7 +97,7 @@ Func _GUICtrlIpAddress_Destroy($hWnd)
 		Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 		Local $hParent = _WinAPI_GetParent($hWnd)
 		$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-		Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+		Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 		If Not $iRet Then
 			; can check for errors here if needed, for debug
 		EndIf

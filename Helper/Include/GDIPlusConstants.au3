@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: GDIPlus_Constants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants for GDI+
 ; Author(s) .....: Valik, Gary Frost, UEZ
@@ -13,6 +13,22 @@
 Global Const $GDIP_DASHCAPFLAT = 0 ; A square cap that squares off both ends of each dash
 Global Const $GDIP_DASHCAPROUND = 2 ; A circular cap that rounds off both ends of each dash
 Global Const $GDIP_DASHCAPTRIANGLE = 3 ; A triangular cap that points both ends of each dash
+
+; Pixel Format constants
+Global Const $GDIP_PXF01INDEXED = 0x00030101 ; 1 bpp, indexed
+Global Const $GDIP_PXF04INDEXED = 0x00030402 ; 4 bpp, indexed
+Global Const $GDIP_PXF08INDEXED = 0x00030803 ; 8 bpp, indexed
+Global Const $GDIP_PXF16GRAYSCALE = 0x00101004 ; 16 bpp, grayscale
+Global Const $GDIP_PXF16RGB555 = 0x00021005 ; 16 bpp; 5 bits for each RGB
+Global Const $GDIP_PXF16RGB565 = 0x00021006 ; 16 bpp; 5 bits red, 6 bits green, and 5 bits blue
+Global Const $GDIP_PXF16ARGB1555 = 0x00061007 ; 16 bpp; 1 bit for alpha and 5 bits for each RGB component
+Global Const $GDIP_PXF24RGB = 0x00021808 ; 24 bpp; 8 bits for each RGB
+Global Const $GDIP_PXF32RGB = 0x00022009 ; 32 bpp; 8 bits for each RGB. No alpha.
+Global Const $GDIP_PXF32ARGB = 0x0026200A ; 32 bpp; 8 bits for each RGB and alpha
+Global Const $GDIP_PXF32PARGB = 0x000E200B ; 32 bpp; 8 bits for each RGB and alpha, pre-mulitiplied
+Global Const $GDIP_PXF48RGB = 0x0010300C ; 48 bpp; 16 bits for each RGB
+Global Const $GDIP_PXF64ARGB = 0x0034400D ; 64 bpp; 16 bits for each RGB and alpha
+Global Const $GDIP_PXF64PARGB = 0x001A400E ; 64 bpp; 16 bits for each RGB and alpha, pre-multiplied
 
 ; Pen Dash Style Types
 Global Const $GDIP_DASHSTYLESOLID = 0 ; A solid line
@@ -112,20 +128,7 @@ Global Const $GDIP_LINECAPARROWANCHOR = 0x14 ; Specifies that the line ends are 
 Global Const $GDIP_LINECAPCUSTOM = 0xFF ; Specifies that the line ends are made from a CustomLineCap
 
 ; Pixel Format constants
-Global Const $GDIP_PXF01INDEXED = 0x00030101 ; 1 bpp, indexed
-Global Const $GDIP_PXF04INDEXED = 0x00030402 ; 4 bpp, indexed
-Global Const $GDIP_PXF08INDEXED = 0x00030803 ; 8 bpp, indexed
-Global Const $GDIP_PXF16GRAYSCALE = 0x00101004 ; 16 bpp, grayscale
-Global Const $GDIP_PXF16RGB555 = 0x00021005 ; 16 bpp; 5 bits for each RGB
-Global Const $GDIP_PXF16RGB565 = 0x00021006 ; 16 bpp; 5 bits red, 6 bits green, and 5 bits blue
-Global Const $GDIP_PXF16ARGB1555 = 0x00061007 ; 16 bpp; 1 bit for alpha and 5 bits for each RGB component
-Global Const $GDIP_PXF24RGB = 0x00021808 ; 24 bpp; 8 bits for each RGB
-Global Const $GDIP_PXF32RGB = 0x00022009 ; 32 bpp; 8 bits for each RGB. No alpha.
-Global Const $GDIP_PXF32ARGB = 0x0026200A ; 32 bpp; 8 bits for each RGB and alpha
-Global Const $GDIP_PXF32PARGB = 0x000E200B ; 32 bpp; 8 bits for each RGB and alpha, pre-mulitiplied
-Global Const $GDIP_PXF48RGB = 0x0010300C ; 48 bpp; 16 bits for each RGB
-Global Const $GDIP_PXF64ARGB = 0x0034400D ; 64 bpp; 16 bits for each RGB and alpha
-Global Const $GDIP_PXF64PARGB = 0x001A400E ; 64 bpp; 16 bits for each RGB and alpha, pre-multiplied
+; Moved in WinAPIInternals.au3
 
 ; ImageFormat constants (Globally Unique Identifier (GUID))
 Global Const $GDIP_IMAGEFORMAT_UNDEFINED = "{B96B3CA9-0728-11D3-9D7B-0000F81EF32E}" ; Windows GDI+ is unable to determine the format.

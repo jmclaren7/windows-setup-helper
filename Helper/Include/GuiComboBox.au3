@@ -1,17 +1,20 @@
 #include-once
 
+#include "GuiCtrlInternals.au3"
+
 #include "ComboConstants.au3"
 #include "DirConstants.au3"
 #include "SendMessage.au3"
 #include "StructureConstants.au3"
-#include "UDFGlobalID.au3"
 #include "WinAPIConv.au3"
 #include "WinAPIHObj.au3"
+
 #include "WinAPISysInternals.au3"
+#include "WindowsStylesConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: ComboBox
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with ComboBox control management.
 ; Author(s) .....: gafrost, PaulIA, Valik
@@ -206,9 +209,9 @@ Func _GUICtrlComboBox_Create($hWnd, $sText, $iX, $iY, $iWidth = 100, $iHeight = 
 	If $iStyle = -1 Then $iStyle = BitOR($WS_VSCROLL, $CBS_AUTOHSCROLL, $CBS_DROPDOWN)
 	If $iExStyle = -1 Then $iExStyle = 0x00000000
 
-	$iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_CHILD, $__UDFGUICONSTANT_WS_TABSTOP, $__UDFGUICONSTANT_WS_VISIBLE)
+	$iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_CHILD, $__GUICTRLCONSTANT_WS_TABSTOP, $__GUICTRLCONSTANT_WS_VISIBLE)
 
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	Local $hCombo = _WinAPI_CreateWindowEx($iExStyle, $__COMBOBOXCONSTANT_ClassName, "", $iStyle, $iX, $iY, $iWidth, $iHeight, $hWnd, $nCtrlID)
@@ -245,7 +248,7 @@ Func _GUICtrlComboBox_Destroy(ByRef $hWnd)
 			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 			Local $hParent = _WinAPI_GetParent($hWnd)
 			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+			Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 			If Not $iRet Then
 				; can check for errors here if needed, for debug
 			EndIf
@@ -793,7 +796,7 @@ EndFunc   ;==>_GUICtrlComboBox_ShowDropDown
 ; Example .......: Yes
 ; ===============================================================================================================================
 Func __GUICtrlComboBox_IsPressed($sHexKey, $vDLL = 'user32.dll')
-	; $hexKey must be the value of one of the keys.
+	; string $sHexKey must be the value of one of the keys.
 	; _Is_Key_Pressed will return 0 if the key is not pressed, 1 if it is.
 	Local $a_R = DllCall($vDLL, "short", "GetAsyncKeyState", "int", '0x' & $sHexKey)
 	If @error Then Return SetError(@error, @extended, False)

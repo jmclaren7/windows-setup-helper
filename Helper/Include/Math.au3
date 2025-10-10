@@ -4,7 +4,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Mathematical calculations
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with mathematical calculations.
 ; Author(s) .....: Valik, Gary Frost, guinness ...
@@ -17,6 +17,7 @@
 
 ; #CURRENT# =====================================================================================================================
 ; _Degree
+; _Div
 ; _Max
 ; _Min
 ; _Radian
@@ -28,6 +29,25 @@
 Func _Degree($iRadians)
 	Return IsNumber($iRadians) ? $iRadians * $MATH_DEGREES : SetError(1, 0, 0)
 EndFunc   ;==>_Degree
+
+; #FUNCTION# ====================================================================================================================
+; Author ........: jchd
+; Modified.......: Jpm
+; ===============================================================================================================================
+Func _Div($iNum1, $iNum2)
+	$iNum1 = Int($iNum1)
+	$iNum2 = Int($iNum2)
+
+	Local $iResult = $iNum1 / $iNum2
+	If $iNum2 <> 0 Then
+		$iResult = Int($iResult)
+		SetExtended(Mod($iNum1, $iNum2))
+	Else
+		SetError(1, 0 / 0) ; in fact double cannot be set in @extended
+	EndIf
+
+	Return $iResult
+EndFunc   ;==>_Div
 
 ; #NO_DOC_FUNCTION# =============================================================================================================
 ; Name...........: _MathCheckDiv

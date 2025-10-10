@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Toolbar_Constants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants for Toolbar functions.
 ; Author(s) .....: Valik, Gary Frost, ...
@@ -30,6 +30,20 @@ Global Const $TBSTATE_INDETERMINATE = 0x00000010 ; The button is grayed
 Global Const $TBSTATE_WRAP = 0x00000020 ; The button is followed by a line break
 Global Const $TBSTATE_ELLIPSES = 0x00000040 ; The button's text is cut off and an ellipsis is displayed
 Global Const $TBSTATE_MARKED = 0x00000080 ; The button is marked
+
+Global Const $I_IMAGECALLBACK = -1
+Global Const $I_IMAGENONE = -2
+Global Const $I_IMAGE = -3
+
+; Standard Resource Identifier Constants
+Global Const $HINST_COMMCTRL = -1
+
+Global Const $IDB_STD_SMALL_COLOR = 0
+Global Const $IDB_STD_LARGE_COLOR = 1
+Global Const $IDB_VIEW_SMALL_COLOR = 4
+Global Const $IDB_VIEW_LARGE_COLOR = 5
+Global Const $IDB_HIST_SMALL_COLOR = 8
+Global Const $IDB_HIST_LARGE_COLOR = 9
 
 ; Messages
 Global Const $__TOOLBARCONSTANTS_WM_USER = 0X400

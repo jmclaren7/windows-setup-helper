@@ -1,18 +1,16 @@
 #include-once
 
-#include "DateTimeConstants.au3"
 #include "GUICtrlInternals.au3"
-#include "Memory.au3"
+
+#include "DateTimeConstants.au3"
 #include "SendMessage.au3"
 #include "StructureConstants.au3"
-#include "UDFGlobalID.au3"
-#include "WinAPIConv.au3"
-;~ #include "WinAPIGdiInternals.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Date_Time_Picker
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Functions that assist with date and time picker (DTP) control management.
 ;                  A date and time picker (DTP) control provides a simple and intuitive interface through which to exchange date
 ;                  and time information with a user.  For example, with a DTP control you can ask the user to enter a date and
@@ -52,8 +50,8 @@ Global Const $__DTPCONSTANT_ClassName = "SysDateTimePick32"
 ; Modified.......: Gary Frost
 ; ===============================================================================================================================
 Func _GUICtrlDTP_Create($hWnd, $iX, $iY, $iWidth = 120, $iHeight = 21, $iStyle = 0x00000000, $iExStyle = 0x00000000)
-	$iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_CHILD, $__UDFGUICONSTANT_WS_VISIBLE)
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	$iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_CHILD, $__GUICTRLCONSTANT_WS_VISIBLE)
+	Local $nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	Return _WinAPI_CreateWindowEx($iExStyle, $__DTPCONSTANT_ClassName, "", $iStyle, $iX, $iY, $iWidth, $iHeight, $hWnd, $nCtrlID)
@@ -72,7 +70,7 @@ Func _GUICtrlDTP_Destroy(ByRef $hWnd)
 			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 			Local $hParent = _WinAPI_GetParent($hWnd)
 			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+			Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 			If Not $iRet Then
 				; can check for errors here if needed, for debug
 			EndIf

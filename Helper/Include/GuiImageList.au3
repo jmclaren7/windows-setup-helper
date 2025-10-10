@@ -1,18 +1,17 @@
 #include-once
 
-#include "ColorConstants.au3"
-#include "ImageListConstants.au3"
-#include "StructureConstants.au3"
-#include "WinAPIConstants.au3"
-#include "WinAPIConv.au3"
-#include "WinAPIError.au3"
-;~ #include "WinAPIGdi.au3"
-#include "WinAPIIcons.au3"
-#include "WinAPIRes.au3"
+#include "ColorConstants.au3"       ; $CLR_NONE
+#include "ImageListConstants.au3"   ; $ILD_BLEND25
+#include "StructureConstants.au3"   ; $tagIMAGEINFO
+#include "WinAPIError.au3"          ; _WinAPI_GetLastError()
+#include "WinAPIHObj.au3"           ; _WinAPI_DeleteObject()
+#include "WinAPIIcons.au3"          ; _WinAPI_ExtractIconEx()
+
+#include "WinAPIInternals.au3"      ; _WinAPI_LoadImage()
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: ImageList
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Functions that assist with ImageList control management.
 ;                  An image list is a collection of images of the same size, each of which can be referred to by its index. Image
 ;                  lists are used to efficiently manage large sets of icons or bitmaps. All images in an image list are contained

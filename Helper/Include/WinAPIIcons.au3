@@ -1,13 +1,14 @@
 #include-once
 
 #include "WinAPIGdiDC.au3"
+
 #include "WinAPIGdiInternals.au3"
 #include "WinAPIHObj.au3"
-#include "WinAPIInternals.au3"
+#include "WinAPIMisc.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIIcons.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -269,7 +270,7 @@ EndFunc   ;==>_WinAPI_CreateIcon
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_CreateIconFromResourceEx($pData, $iSize, $bIcon = True, $iXDesiredPixels = 0, $iYDesiredPixels = 0, $iFlags = 0)
+Func _WinAPI_CreateIconFromResourceEx($pData, $iSize, $bIcon = True, $iXDesiredPixels = 0, $iYDesiredPixels = 0, $iFlags = $LR_DEFAULTCOLOR)
 	Local $aCall = DllCall('user32.dll', 'handle', 'CreateIconFromResourceEx', 'ptr', $pData, 'dword', $iSize, 'bool', $bIcon, _
 			'dword', 0x00030000, 'int', $iXDesiredPixels, 'int', $iYDesiredPixels, 'uint', $iFlags)
 	If @error Then Return SetError(@error, @extended, 0)

@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Constants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants to be included in an AutoIt v3 script.
 ; Author(s) .....: JLandes, Nutster, CyberSlug, Holger, ...
@@ -128,6 +128,9 @@ Global Const $MOUSEEVENTF_RIGHTUP = 0x0010 ; Specifies that the right button cha
 Global Const $MOUSEEVENTF_MIDDLEDOWN = 0x0020 ; Specifies that the middle button changed to down
 Global Const $MOUSEEVENTF_MIDDLEUP = 0x0040 ; Specifies that the middle button changed to up
 Global Const $MOUSEEVENTF_WHEEL = 0x0800 ; Specifies that the wheel has been moved, if the mouse has a wheel
+Global Const $MOUSEEVENTF_HWHEEL = 0x1000 ; Specifies that the wheel was moved horizontally, if the mouse has a wheel. The amount of movement is specified in mouseData.
+Global Const $MOUSEEVENTF_MOVE_NOCOALESCE = 0x2000 ; The WM_MOUSEMOVE messages will not be coalesced. The default behavior is to coalesce $WM_MOUSEMOVE messages.
+Global Const $MOUSEEVENTF_VIRTUALDESK = 0x4000 ; Maps coordinates to the entire desktop. Must be used with $MOUSEEVENTF_ABSOLUTE.
 Global Const $MOUSEEVENTF_XDOWN = 0x0080 ; Specifies that an X button was pressed
 Global Const $MOUSEEVENTF_XUP = 0x0100 ; Specifies that an X button was released
 

@@ -1,15 +1,18 @@
 #include-once
 
 #include "APIRegConstants.au3"
+#include "AutoItConstants.au3"
 #include "StringConstants.au3"
 #include "StructureConstants.au3"
 #include "WinAPICom.au3"
 #include "WinAPIError.au3"
+
+#include "WinAPIInternals.au3"
 #include "WinAPIMem.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIReg.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -268,7 +271,7 @@ EndFunc   ;==>_WinAPI_RegCopyTreeEx
 ; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_RegCreateKey($vKey, $sSubKey = '', $iAccess = $KEY_ALL_ACCESS, $iOptions = 0, $tSecurity = 0)
-	$vKey = __WinAPI_RegConvHKey($vKey, $sSubKey, $iAccess)
+	$vKey = __WinAPI_RegConvHKey($vKey, $sSubKey)
 	If @error Then Return SetError(@error + 10, @extended, 0)
 
 	Local $aCall = DllCall('advapi32.dll', 'long', 'RegCreateKeyExW', 'handle', $vKey, 'wstr', $sSubKey, 'dword', 0, 'ptr', 0, _
@@ -295,7 +298,7 @@ EndFunc   ;==>_WinAPI_RegDeleteEmptyKey
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_RegDeleteKey($hKey, $sSubKey = '', $iSamDesired = Default)
+Func _WinAPI_RegDeleteKey($vKey, $sSubKey = '', $iSamDesired = Default)
 	If $iSamDesired = Default Then
 		If @AutoItX64 Then
 			$iSamDesired = $KEY_WOW64_64KEY
@@ -304,9 +307,12 @@ Func _WinAPI_RegDeleteKey($hKey, $sSubKey = '', $iSamDesired = Default)
 		EndIf
 	EndIf
 
-	Local $aCall = DllCall('advapi32.dll', 'long', 'RegDeleteKeyExW', 'handle', $hKey, 'wstr', $sSubKey, 'dword', $iSamDesired, 'dword', 0)
+	$vKey = __WinAPI_RegConvHKey($vKey, $sSubKey)
+	If @error Then Return SetError(@error + 10, @extended, 0)
+
+	Local $aCall = DllCall('advapi32.dll', 'long', 'RegDeleteKeyExW', 'handle', $vKey, 'wstr', $sSubKey, 'dword', $iSamDesired, 'dword', 0)
 	If @error Then Return SetError(@error, @extended, 0)
-	If $aCall[0] Then Return SetError(10, $aCall[0], 0)
+	If $aCall[0] Then Return SetError(10, $aCall[0], _WinAPI_GetLastError())
 
 	Return 1
 EndFunc   ;==>_WinAPI_RegDeleteKey
@@ -469,7 +475,7 @@ EndFunc   ;==>_WinAPI_RegNotifyChangeKeyValue
 ; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_RegOpenKey($vKey, $sSubKey = '', $iAccess = $KEY_ALL_ACCESS)
-	$vKey = __WinAPI_RegConvHKey($vKey, $sSubKey, $iAccess)
+	$vKey = __WinAPI_RegConvHKey($vKey, $sSubKey)
 	If @error Then Return SetError(@error + 10, @extended, 0)
 
 	Local $sSubKeyType = 'wstr'
@@ -486,18 +492,17 @@ EndFunc   ;==>_WinAPI_RegOpenKey
 ; #INTERNAL_USE_ONLY# ===========================================================================================================
 ; Name...........: __WinAPI_RegConvHKey
 ; Description ...: Frees the memory that network management functions return
-; Syntax.........: __WinAPI_RegConvHKey( $vKey, ByRef $sSubKey, ByRef $iAccess )
+; Syntax.........: __WinAPI_RegConvHKey( $vKey, ByRef $sSubKey )
 ; Parameters ....: $vKey     - If String will return as hRootKey
 ;                  $sSubKey  - If String will return as SubKey defined in $vKey
-;                  $iAccess  - Updated when running in X64 mode or if X64 requested
 ; Return values .: Success      - Handle hRootKey
 ;                  Failure      - False
 ; Author ........: Jpm
 ; Modified.......:
 ; Remarks .......: This function is used internally by the _WinAPI_RegOpenKey or  module to free network management buffers
 ; ===============================================================================================================================
-Func __WinAPI_RegConvHKey($vKey, ByRef $sSubKey, ByRef $iAccess)
-	Local $hRootKey = $vKey, $sSubKeyTemp = "", $bX64 = False
+Func __WinAPI_RegConvHKey($vKey, ByRef $sSubKey)
+	Local $hRootKey = $vKey, $sSubKeyTemp = ""
 	If IsString($vKey) Then
 		Local $sRoot = $vKey
 		Local $n = StringInStr($vKey, "\")
@@ -506,9 +511,8 @@ Func __WinAPI_RegConvHKey($vKey, ByRef $sSubKey, ByRef $iAccess)
 			$sSubKeyTemp = StringTrimLeft($vKey, $n)
 		EndIf
 
-		; Check if X64 requested
+		; Update $sRoot if X64 requested
 		$sRoot = StringReplace($sRoot, "64", "")
-		If @extended Then $bX64 = True
 
 		Switch $sRoot
 			Case "HKCR", "HKEY_CLASSES_ROOT"
@@ -538,15 +542,6 @@ Func __WinAPI_RegConvHKey($vKey, ByRef $sSubKey, ByRef $iAccess)
 			If $sSubKeyTemp <> "" Then Return SetError(2, 0, 0) ; $sRoot contains subkey and $sSubKey already defined
 		Else
 			$sSubKey = $sSubKeyTemp
-		EndIf
-	EndIf
-
-	If @AutoItX64 Then
-		If $bX64 And (BitAND($iAccess, $KEY_WOW64_32KEY) = 0) Then
-			$iAccess = BitOR($iAccess, $KEY_WOW64_64KEY)
-		Else
-			If BitAND($iAccess, $KEY_WOW64_64KEY) = 0 Then _
-					$iAccess = BitOR($iAccess, $KEY_WOW64_32KEY)
 		EndIf
 	EndIf
 

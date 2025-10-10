@@ -3,11 +3,10 @@
 #include "MemoryConstants.au3"
 #include "ProcessConstants.au3"
 #include "Security.au3"
-#include "StructureConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Memory
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Functions that assist with Memory management.
 ;                  The memory manager implements virtual memory, provides a core set of services such  as  memory  mapped  files,
 ;                  copy-on-write memory, large memory support, and underlying support for the cache manager.
@@ -121,11 +120,11 @@ EndFunc   ;==>_MemGlobalLock
 ; Author ........: matwachich
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _MemGlobalRealloc($hMemory, $iBytes, $iFlags = 0)
+Func _MemGlobalReAlloc($hMemory, $iBytes, $iFlags = 0)
 	Local $aResult = DllCall("kernel32.dll", "handle", "GlobalReAlloc", "handle", $hMemory, "ulong_ptr", $iBytes, "uint", $iFlags)
 	If @error Then Return SetError(@error, @extended, 0)
 	Return $aResult[0]
-EndFunc   ;==>_MemGlobalRealloc
+EndFunc   ;==>_MemGlobalReAlloc
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: Paul Campbell (PaulIA)

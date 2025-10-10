@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Button_Constants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants for <a href="../appendix/GUIStyles.htm#Button">GUI control Button styles</a> and Group, Radio, Checkbox.
 ; Author(s) .....: Valik

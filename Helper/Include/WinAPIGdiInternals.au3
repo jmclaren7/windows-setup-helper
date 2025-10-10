@@ -1,14 +1,16 @@
 #include-once
 
+#include "MsgBoxConstants.au3"
 #include "StructureConstants.au3"
-#include "WinAPIHobj.au3"
+#include "WinAPIHObj.au3"
+
 #include "WinAPIInternals.au3"
 #include "WinAPIMem.au3"
 #include "WinAPIMisc.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIxxx.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -24,16 +26,14 @@ Global Const $tagBITMAPV5HEADER = 'struct;dword bV5Size;long bV5Width;long bV5He
 Global Const $tagDIBSECTION = $tagBITMAP & ';' & $tagBITMAPINFOHEADER & ';dword dsBitfields[3];ptr dshSection;dword dsOffset'
 
 ; flags for GetTextMetrics
-Global Const $TMPF_FIXED_PITCH = 0x01
-Global Const $TMPF_VECTOR = 0x02
-Global Const $TMPF_TRUETYPE = 0x04
-Global Const $TMPF_DEVICE = 0x08
+; Moved in WinAPIConstants.au3
 
 Global Const $__WINAPICONSTANT_FW_NORMAL = 400
 Global Const $__WINAPICONSTANT_DEFAULT_CHARSET = 1
 Global Const $__WINAPICONSTANT_OUT_DEFAULT_PRECIS = 0
 Global Const $__WINAPICONSTANT_CLIP_DEFAULT_PRECIS = 0
 Global Const $__WINAPICONSTANT_DEFAULT_QUALITY = 0
+Global Const $__WINAPICONSTANT_FF_DONTCARE = 0
 ; ===============================================================================================================================
 
 #EndRegion Global Variables and Constants
@@ -74,6 +74,7 @@ Global Const $__WINAPICONSTANT_DEFAULT_QUALITY = 0
 
 ; #INTERNAL_USE_ONLY# ===========================================================================================================
 ; __Init
+; __RGB
 ; ===============================================================================================================================
 
 #EndRegion Functions list
@@ -117,7 +118,7 @@ EndFunc   ;==>_WinAPI_CopyBitmap
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_CopyImage($hImage, $iType = 0, $iXDesiredPixels = 0, $iYDesiredPixels = 0, $iFlags = 0)
+Func _WinAPI_CopyImage($hImage, $iType = 0, $iXDesiredPixels = 0, $iYDesiredPixels = 0, $iFlags = $LR_DEFAULTCOLOR)
 	Local $aCall = DllCall('user32.dll', 'handle', 'CopyImage', 'handle', $hImage, 'uint', $iType, _
 			'int', $iXDesiredPixels, 'int', $iYDesiredPixels, 'uint', $iFlags)
 	If @error Then Return SetError(@error, @extended, 0)
@@ -297,7 +298,7 @@ EndFunc   ;==>_WinAPI_CreateDIBColorTable
 ; Author ........: Gary Frost
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_CreateFont($iHeight, $iWidth, $iEscape = 0, $iOrientn = 0, $iWeight = $__WINAPICONSTANT_FW_NORMAL, $bItalic = False, $bUnderline = False, $bStrikeout = False, $iCharset = $__WINAPICONSTANT_DEFAULT_CHARSET, $iOutputPrec = $__WINAPICONSTANT_OUT_DEFAULT_PRECIS, $iClipPrec = $__WINAPICONSTANT_CLIP_DEFAULT_PRECIS, $iQuality = $__WINAPICONSTANT_DEFAULT_QUALITY, $iPitch = 0, $sFace = 'Arial')
+Func _WinAPI_CreateFont($iHeight, $iWidth, $iEscape = 0, $iOrientn = 0, $iWeight = $__WINAPICONSTANT_FW_NORMAL, $bItalic = False, $bUnderline = False, $bStrikeout = False, $iCharset = $__WINAPICONSTANT_DEFAULT_CHARSET, $iOutputPrec = $__WINAPICONSTANT_OUT_DEFAULT_PRECIS, $iClipPrec = $__WINAPICONSTANT_CLIP_DEFAULT_PRECIS, $iQuality = $__WINAPICONSTANT_DEFAULT_QUALITY, $iPitch = $__WINAPICONSTANT_FF_DONTCARE, $sFace = 'Arial')
 	Local $aCall = DllCall("gdi32.dll", "handle", "CreateFontW", "int", $iHeight, "int", $iWidth, "int", $iEscape, _
 			"int", $iOrientn, "int", $iWeight, "dword", $bItalic, "dword", $bUnderline, "dword", $bStrikeout, _
 			"dword", $iCharset, "dword", $iOutputPrec, "dword", $iClipPrec, "dword", $iQuality, "dword", $iPitch, "wstr", $sFace)
@@ -590,10 +591,20 @@ EndFunc   ;==>__XORProc
 Func __Init($dData)
 	Local $iLength = BinaryLen($dData)
 	Local $aCall = DllCall('kernel32.dll', 'ptr', 'VirtualAlloc', 'ptr', 0, 'ulong_ptr', $iLength, 'dword', 0x00001000, 'dword', 0x00000040)
-	If @error Or Not $aCall[0] Then __FatalExit(1, 'Error allocating memory.')
+	If @error Or Not $aCall[0] Then
+		MsgBox($MB_SYSTEMMODAL, 'AutoIt', 'Error allocating memory.')
+		DllCall('kernel32.dll', 'none', 'FatalExit', 'int', 1) ; _WinAPI_FatalExit($iCode)
+	EndIf
 	Local $tData = DllStructCreate('byte[' & $iLength & "]", $aCall[0])
 	DllStructSetData($tData, 1, $dData)
 	Return $aCall[0]
 EndFunc   ;==>__Init
+
+Func __RGB($iColor)
+	If $__g_iRGBMode Then
+		$iColor = _WinAPI_SwitchColor($iColor)
+	EndIf
+	Return $iColor
+EndFunc   ;==>__RGB
 
 #EndRegion Internal Functions

@@ -4,11 +4,13 @@
 #include "StringConstants.au3"
 #include "StructureConstants.au3"
 #include "WinAPIConv.au3"
+
+#include "WinAPIInternals.au3"
 #include "WinAPIMem.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIMisc.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================

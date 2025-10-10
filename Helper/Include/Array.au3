@@ -1,13 +1,13 @@
-#include-Once
+#include-once
 
 #include "ArrayDisplayInternals.au3"
+
 #include "AutoItConstants.au3"
-#include "MsgBoxConstants.au3"
 #include "StringConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Array
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions for manipulating arrays.
 ; Author(s) .....: JdeB, Erik Pilsits, Ultima, Dale (Klaatu) Thompson, Cephas,randallc, Gary Frost, GEOSoft,
@@ -483,9 +483,9 @@ EndFunc   ;==>_ArrayDelete
 ; Author ........: randallc, Ultima
 ; Modified.......: Gary Frost (gafrost), Ultima, Zedna, jpm, Melba23, AZJIO, UEZ
 ; ===============================================================================================================================
-Func _ArrayDisplay(Const ByRef $aArray, $sTitle = Default, $sArrayRange = Default, $iFlags = Default, $vUser_Separator = Default, $sHeader = Default, $iMax_ColWidth = Default)
+Func _ArrayDisplay(Const ByRef $aArray, $sTitle = Default, $sArrayRange = Default, $iFlags = Default, $vUser_Separator = Default, $sHeader = Default, $iDesired_Colwidth = Default)
 	#forceref $vUser_Separator
-	Local $iRet = __ArrayDisplay_Share($aArray, $sTitle, $sArrayRange, $iFlags, Default, $sHeader, $iMax_ColWidth, 0, False)
+	Local $iRet = __ArrayDisplay_Share($aArray, $sTitle, $sArrayRange, $iFlags, Default, $sHeader, $iDesired_Colwidth, 0, False)
 	Return SetError(@error, @extended, $iRet)
 EndFunc   ;==>_ArrayDisplay
 
@@ -603,7 +603,6 @@ EndFunc   ;==>_ArrayFromString
 ; Modified.......: Ultima - code cleanup; Melba23 - element position check, 2D support & multiple insertions
 ; ===============================================================================================================================
 Func _ArrayInsert(ByRef $aArray, $vRange, $vValue = "", $iStart = 0, $sDelim_Item = "|", $sDelim_Row = @CRLF, $iForce = $ARRAYFILL_FORCE_DEFAULT)
-
 	If $vValue = Default Then $vValue = ""
 	If $iStart = Default Then $iStart = 0
 	If $sDelim_Item = Default Then $sDelim_Item = "|"
@@ -1995,15 +1994,57 @@ EndFunc   ;==>_Array1DToHistogram
 ; Author ........: jpm
 ; Modified.......:
 ; ===============================================================================================================================
-Func _Array2DCreate($aCol0, $aCol1)
-	If (UBound($aCol0, 0) <> 1) Or (UBound($aCol1, 0) <> 1) Then Return SetError(1, 0, "")
-	Local $nRows = UBound($aCol0)
-	If $nRows <> UBound($aCol1) Then Return SetError(2, 0, "")
-	Local $aTmp[$nRows][2]
-	For $i = 0 To $nRows - 1
-		$aTmp[$i][0] = $aCol0[$i]
-		$aTmp[$i][1] = $aCol1[$i]
-	Next
+Func _Array2DCreate($aArray1, $aArray2)
+
+	If Not IsArray($aArray1) Or Not IsArray($aArray2) Then Return SetError(3, 0, "")
+	Local $iDim1 = UBound($aArray1, $UBOUND_DIMENSIONS), $iDim2 = UBound($aArray2, $UBOUND_DIMENSIONS)
+	If $iDim1 > 2 Or $iDim2 > 2 Then Return SetError(1, 0, "")
+	Local $nRows = UBound($aArray1, $UBOUND_ROWS)
+	If $nRows <> UBound($aArray2, $UBOUND_ROWS) Then Return SetError(2, 0, "")
+	Local $nCols1 = ($iDim1 = 1 ? 1 : UBound($aArray1, $UBOUND_COLUMNS))
+	Local $nCols2 = ($iDim2 = 1 ? 1 : UBound($aArray2, $UBOUND_COLUMNS))
+	Local $aTmp[$nRows][$nCols1 + $nCols2]
+
+	Select
+		Case $iDim1 = 1 And $iDim2 = 1
+			For $i = 0 To $nRows - 1
+				$aTmp[$i][0] = $aArray1[$i]
+				$aTmp[$i][1] = $aArray2[$i]
+			Next
+
+		Case $iDim1 = 1 And $iDim2 = 2
+			For $i = 0 To $nRows - 1
+				$aTmp[$i][0] = $aArray1[$i]
+			Next
+			For $j = 1 To $nCols2
+				For $i = 0 To $nRows - 1
+					$aTmp[$i][$j] = $aArray2[$i][$j - 1]
+				Next
+			Next
+
+		Case $iDim1 = 2 And $iDim2 = 1
+			For $j = 0 To $nCols1 - 1
+				For $i = 0 To $nRows - 1
+					$aTmp[$i][$j] = $aArray1[$i][$j]
+				Next
+			Next
+			For $i = 0 To $nRows - 1
+				$aTmp[$i][$nCols1] = $aArray2[$i]
+			Next
+
+		Case $iDim1 = 2 And $iDim2 = 2
+			For $j = 0 To $nCols1 - 1
+				For $i = 0 To $nRows - 1
+					$aTmp[$i][$j] = $aArray1[$i][$j]
+				Next
+			Next
+			For $j = $nCols1 To ($nCols1 + $nCols2) - 1
+				For $i = 0 To $nRows - 1
+					$aTmp[$i][$j] = $aArray2[$i][$j - $nCols1]
+				Next
+			Next
+	EndSelect
+
 	Return $aTmp
 EndFunc   ;==>_Array2DCreate
 

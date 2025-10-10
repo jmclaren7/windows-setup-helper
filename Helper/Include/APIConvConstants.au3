@@ -10,9 +10,23 @@
 
 ; #CONSTANTS# ===================================================================================================================
 
-; _WinAPI_CoInitialize()
-Global Const $COINIT_APARTMENTTHREADED = 0x02
-Global Const $COINIT_DISABLE_OLE1DDE = 0x04
-Global Const $COINIT_MULTITHREADED = 0x00
-Global Const $COINIT_SPEED_OVER_MEMORY = 0x08
+; code page identifiers
+; _WinAPI_MultiByteToWideChar(), _WinAPI_MultiByteToWideCharEx() and _WinAPI_WideCharToMultiByte()
+Global Const $CP_ACP = 0
+Global Const $CP_OEMCP = 1
+Global Const $CP_MACCP = 2
+Global Const $CP_THREAD_ACP = 3
+Global Const $CP_SYMBOL = 42
+Global Const $CP_SHIFT_JIS = 932
+Global Const $CP_UTF16 = 1200
+Global Const $CP_UNICODE = $CP_UTF16
+Global Const $CP_UTF7 = 65000
+Global Const $CP_UTF8 = 65001
+
+; conversion type
+; _WinAPI_MultiByteToWideChar() and _WinAPI_MultiByteToWideCharEx()
+Global Const $MB_PRECOMPOSED = 0x01
+Global Const $MB_COMPOSITE = 0x02
+Global Const $MB_USEGLYPHCHARS = 0x04
+Global Const $MB_ERR_INVALID_CHARS = 0x08
 ; ===============================================================================================================================

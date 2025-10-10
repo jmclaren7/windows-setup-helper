@@ -1,12 +1,14 @@
 #include-once
 
 #include "Array.au3"
+#include "AutoItConstants.au3"
 #include "FileConstants.au3"
 #include "StringConstants.au3"
+#include "StructureConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: File
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with files and directories.
 ; Author(s) .....: Brian Keene, Michael Michta, erifash, Jon, JdeB, Jeremy Landes, MrCreatoR, cdkid, Valik, Erik Pilsits, Kurt, Dale, guinness, DXRW4E, Melba23
@@ -229,8 +231,9 @@ Func _FileListToArrayRec($sFilePath, $sMask = "*", $iReturn = $FLTAR_FILESFOLDER
 
 	; Prepare for DllCall if required
 	If $iHide_Link Then
-		Local $tFile_Data = DllStructCreate("struct;align 4;dword FileAttributes;uint64 CreationTime;uint64 LastAccessTime;uint64 LastWriteTime;" & _
-				"dword FileSizeHigh;dword FileSizeLow;dword Reserved0;dword Reserved1;wchar FileName[260];wchar AlternateFileName[14];endstruct")
+;~ 		Local $tagWIN32_FIND_DATAW = "struct;align 4;dword FileAttributes;uint64 CreationTime;uint64 LastAccessTime;uint64 LastWriteTime;" & _
+;~ 				"dword FileSizeHigh;dword FileSizeLow;dword Reserved0;dword Reserved1;wchar FileName[260];wchar AlternateFileName[14];endstruct"
+		Local $tFile_Data = DllStructCreate($tagWIN32_FIND_DATA)
 		Local $hDLL = DllOpen('kernel32.dll'), $aDLL_Ret
 	EndIf
 
@@ -926,7 +929,7 @@ EndFunc   ;==>_PathFull
 Func _PathGetRelative($sFrom, $sTo)
 	If StringRight($sFrom, 1) <> "\" Then $sFrom &= "\" ; add missing trailing \ to $sFrom path
 	If StringRight($sTo, 1) <> "\" Then $sTo &= "\" ; add trailing \ to $sTo
-	If $sFrom = $sTo Then Return SetError(1, 0, StringTrimRight($sTo, 1)) ; $sFrom equals $sTo
+	If $sFrom = $sTo Then Return SetError(1, 0, StringTrimRight($sTo, 1)) ; From equals To
 	Local $asFrom = StringSplit($sFrom, "\")
 	Local $asTo = StringSplit($sTo, "\")
 	If $asFrom[1] <> $asTo[1] Then Return SetError(2, 0, StringTrimRight($sTo, 1)) ; drives are different, rel path not possible

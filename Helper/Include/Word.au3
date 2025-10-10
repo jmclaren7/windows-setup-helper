@@ -6,7 +6,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Microsoft Word Function Library (MS Word 2003 and later)
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: A collection of functions for accessing and manipulating Microsoft Word documents
 ; Author(s) .....: Bob Anthony, rewritten by water
@@ -514,8 +514,8 @@ Func _Word_DocSaveAs($oDoc, $sFileName = Default, $iFileFormat = Default, $bRead
 	Local $oError = ObjEvent("AutoIt.Error", "__Word_COMErrFunc")
 	#forceref $oError
 
-;	If $sFileName = Default Then $sFileName = "" ; Fixing Bug #3325
-;	If $iFileFormat = Default Then $iFileFormat = $WdFormatDocument ; Fixing Bug #3325
+	;	If $sFileName = Default Then $sFileName = "" ; Fixing Bug #3325
+	;	If $iFileFormat = Default Then $iFileFormat = $WdFormatDocument ; Fixing Bug #3325
 	If $bReadOnlyRecommended = Default Then $bReadOnlyRecommended = False
 	If $bAddToRecentFiles = Default Then $bAddToRecentFiles = 0
 	If $sPassword = Default Then $sPassword = ""

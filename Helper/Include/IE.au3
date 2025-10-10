@@ -6,7 +6,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Internet Explorer Automation UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: A collection of functions for creating, attaching to, reading from and manipulating Internet Explorer.
 ; Author(s) .....: DaleHohm, big_daddy, jpm
@@ -978,7 +978,7 @@ Func _IEFormElementGetValue(ByRef $oObject)
 		__IEConsoleWriteError("Error", "_IEFormElementGetValue", "$_IESTATUS_COMError", @error)
 		Return SetError($_IESTATUS_ComError, @error, 0)
 	EndIf
-	Return SetError($_IESTATUS_Success,0,$sReturn)
+	Return SetError($_IESTATUS_Success, 0, $sReturn)
 EndFunc   ;==>_IEFormElementGetValue
 
 ; #FUNCTION# ====================================================================================================================

@@ -1,11 +1,12 @@
 #include-once
 
 #include "APIComConstants.au3"
+
 #include "WinAPIInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPICom.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -59,7 +60,7 @@ EndFunc   ;==>_WinAPI_CLSIDFromProgID
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_CoInitialize($iFlags = 0)
+Func _WinAPI_CoInitialize($iFlags = $COINIT_MULTITHREADED)
 	Local $aCall = DllCall('ole32.dll', 'long', 'CoInitializeEx', 'ptr', 0, 'dword', $iFlags)
 	If @error Then Return SetError(@error, @extended, 0)
 	If $aCall[0] Then Return SetError(10, $aCall[0], 0)

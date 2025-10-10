@@ -1,6 +1,10 @@
 #include-once
 
 #include "APIGdiConstants.au3"
+#include "AutoItConstants.au3"
+#include "FontConstants.au3"
+#include "GDIPlusConstants.au3"
+#include "StringConstants.au3"
 #include "StructureConstants.au3"
 #include "WinAPICom.au3"
 #include "WinAPIConv.au3"
@@ -9,12 +13,15 @@
 #include "WinAPIGdiInternals.au3"
 #include "WinAPIHObj.au3"
 #include "WinAPIIcons.au3"
+
 #include "WinAPIInternals.au3"
+#include "WinAPIMem.au3"
 #include "WinAPIMisc.au3"
+#include "WindowsNotifsConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIGdi.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -378,7 +385,7 @@ EndFunc   ;==>_WinAPI_AddIconOverlay
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_AdjustBitmap($hBitmap, $iWidth, $iHeight, $iMode = 3, $tAdjustment = 0)
+Func _WinAPI_AdjustBitmap($hBitmap, $iWidth, $iHeight, $iMode = $COLORONCOLOR, $tAdjustment = 0)
 	Local $tObj = DllStructCreate($tagBITMAP)
 	Local $aCall = DllCall('gdi32.dll', 'int', 'GetObject', 'handle', $hBitmap, 'int', DllStructGetSize($tObj), 'struct*', $tObj)
 	If @error Or Not $aCall[0] Then Return SetError(@error, @extended, 0)
@@ -589,7 +596,7 @@ EndFunc   ;==>_WinAPI_CombineTransform
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_CompressBitmapBits($hBitmap, ByRef $pBuffer, $iCompression = 0, $iQuality = 100)
+Func _WinAPI_CompressBitmapBits($hBitmap, ByRef $pBuffer, $iCompression = $COMPRESSION_BITMAP_PNG, $iQuality = 100)
 	If Not __DLL('gdiplus.dll') Then Return SetError(103, 0, 0)
 
 	Local $aSize[2], $iCount, $iFormat, $iLength, $sMime, $aCall, $hDC, $hSv, $hMem, $tBits, $tData, $pData, $iError = 1 ; JPM: 1????
@@ -656,9 +663,9 @@ Func _WinAPI_CompressBitmapBits($hBitmap, ByRef $pBuffer, $iCompression = 0, $iQ
 			ExitLoop
 		EndIf
 		If _WinAPI_IsAlphaBitmap($hBitmap) Then
-			$iFormat = 0x0026200A
+			$iFormat = $GDIP_PXF32ARGB
 		Else
-			$iFormat = 0x00022009
+			$iFormat = $GDIP_PXF32RGB
 		EndIf
 		$hToken = $aCall[1]
 		$aCall = DllCall('gdiplus.dll', 'int', 'GdipCreateBitmapFromScan0', 'int', $aSize[0], 'int', $aSize[1], _
@@ -786,7 +793,7 @@ EndFunc   ;==>_WinAPI_CopyEnhMetaFile
 Func _WinAPI_CopyRect($tRECT)
 	Local $tData = DllStructCreate($tagRECT)
 	Local $aCall = DllCall('user32.dll', 'bool', 'CopyRect', 'struct*', $tData, 'struct*', $tRECT)
-	If @error Or Not $aCall[0] Then SetError(@error + 10, @extended, 0)
+	If @error Or Not $aCall[0] Then Return SetError(@error + 10, @extended, 0)
 	; If Not $aCall[0] Then Return SetError(1000, 0, 0)
 
 	Return $tData
@@ -863,7 +870,7 @@ EndFunc   ;==>_WinAPI_CreateBitmapIndirect
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_CreateBrushIndirect($iStyle, $iRGB, $iHatch = 0)
+Func _WinAPI_CreateBrushIndirect($iStyle, $iRGB, $iHatch = $BS_SOLID)
 	Local $tLOGBRUSH = DllStructCreate($tagLOGBRUSH)
 	DllStructSetData($tLOGBRUSH, 1, $iStyle)
 	DllStructSetData($tLOGBRUSH, 2, __RGB($iRGB))
@@ -880,7 +887,7 @@ EndFunc   ;==>_WinAPI_CreateBrushIndirect
 ; Author.........: Yashied
 ; Modified.......:
 ; ===============================================================================================================================
-Func _WinAPI_CreateColorAdjustment($iFlags = 0, $iIlluminant = 0, $iGammaR = 10000, $iGammaG = 10000, $iGammaB = 10000, $iBlack = 0, $iWhite = 10000, $iContrast = 0, $iBrightness = 0, $iColorfulness = 0, $iTint = 0)
+Func _WinAPI_CreateColorAdjustment($iFlags = 0, $iIlluminant = $ILLUMINANT_DEVICE_DEFAULT, $iGammaR = 10000, $iGammaG = 10000, $iGammaB = 10000, $iBlack = 0, $iWhite = 10000, $iContrast = 0, $iBrightness = 0, $iColorfulness = 0, $iTint = 0)
 	Local $tCA = DllStructCreate($tagCOLORADJUSTMENT)
 	DllStructSetData($tCA, 1, DllStructGetSize($tCA))
 	DllStructSetData($tCA, 2, $iFlags)
@@ -1006,7 +1013,7 @@ EndFunc   ;==>_WinAPI_CreateEnhMetaFile
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_CreateFontEx($iHeight, $iWidth = 0, $iEscapement = 0, $iOrientation = 0, $iWeight = 400, $bItalic = False, $bUnderline = False, $bStrikeOut = False, $iCharSet = 1, $iOutPrecision = 0, $iClipPrecision = 0, $iQuality = 0, $iPitchAndFamily = 0, $sFaceName = '', $iStyle = 0)
+Func _WinAPI_CreateFontEx($iHeight, $iWidth = 0, $iEscapement = 0, $iOrientation = 0, $iWeight = $FW_NORMAL, $bItalic = False, $bUnderline = False, $bStrikeOut = False, $iCharSet = $DEFAULT_CHARSET, $iOutPrecision = $OUT_DEFAULT_PRECIS, $iClipPrecision = $CLIP_DEFAULT_PRECIS, $iQuality = $DEFAULT_QUALITY, $iPitchAndFamily = $DEFAULT_PITCH, $sFaceName = '', $iStyle = 0)
 	Local $aCall = DllCall('gdi32.dll', 'handle', 'CreateFontW', 'int', $iHeight, 'int', $iWidth, 'int', $iEscapement, _
 			'int', $iOrientation, 'int', $iWeight, 'dword', $bItalic, 'dword', $bUnderline, 'dword', $bStrikeOut, _
 			'dword', $iCharSet, 'dword', $iOutPrecision, 'dword', $iClipPrecision, 'dword', $iQuality, _
@@ -1167,7 +1174,7 @@ EndFunc   ;==>_WinAPI_DrawAnimatedRects
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_DrawBitmap($hDC, $iX, $iY, $hBitmap, $iRop = 0x00CC0020)
+Func _WinAPI_DrawBitmap($hDC, $iX, $iY, $hBitmap, $iRop = $SRCCOPY)
 	Local $tObj = DllStructCreate($tagBITMAP)
 	Local $aCall = DllCall('gdi32.dll', 'int', 'GetObject', 'handle', $hBitmap, 'int', DllStructGetSize($tObj), 'struct*', $tObj)
 	If @error Or Not $aCall[0] Then Return SetError(@error + 20, @extended, 0)
@@ -1219,7 +1226,7 @@ EndFunc   ;==>_WinAPI_DrawLine
 ; Author.........: Rover
 ; Modified.......: Yashied, Jpm
 ; ===============================================================================================================================
-Func _WinAPI_DrawShadowText($hDC, $sText, $iRGBText, $iRGBShadow, $iXOffset = 0, $iYOffset = 0, $tRECT = 0, $iFlags = 0)
+Func _WinAPI_DrawShadowText($hDC, $sText, $iRGBText, $iRGBShadow, $iXOffset = 0, $iYOffset = 0, $tRECT = 0, $iFlags = $DT_LEFT)
 	Local $aCall
 
 	If Not IsDllStruct($tRECT) Then
@@ -1335,20 +1342,20 @@ Func _WinAPI_DwmGetWindowAttribute($hWnd, $iAttribute)
 	Switch $iAttribute
 		Case 5, 9
 			$tagStruct = $tagRECT
-		Case 1
+		Case 1, 14
 			$tagStruct = 'uint'
 		Case Else
-			Return SetError(11, 0, 0)
+			Return SetError(1, 0, 0)
 	EndSwitch
 
 	Local $tData = DllStructCreate($tagStruct)
 	Local $aCall = DllCall('dwmapi.dll', 'long', 'DwmGetWindowAttribute', 'hwnd', $hWnd, 'dword', $iAttribute, _
 			'struct*', $tData, 'dword', DllStructGetSize($tData))
-	If @error Then Return SetError(@error, @extended, 0)
+	If @error Then Return SetError(@error + 10, @extended, 0)
 	If $aCall[0] Then Return SetError(10, $aCall[0], 0)
 
 	Switch $iAttribute
-		Case 1
+		Case 1, 14
 			Return DllStructGetData($tData, 1)
 		Case Else
 			Return $tData
@@ -1461,7 +1468,7 @@ EndFunc   ;==>_WinAPI_DwmSetIconicThumbnail
 ; ===============================================================================================================================
 Func _WinAPI_DwmSetWindowAttribute($hWnd, $iAttribute, $iData)
 	Switch $iAttribute
-		Case 2, 3, 4, 6, 7, 8, 10, 11, 12
+		Case 2, 3, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, $DWMWA_USE_IMMERSIVE_DARK_MODE, 33, 34, 35, 36, 37
 
 		Case Else
 			Return SetError(1, 0, 0)
@@ -1469,7 +1476,7 @@ Func _WinAPI_DwmSetWindowAttribute($hWnd, $iAttribute, $iData)
 
 	Local $aCall = DllCall('dwmapi.dll', 'long', 'DwmSetWindowAttribute', 'hwnd', $hWnd, 'dword', $iAttribute, _
 			'dword*', $iData, 'dword', 4)
-	If @error Then Return SetError(@error, @extended, 0)
+	If @error Then Return SetError(@error + 10, @extended, 0)
 	If $aCall[0] Then Return SetError(10, $aCall[0], 0)
 
 	Return 1
@@ -1609,7 +1616,7 @@ EndFunc   ;==>_WinAPI_EnumDisplaySettings
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_EnumFontFamilies($hDC = 0, $sFaceName = '', $iCharSet = 1, $iFontType = 0x07, $sPattern = '', $bExclude = False)
+Func _WinAPI_EnumFontFamilies($hDC = 0, $sFaceName = '', $iCharSet = $DEFAULT_CHARSET, $iFontType = 0x07, $sPattern = '', $bExclude = False)
 	Local $tLOGFONT = DllStructCreate($tagLOGFONT)
 	Local $tPattern = DllStructCreate('uint;uint;ptr;wchar[' & (StringLen($sPattern) + 1) & ']')
 
@@ -1729,7 +1736,7 @@ EndFunc   ;==>_WinAPI_ExtCreateRegion
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_ExtFloodFill($hDC, $iX, $iY, $iRGB, $iType = 0)
+Func _WinAPI_ExtFloodFill($hDC, $iX, $iY, $iRGB, $iType = $FLOODFILLBORDER)
 	Local $aCall = DllCall('gdi32.dll', 'bool', 'ExtFloodFill', 'handle', $hDC, 'int', $iX, 'int', $iY, 'dword', __RGB($iRGB), _
 			'uint', $iType)
 	If @error Then Return SetError(@error, @extended, False)
@@ -1742,7 +1749,7 @@ EndFunc   ;==>_WinAPI_ExtFloodFill
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_ExtSelectClipRgn($hDC, $hRgn, $iMode = 5)
+Func _WinAPI_ExtSelectClipRgn($hDC, $hRgn, $iMode = $RGN_COPY)
 	Local $aCall = DllCall('gdi32.dll', 'int', 'ExtSelectClipRgn', 'handle', $hDC, 'handle', $hRgn, 'int', $iMode)
 	If @error Then Return SetError(@error, @extended, 0)
 	; If Not $aCall[0] Then Return SetError(1000, 0, 0)
@@ -2092,7 +2099,7 @@ EndFunc   ;==>_WinAPI_GetEnhMetaFileHeader
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_GetFontName($sFaceName, $iStyle = 0, $iCharSet = 1)
+Func _WinAPI_GetFontName($sFaceName, $iStyle = $FS_REGULAR, $iCharSet = $DEFAULT_CHARSET)
 	If Not $sFaceName Then Return SetError(1, 0, '')
 
 	Local $iFlags = 0
@@ -2857,7 +2864,7 @@ EndFunc   ;==>_WinAPI_ModifyWorldTransform
 ; Author.........: Yashied
 ; Modified.......: JPM
 ; ===============================================================================================================================
-Func _WinAPI_MonitorFromPoint(ByRef $tPOINT, $iFlag = 1)
+Func _WinAPI_MonitorFromPoint(ByRef $tPOINT, $iFlag = $MONITOR_DEFAULTTONEAREST)
 	If DllStructGetSize($tPOINT) <> 8 Then Return SetError(@error + 10, @extended, 0)
 
 	Local $aCall = DllCall('user32.dll', 'handle', 'MonitorFromPoint', 'struct', $tPOINT, 'dword', $iFlag)
@@ -2870,7 +2877,7 @@ EndFunc   ;==>_WinAPI_MonitorFromPoint
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_MonitorFromRect(ByRef $tRECT, $iFlag = 1)
+Func _WinAPI_MonitorFromRect(ByRef $tRECT, $iFlag = $MONITOR_DEFAULTTONEAREST)
 	Local $aCall = DllCall('user32.dll', 'ptr', 'MonitorFromRect', 'struct*', $tRECT, 'dword', $iFlag)
 	If @error Then Return SetError(@error, @extended, 0)
 
@@ -2881,7 +2888,7 @@ EndFunc   ;==>_WinAPI_MonitorFromRect
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_MonitorFromWindow($hWnd, $iFlag = 1)
+Func _WinAPI_MonitorFromWindow($hWnd, $iFlag = $MONITOR_DEFAULTTONEAREST)
 	Local $aCall = DllCall('user32.dll', 'handle', 'MonitorFromWindow', 'hwnd', $hWnd, 'dword', $iFlag)
 	If @error Then Return SetError(@error, @extended, 0)
 
@@ -3713,7 +3720,7 @@ EndFunc   ;==>_WinAPI_ScaleWindowExt
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_SelectClipPath($hDC, $iMode = 5)
+Func _WinAPI_SelectClipPath($hDC, $iMode = $RGN_COPY)
 	Local $aCall = DllCall('gdi32.dll', 'bool', 'SelectClipPath', 'handle', $hDC, 'int', $iMode)
 	If @error Then Return SetError(@error, @extended, False)
 	; If Not $aCall[0] Then Return SetError(1000, 0, 0)
@@ -3952,7 +3959,7 @@ EndFunc   ;==>_WinAPI_SetPixel
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_SetPolyFillMode($hDC, $iMode = 1)
+Func _WinAPI_SetPolyFillMode($hDC, $iMode = $ALTERNATE)
 	Local $aCall = DllCall('gdi32.dll', 'int', 'SetPolyFillMode', 'handle', $hDC, 'int', $iMode)
 	If @error Then Return SetError(@error, @extended, 0)
 	; If Not $aCall[0] Then Return SetError(1000, 0, 0)

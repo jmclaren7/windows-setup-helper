@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: API Constants UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants that can be used with UDF library
 ; Author(s) .....: Yashied, Jpm
@@ -15,12 +15,10 @@ Global Const $INVALID_HANDLE_VALUE = Ptr(-1)
 Global Const $CLR_INVALID = -1
 
 ; Stock Object Constants
-; in WinAPIHObj
+; Moved in WinAPIHObj.au3
 
 ; conversion type
-Global Const $MB_PRECOMPOSED = 0x01
-Global Const $MB_COMPOSITE = 0x02
-Global Const $MB_USEGLYPHCHARS = 0x04
+; Moved in WinAPIConv.au3
 
 ; translucency flags
 Global Const $ULW_ALPHA = 0x02
@@ -96,19 +94,22 @@ Global Const $OFN_SHOWHELP = 0x00000010
 Global Const $OFN_EX_NOPLACESBAR = 0x00000001
 
 ; flags for GetTextMetrics
-; in WinAPIGdiDC
+Global Const $TMPF_FIXED_PITCH = 0x01
+Global Const $TMPF_VECTOR = 0x02
+Global Const $TMPF_TRUETYPE = 0x04
+Global Const $TMPF_DEVICE = 0x08
 
 ; EnumDisplayDevice Constants
-; in WinAPIGdiDC
+; Moved in WinAPIGdiDC.au3
 
 ; FlashWindowEx Constants
-; in WinAPISysWin
+; Moved in WinAPISysWin.au3
 
 ; GetWindows Constants
-; in WinAPISysWin
+; Moved in WinAPISysWin.au3
 
 ; GetWindowLong Constants
-; in WinAPISysWin
+; Moved in WinAPISysWin.au3
 
 ; Standard Icon Index Constants
 Global Const $STD_CUT = 0
@@ -127,8 +128,11 @@ Global Const $STD_FIND = 12
 Global Const $STD_REPLACE = 13
 Global Const $STD_PRINT = 14
 
+; $tagTBBUTTONINFO Index Constants
+; Moved in ToolbarConstants
+
 ; Image Type Constants
-; in WinAPIInternals.au3
+; Moved in WinAPIInternals.au3
 
 ; Keyboard Constants
 ; Changes how keys are processed
@@ -140,7 +144,7 @@ Global Const $KB_CAPSOFF = 0 ; Caps Lock is off
 Global Const $KB_CAPSON = 1 ; Caps Lock is on
 
 ; LoadLibraryEx Constants
-; in APIResConstants.au3
+; Moved in APIResConstants.au3
 
 ; Common HRESULT errors
 Global Const $S_OK = 0x00000000
@@ -156,8 +160,8 @@ Global Const $E_POINTER = 0x80004003
 Global Const $E_UNEXPECTED = 0x8000FFFF
 
 ; DEVMODE structure
-; in APIGdiConstants.au3
+; Moved in APIGdiConstants.au3
 
 ; _WinAPI_LoadImage(), _WinAPI_CopyImage()
-; in WinAPIInternals.au3
+; Moved in WinAPIInternals.au3
 ; ===============================================================================================================================

@@ -1,19 +1,18 @@
 #include-once
 
 #include "GuiCtrlInternals.au3"
-#include "Memory.au3"
+
 #include "SendMessage.au3"
 #include "StructureConstants.au3"
 #include "ToolbarConstants.au3"
-#include "UDFGlobalID.au3"
-#include "WinAPIConstants.au3"
 #include "WinAPIConv.au3"
 #include "WinAPIRes.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Toolbar
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with Toolbar control management.
 ;                  A toolbar is a control window that contains one or more buttons.  Each button, when clicked by a user, sends a
@@ -225,7 +224,7 @@ EndFunc   ;==>_GUICtrlToolbar_AddBitmap
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......: Gary Frost, Jpm
 ; ===============================================================================================================================
-Func _GUICtrlToolbar_AddButton($hWnd, $iID, $iImage, $iString = 0, $iStyle = 0, $iState = 4, $iParam = 0)
+Func _GUICtrlToolbar_AddButton($hWnd, $iID, $iImage, $iString = 0, $iStyle = 0, $iState = $TBSTATE_ENABLED, $iParam = 0)
 	Local $iMsg
 	If _GUICtrlToolbar_GetUnicodeFormat($hWnd) Then
 		$iMsg = $TB_ADDBUTTONSW
@@ -382,10 +381,10 @@ EndFunc   ;==>_GUICtrlToolbar_CommandToIndex
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......: Gary Frost
 ; ===============================================================================================================================
-Func _GUICtrlToolbar_Create($hWnd, $iStyle = 0x00000800, $iExStyle = 0x00000000)
-	$iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_CHILD, $__TOOLBARCONSTANT_WS_CLIPSIBLINGS, $__UDFGUICONSTANT_WS_VISIBLE)
+Func _GUICtrlToolbar_Create($hWnd, $iStyle = $TBSTYLE_FLAT, $iExStyle = 0x00000000)
+	$iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_CHILD, $__TOOLBARCONSTANT_WS_CLIPSIBLINGS, $__GUICTRLCONSTANT_WS_VISIBLE)
 
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	Local $hTool = _WinAPI_CreateWindowEx($iExStyle, $__TOOLBARCONSTANT_ClassName, "", $iStyle, 0, 0, 0, 0, $hWnd, $nCtrlID)
@@ -425,7 +424,7 @@ Func _GUICtrlToolbar_Destroy(ByRef $hWnd)
 		Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 		Local $hParent = _WinAPI_GetParent($hWnd)
 		$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-		Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+		Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 		If Not $iRet Then
 			; can check for errors here if needed, for debug
 		EndIf
@@ -921,7 +920,7 @@ EndFunc   ;==>_GUICtrlToolbar_IndexToCommand
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......: Gary Frost, Jpm
 ; ===============================================================================================================================
-Func _GUICtrlToolbar_InsertButton($hWnd, $iIndex, $iID, $iImage, $sText = "", $iStyle = 0, $iState = 4, $iParam = 0)
+Func _GUICtrlToolbar_InsertButton($hWnd, $iIndex, $iID, $iImage, $sText = "", $iStyle = 0, $iState = $TBSTATE_ENABLED, $iParam = 0)
 	Local $tButton = DllStructCreate($tagTBBUTTON)
 	Local $tBuffer, $iMsg
 	If _GUICtrlToolbar_GetUnicodeFormat($hWnd) Then
@@ -1088,11 +1087,11 @@ EndFunc   ;==>_GUICtrlToolbar_SetButtonBitMap
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......:
 ; ===============================================================================================================================
-Func _GUICtrlToolbar_SetButtonInfo($hWnd, $iCommandID, $iImage = -3, $iState = -1, $iStyle = -1, $iWidth = -1, $iParam = -1)
+Func _GUICtrlToolbar_SetButtonInfo($hWnd, $iCommandID, $iImage = $I_IMAGE, $iState = -1, $iStyle = -1, $iWidth = -1, $iParam = -1)
 	Local $iMask = 0
 
 	Local $tButton = DllStructCreate($tagTBBUTTONINFO)
-	If $iImage <> -3 Then
+	If $iImage <> $I_IMAGE Then
 		$iMask = $TBIF_IMAGE
 		DllStructSetData($tButton, "Image", $iImage)
 	EndIf
@@ -1364,7 +1363,7 @@ EndFunc   ;==>_GUICtrlToolbar_SetRows
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlToolbar_SetStyle($hWnd, $iStyle)
-	$iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_CHILD, $__TOOLBARCONSTANT_WS_CLIPSIBLINGS, $__UDFGUICONSTANT_WS_VISIBLE)
+	$iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_CHILD, $__TOOLBARCONSTANT_WS_CLIPSIBLINGS, $__GUICTRLCONSTANT_WS_VISIBLE)
 	_SendMessage($hWnd, $TB_SETSTYLE, 0, $iStyle)
 EndFunc   ;==>_GUICtrlToolbar_SetStyle
 

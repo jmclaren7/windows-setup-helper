@@ -5,6 +5,7 @@
 #include "StructureConstants.au3"
 #include "WinAPICom.au3"
 #include "WinAPIConstants.au3"
+
 #include "WinAPIInternals.au3"
 #include "WinAPIMem.au3"
 #include "WinAPIMisc.au3"
@@ -13,7 +14,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIDlg.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -263,7 +264,7 @@ EndFunc   ;==>_WinAPI_FlushFRBuffer
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_FormatDriveDlg($sDrive, $iOption = 0, $hParent = 0)
+Func _WinAPI_FormatDriveDlg($sDrive, $iOption = $SHFMT_OPT_FULL, $hParent = 0)
 	If Not IsString($sDrive) Then Return SetError(10, 0, 0)
 
 	$sDrive = StringLeft(StringUpper(StringStripWS($sDrive, $STR_STRIPLEADING)), 1)
@@ -482,7 +483,7 @@ EndFunc   ;==>_WinAPI_ReplaceTextDlg
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_RestartDlg($sText = '', $iFlags = 2, $hParent = 0)
+Func _WinAPI_RestartDlg($sText = '', $iFlags = $EWX_REBOOT, $hParent = 0)
 	Local $aCall = DllCall('shell32.dll', 'int', 'RestartDialog', 'hwnd', $hParent, 'wstr', $sText, 'int', $iFlags)
 	If @error Then Return SetError(@error, @extended, 0)
 

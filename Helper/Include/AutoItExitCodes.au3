@@ -5,7 +5,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: AutoIt3 Exit Codes
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: lib to format @exitCode
 ; Author(s) .....: Jpm
@@ -24,8 +24,8 @@ Global Const $EXITCODES[5][2] = [ _
 
 ; #CURRENT# =====================================================================================================================
 ;
-; Doc in Misc
 ; _FormatAutoItExitCode
+; _FormatAutoItExitMethod
 ;
 ; ===============================================================================================================================
 
@@ -51,4 +51,4 @@ Func _FormatAutoItExitMethod()
 	Next
 
 	Return "0x" & Hex(@exitCode)
-EndFunc   ;==>_FormatAutoItExitCode
+EndFunc   ;==>_FormatAutoItExitMethod

@@ -1,20 +1,23 @@
 #include-once
 
+#include "GUICtrlInternals.au3"
+
+#include "APIConvConstants.au3"
+#include "AutoItConstants.au3"
 #include "Clipboard.au3"
 #include "EditConstants.au3"
 #include "FileConstants.au3"
-#include "GUICtrlInternals.au3"
 #include "RichEditConstants.au3"
 #include "SendMessage.au3"
+#include "StringConstants.au3"
 #include "StructureConstants.au3"
-#include "UDFGlobalID.au3"
-#include "WinAPIConv.au3"
-#include "WinAPIHobj.au3"
+#include "WinAPIHObj.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Rich Edit
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Programmer-friendly Rich Edit control
 ; Author(s) .....: GaryFrost, grham, Prog@ndy, KIP, c.haslam
@@ -64,6 +67,9 @@ Global Const $__RICHEDITCONSTANT_WM_PASTE = 0x00000302
 Global Const $__RICHEDITCONSTANT_WM_SETREDRAW = 0x000B
 
 Global Const $__RICHEDITCONSTANT_COLOR_WINDOWTEXT = 8
+
+Global Const $__RICHEDITCONSTANT_CP_ACP = 0
+Global Const $__RICHEDITCONSTANT_CP_UNICODE = 1200
 
 Global Const $_GCR_S_OK = 0
 Global Const $_GCR_E_NOTIMPL = 0x80004001
@@ -408,7 +414,7 @@ Global Const $tagFINDTEXTEX = $tagCHARRANGE & ";ptr lpstrText;long cpMinRang;lon
 ;                  |  $GT_DEFAULT   - No CR translation.
 ;                  |  $GT_SELECTION - Retrieves the text for the current selection.
 ;                  |  $GT_USECRLF   - Indicates that when copying text, each CR should be translated into a CRLF.
-;                  codepage      - Code page used in the translation. It is $CP_ACP for ANSI Code Page and 1200 for Unicode.
+;                  codepage      - Code page used in the translation. It is CP_ACP for ANSI Code Page and 1200 for Unicode.
 ;                  lpDefaultChar - Points to the character used if a wide character cannot be represented in the specified code page.
 ;                  |It is used only if the code page is not 1200 (Unicode). If this member is NULL, a system default value is used.
 ;                  lpUsedDefChar - Points to a flag that indicates whether a default character was used.
@@ -430,7 +436,7 @@ Global Const $tagGETTEXTEX = "struct;align 4;dword cb;dword flags;uint codepage;
 ;                  |  $GTL_CLOSE    - Computes an approximate (close) answer. It is obtained quickly and can be used to set the buffer size. This flag cannot be used with the GTL_PRECISE flag. E_INVALIDARG will be returned if both are used.
 ;                  |  $GTL_NUMCHARS - Returns the number of characters. This flag cannot be used with the GTL_NUMBYTES flag. E_INVALIDARG will be returned if both are used.
 ;                  |  $GTL_NUMBYTES - Returns the number of bytes. This flag cannot be used with the GTL_NUMCHARS flag. E_INVALIDARG will be returned if both are used.
-;                  codepage - Code page used in the translation. It is $CP_ACP for ANSI Code Page and 1200 for Unicode.
+;                  codepage - Code page used in the translation. It is CP_ACP for ANSI Code Page and 1200 for Unicode.
 ; Author ........: Gary Frost (gafrost)
 ; Remarks .......:
 ; ===============================================================================================================================
@@ -482,7 +488,7 @@ Global Const $tagGETTEXTLENGTHEX = "dword flags;uint codepage"
 ; Remarks .......:
 ; ===============================================================================================================================
 Global Const $tagPARAFORMAT = "uint cbSize;dword dwMask;word wNumbering;word wEffects;long dxStartIndent;" _
-		 & "long dxRightIndent;long dxOffset;word wAlignment;short cTabCount;long rgxTabs[32]"
+		& "long dxRightIndent;long dxOffset;word wAlignment;short cTabCount;long rgxTabs[32]"
 
 ; #INTERNAL_USE_ONLY# ===========================================================================================================
 ; Name...........: $tagPARAFORMAT2
@@ -675,9 +681,9 @@ Global Const $tagPARAFORMAT = "uint cbSize;dword dwMask;word wNumbering;word wEf
 ; Remarks .......:
 ; ===============================================================================================================================
 Global Const $tagPARAFORMAT2 = $tagPARAFORMAT _
-		 & ";long dySpaceBefore;long dySpaceAfter;long dyLineSpacing;short sStyle;byte bLineSpacingRule;" _
-		 & "byte bOutlineLevel;word wShadingWeight;word wShadingStyle;word wNumberingStart;word wNumberingStyle;" _
-		 & "word wNumberingTab;word wBorderSpace;word wBorderWidth;word wBorders"
+		& ";long dySpaceBefore;long dySpaceAfter;long dyLineSpacing;short sStyle;byte bLineSpacingRule;" _
+		& "byte bOutlineLevel;word wShadingWeight;word wShadingStyle;word wNumberingStart;word wNumberingStyle;" _
+		& "word wNumberingTab;word wBorderSpace;word wBorderWidth;word wBorders"
 
 ; #INTERNAL_USE_ONLY# ===========================================================================================================
 ; Name...........: $tagSETTEXTEX
@@ -686,7 +692,7 @@ Global Const $tagPARAFORMAT2 = $tagPARAFORMAT _
 ;                  |  $ST_DEFAULT   - Deletes the undo stack, discards rich-text formatting, replaces all text.
 ;                  |  $ST_KEEPUNDO  - Keeps the undo stack.
 ;                  |  $ST_SELECTION - Replaces selection and keeps rich-text formatting.
-;                  codepage - Code page used in the translation. It is $CP_ACP for ANSI Code Page and 1200 for Unicode.
+;                  codepage - Code page used in the translation. It is CP_ACP for ANSI Code Page and 1200 for Unicode.
 ; Author ........: Gary Frost (gafrost)
 ; Remarks .......:
 ; ===============================================================================================================================
@@ -746,10 +752,10 @@ Func _GUICtrlRichEdit_AppendText($hWnd, $sText)
 	DllStructSetData($tSetText, 1, $ST_SELECTION)
 	Local $iRet
 	If StringLeft($sText, 5) <> "{\rtf" And StringLeft($sText, 5) <> "{urtf" Then
-		DllStructSetData($tSetText, 2, $CP_UNICODE)
+		DllStructSetData($tSetText, 2, $__RICHEDITCONSTANT_CP_UNICODE)
 		$iRet = _SendMessage($hWnd, $EM_SETTEXTEX, $tSetText, $sText, 0, "struct*", "wstr")
 	Else
-		DllStructSetData($tSetText, 2, $CP_ACP)
+		DllStructSetData($tSetText, 2, $__RICHEDITCONSTANT_CP_ACP)
 		$iRet = _SendMessage($hWnd, $EM_SETTEXTEX, $tSetText, $sText, 0, "struct*", "STR")
 	EndIf
 	If Not $iRet Then Return SetError(700, 0, False)
@@ -816,7 +822,7 @@ EndFunc   ;==>_GUICtrlRichEdit_CanUndo
 ; ===============================================================================================================================
 Func _GUICtrlRichEdit_ChangeFontSize($hWnd, $iIncrement)
 	If Not _WinAPI_IsClassName($hWnd, $__g_sRTFClassName) Then Return SetError(101, 0, False)
-	If Not __GCR_IsNumeric($iIncrement) Then SetError(102, 0, False)
+	If Not __GCR_IsNumeric($iIncrement) Then Return SetError(102, 0, False)
 
 	If Not _GUICtrlRichEdit_IsTextSelected($hWnd) Then Return SetError(-1, 0, False)
 	Return _SendMessage($hWnd, $EM_SETFONTSIZE, $iIncrement, 0) <> 0
@@ -851,12 +857,12 @@ Func _GUICtrlRichEdit_Create($hWnd, $sText, $iLeft, $iTop, $iWidth = 150, $iHeig
 	If $iStyle = -1 Then $iStyle = BitOR($ES_WANTRETURN, $ES_MULTILINE)
 
 	If BitAND($iStyle, $ES_MULTILINE) <> 0 Then $iStyle = BitOR($iStyle, $ES_WANTRETURN)
-	If $iExStyle = -1 Then $iExStyle = 0x200 ;	$DS_FOREGROUND
+	If $iExStyle = -1 Then $iExStyle = $__GUICTRLCONSTANT_WS_EX_CLIENTEDGE
 
-	$iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_CHILD, $__UDFGUICONSTANT_WS_VISIBLE)
-	If BitAND($iStyle, $ES_READONLY) = 0 Then $iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_TABSTOP)
+	$iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_CHILD, $__GUICTRLCONSTANT_WS_VISIBLE)
+	If BitAND($iStyle, $ES_READONLY) = 0 Then $iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_TABSTOP)
 
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	__GCR_Init()
@@ -906,7 +912,7 @@ Func _GUICtrlRichEdit_Destroy(ByRef $hWnd)
 			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 			Local $hParent = _WinAPI_GetParent($hWnd)
 			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+			Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 			If Not $iRet Then
 				; can check for errors here if needed, for debug
 			EndIf
@@ -1177,7 +1183,7 @@ Func _GUICtrlRichEdit_GetText($hWnd, $bCrToCrLf = False, $iCodePage = 0, $sReplC
 
 	Local $iLen = _GUICtrlRichEdit_GetTextLength($hWnd, False, True) + 1
 	Local $sUni = ''
-	If $iCodePage = $CP_UNICODE Or Not $iCodePage Then $sUni = "w"
+	If $iCodePage = $__RICHEDITCONSTANT_CP_UNICODE Or Not $iCodePage Then $sUni = "w"
 	Local $tText = DllStructCreate($sUni & "char[" & $iLen & "]")
 
 	Local $tGetTextEx = DllStructCreate($tagGETTEXTEX)
@@ -1187,7 +1193,7 @@ Func _GUICtrlRichEdit_GetText($hWnd, $bCrToCrLf = False, $iCodePage = 0, $sReplC
 	If $bCrToCrLf Then $iFlags = $GT_USECRLF
 	DllStructSetData($tGetTextEx, "flags", $iFlags)
 
-	If $iCodePage = 0 Then $iCodePage = $CP_UNICODE
+	If $iCodePage = 0 Then $iCodePage = $__RICHEDITCONSTANT_CP_UNICODE
 	DllStructSetData($tGetTextEx, "codepage", $iCodePage)
 
 	Local $pUsedDefChar = 0, $pDefaultChar = 0
@@ -1220,7 +1226,7 @@ Func _GUICtrlRichEdit_GetTextLength($hWnd, $bExact = True, $bChars = False, $iUs
 	Local $iFlags = BitOR($iUseCrLf * $GTL_USECRLF, ($bExact ? $GTL_PRECISE : $GTL_CLOSE))
 	$iFlags = BitOR($iFlags, ($bChars ? $GTL_DEFAULT : $GTL_NUMBYTES))
 	DllStructSetData($tGetTextLen, 1, $iFlags)
-	DllStructSetData($tGetTextLen, 2, ($bChars ? $CP_ACP : $CP_UNICODE))
+	DllStructSetData($tGetTextLen, 2, ($bChars ? $__RICHEDITCONSTANT_CP_ACP : $__RICHEDITCONSTANT_CP_UNICODE))
 	Local $iRet = _SendMessage($hWnd, $EM_GETTEXTLENGTHEX, $tGetTextLen, 0, 0, "struct*")
 	Return $iRet
 EndFunc   ;==>_GUICtrlRichEdit_GetTextLength
@@ -1899,10 +1905,10 @@ Func _GUICtrlRichEdit_InsertText($hWnd, $sText)
 	_GUICtrlRichEdit_Deselect($hWnd)
 	Local $iRet
 	If StringLeft($sText, 5) <> "{\rtf" And StringLeft($sText, 5) <> "{urtf" Then
-		DllStructSetData($tSetText, 2, $CP_UNICODE)
+		DllStructSetData($tSetText, 2, $__RICHEDITCONSTANT_CP_UNICODE)
 		$iRet = _SendMessage($hWnd, $EM_SETTEXTEX, $tSetText, $sText, 0, "struct*", "wstr")
 	Else
-		DllStructSetData($tSetText, 2, $CP_ACP)
+		DllStructSetData($tSetText, 2, $__RICHEDITCONSTANT_CP_ACP)
 		$iRet = _SendMessage($hWnd, $EM_SETTEXTEX, $tSetText, $sText, 0, "struct*", "STR")
 	EndIf
 	If Not $iRet Then Return SetError(103, 0, False) ; cannot be set
@@ -2036,7 +2042,7 @@ EndFunc   ;==>_GUICtrlRichEdit_ScrollLineOrPage
 ; ===============================================================================================================================
 Func _GUICtrlRichEdit_ScrollLines($hWnd, $iQlines)
 	If Not _WinAPI_IsClassName($hWnd, $__g_sRTFClassName) Then Return SetError(101, 0, False)
-	If Not __GCR_IsNumeric($iQlines) Then SetError(102, 0, False)
+	If Not __GCR_IsNumeric($iQlines) Then Return SetError(102, 0, False)
 
 	Local $iRet = _SendMessage($hWnd, $EM_LINESCROLL, 0, $iQlines)
 	If $iRet = 0 Then Return SetError(700, 0, False)
@@ -2283,7 +2289,7 @@ Func _GUICtrlRichEdit_SetFont($hWnd, $iPoints = Default, $sName = Default, $iCha
 		DllStructSetData($tCharFormat, 4, Int($iPoints * 20))
 	EndIf
 	If $sName <> Default Then
-		If StringLen($sName) > $LF_FACESIZE - 1 Then SetError(-1, 0, False)
+		If StringLen($sName) > $LF_FACESIZE - 1 Then Return SetError(-1, 0, False)
 		$iDwMask = BitOR($iDwMask, $CFM_FACE)
 		DllStructSetData($tCharFormat, 9, $sName)
 	EndIf
@@ -2753,7 +2759,7 @@ EndFunc   ;==>_GUICtrlRichEdit_SetParaTabStops
 ; ===============================================================================================================================
 Func _GUICtrlRichEdit_SetPasswordChar($hWnd, $sDisplayChar = "*")
 	If Not _WinAPI_IsClassName($hWnd, $__g_sRTFClassName) Then Return SetError(101, 0, False)
-	If Not IsString($sDisplayChar) Then SetError(102, 0, False)
+	If Not IsString($sDisplayChar) Then Return SetError(102, 0, False)
 
 	If $sDisplayChar = "" Then
 		_SendMessage($hWnd, $EM_SETPASSWORDCHAR)
@@ -2838,10 +2844,10 @@ Func _GUICtrlRichEdit_SetText($hWnd, $sText)
 	Local $tSetText = DllStructCreate($tagSETTEXTEX)
 	;	DllStructSetData($tSetText, 1, $ST_KEEPUNDO)
 	DllStructSetData($tSetText, 1, $ST_DEFAULT)
-	DllStructSetData($tSetText, 2, $CP_ACP)
+	DllStructSetData($tSetText, 2, $__RICHEDITCONSTANT_CP_ACP)
 	Local $iRet
 	If StringLeft($sText, 5) <> "{\rtf" And StringLeft($sText, 5) <> "{urtf" Then
-		DllStructSetData($tSetText, 2, $CP_UNICODE)
+		DllStructSetData($tSetText, 2, $__RICHEDITCONSTANT_CP_UNICODE)
 		$iRet = _SendMessage($hWnd, $EM_SETTEXTEX, $tSetText, $sText, 0, "struct*", "wstr")
 	Else
 		$iRet = _SendMessage($hWnd, $EM_SETTEXTEX, $tSetText, $sText, 0, "struct*", "STR")
@@ -3108,7 +3114,7 @@ EndFunc   ;==>__GCR_StreamFromVarCallback
 ;                  $pQbytes - pointer to number of bytes set in buffer
 ; Return values .: 0
 ; Author ........: Prog@ndy
-; Modified.......: Chris Haslam (c.haslam)
+; Modified.......: Chris Haslam (c.haslam), Nine
 ; Remarks .......:
 ; Related .......:
 ; Link ..........: @@MsdnLink@@ EditStreamCallback Function
@@ -3118,7 +3124,7 @@ Func __GCR_StreamToFileCallback($hFile, $pBuf, $iBuflen, $pQbytes)
 	Local $tQbytes = DllStructCreate("long", $pQbytes)
 	DllStructSetData($tQbytes, 1, 0)
 	Local $tBuf = DllStructCreate("char[" & $iBuflen & "]", $pBuf)
-	Local $s = DllStructGetData($tBuf, 1)
+	Local $s = StringReplace(DllStructGetData($tBuf, 1), "\par" & @CRLF & "}", @CRLF & "}")
 	FileWrite($hFile, $s)
 	DllStructSetData($tQbytes, 1, StringLen($s))
 	Return 0

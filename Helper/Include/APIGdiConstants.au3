@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPIGdi Constants UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants that can be used with UDF library
 ; Author(s) .....: Yashied, Jpm
@@ -68,9 +68,77 @@ Global Const $BI_BITFIELDS = 3
 Global Const $BI_JPEG = 4
 Global Const $BI_PNG = 5
 
+; Pen styles
+; _WinAPI_CreatePen(), _WinAPI_ExtCreatePen()
+Global Const $PS_SOLID = 0
+Global Const $PS_DASH = 1
+Global Const $PS_DOT = 2
+Global Const $PS_DASHDOT = 3
+Global Const $PS_DASHDOTDOT = 4
+Global Const $PS_NULL = 5
+Global Const $PS_INSIDEFRAME = 6
+Global Const $PS_USERSTYLE = 7
+Global Const $PS_ALTERNATE = 8
+
+Global Const $PS_ENDCAP_ROUND = 0x00000000
+Global Const $PS_ENDCAP_SQUARE = 0x00000100
+Global Const $PS_ENDCAP_FLAT = 0x00000200
+
+Global Const $PS_JOIN_BEVEL = 0x00001000
+Global Const $PS_JOIN_MITER = 0x00002000
+Global Const $PS_JOIN_ROUND = 0x00000000
+
+Global Const $PS_GEOMETRIC = 0x00010000
+Global Const $PS_COSMETIC = 0x00000000
+
 ; _WinAPI_CreatePolygonRgn()
 Global Const $ALTERNATE = 1
 Global Const $WINDING = 2
+
+; _WinAPI_DrawBitmap
+Global Const $BLACKNESS = 0x00000042 ; Fills the destination rectangle using the color associated with index 0 in the physical palette
+Global Const $CAPTUREBLT = 0X40000000 ; Includes any window that are layered on top of your window in the resulting image
+Global Const $DSTINVERT = 0x00550009 ; Inverts the destination rectangle
+Global Const $MERGECOPY = 0x00C000CA ; Copies the inverted source rectangle to the destination
+Global Const $MERGEPAINT = 0x00BB0226 ; Merges the color of the inverted source rectangle with the colors of the destination rectangle by using the OR operator
+Global Const $NOMIRRORBITMAP = 0X80000000 ; Prevents the bitmap from being mirrored
+Global Const $NOTSRCCOPY = 0x00330008 ; Copies the inverted source rectangle to the destination
+Global Const $NOTSRCERASE = 0x001100A6 ; Combines the colors of the source and destination rectangles by using the Boolean OR operator and then inverts the resultant color
+Global Const $PATCOPY = 0x00F00021 ; Copies the brush selected in hdcDest, into the destination bitmap
+Global Const $PATINVERT = 0x005A0049 ; Combines the colors of the brush currently selected  in  hDest,  with  the  colors  of  the destination rectangle by using the XOR operator
+Global Const $PATPAINT = 0x00FB0A09 ; Combines the colors of the brush currently selected  in  hDest,  with  the  colors  of  the inverted source rectangle by using the OR operator
+Global Const $SRCAND = 0x008800C6 ; Combines the colors of the source and destination rectangles by using the Boolean AND operator
+Global Const $SRCCOPY = 0x00CC0020 ; Copies the source rectangle directly to the destination rectangle
+Global Const $SRCERASE = 0x00440328 ; Combines the inverted colors of the destination rectangle with the colors of the source rectangle by using the Boolean AND operator
+Global Const $SRCINVERT = 0x00660046 ; Combines the colors of the source and destination rectangles by using the Boolean XOR operator
+Global Const $SRCPAINT = 0x00EE0086 ; Combines the colors of the source and destination rectangles by using the Boolean OR operator
+Global Const $WHITENESS = 0x00FF0062 ; Fills the destination rectangle using the color associated with index 1 in the physical palette
+
+; _WinAPI_DrawShadowText()
+Global Const $DT_BOTTOM = 0x8
+Global Const $DT_CALCRECT = 0x400
+Global Const $DT_CENTER = 0x1
+Global Const $DT_EDITCONTROL = 0x2000
+Global Const $DT_END_ELLIPSIS = 0x8000
+Global Const $DT_EXPANDTABS = 0x40
+Global Const $DT_EXTERNALLEADING = 0x200
+Global Const $DT_HIDEPREFIX = 0x100000
+Global Const $DT_INTERNAL = 0x1000
+Global Const $DT_LEFT = 0x0
+Global Const $DT_MODIFYSTRING = 0x10000
+Global Const $DT_NOCLIP = 0x100
+Global Const $DT_NOFULLWIDTHCHARBREAK = 0x80000
+Global Const $DT_NOPREFIX = 0x800
+Global Const $DT_PATH_ELLIPSIS = 0x4000
+Global Const $DT_PREFIXONLY = 0x200000
+Global Const $DT_RIGHT = 0x2
+Global Const $DT_RTLREADING = 0x20000
+Global Const $DT_SINGLELINE = 0x20
+Global Const $DT_TABSTOP = 0x80
+Global Const $DT_TOP = 0x0
+Global Const $DT_VCENTER = 0x4
+Global Const $DT_WORDBREAK = 0x10
+Global Const $DT_WORD_ELLIPSIS = 0x40000
 
 ; _WinAPI_DwmGetWindowAttribute(), _WinAPI_DwmSetWindowAttribute()
 Global Const $DWMWA_NCRENDERING_ENABLED = 1
@@ -82,9 +150,32 @@ Global Const $DWMWA_NONCLIENT_RTL_LAYOUT = 6
 Global Const $DWMWA_FORCE_ICONIC_REPRESENTATION = 7
 Global Const $DWMWA_FLIP3D_POLICY = 8
 Global Const $DWMWA_EXTENDED_FRAME_BOUNDS = 9
+
+; > Windows Vista
 Global Const $DWMWA_HAS_ICONIC_BITMAP = 10
 Global Const $DWMWA_DISALLOW_PEEK = 11
 Global Const $DWMWA_EXCLUDED_FROM_PEEK = 12
+
+; > Windows 7 osbuild 7600
+Global Const $DWMWA_CLOAK = 13
+Global Const $DWMWA_CLOAKED = 14
+Global Const $DWMWA_FREEZE_REPRESENTATION = 15
+Global Const $DWMWA_PASSIVE_UPDATE_MODE = 16
+
+; >= Windows 11 build 22000
+Global Const $DWMWA_USE_HOSTBACKDROPBRUSH = 17
+
+Global Const $DWMWA_USE_IMMERSIVE_DARK_MODE = (@OSBuild <= 18985) ? 19 : 20
+
+Global Const $DWMWA_WINDOW_CORNER_PREFERENCE = 33
+Global Const $DWMWA_BORDER_COLOR = 34
+Global Const $DWMWA_CAPTION_COLOR = 35
+Global Const $DWMWA_TEXT_COLOR = 36
+Global Const $DWMWA_VISIBLE_FRAME_BORDER_THICKNESS = 37
+
+; >=Windows 11 build 22621
+Global Const $DWMWA_SYSTEMBACKDROP_TYPE = 38
+Global Const $DWMWA_LAST = 39
 
 Global Const $DWMNCRP_USEWINDOWSTYLE = 0
 Global Const $DWMNCRP_DISABLED = 1
@@ -348,9 +439,26 @@ Global Const $NTM_TYPE1 = 0x00100000
 Global Const $FLOODFILLBORDER = 0
 Global Const $FLOODFILLSURFACE = 1
 
+; _WinAPI_ExtSelectClipRgn(), _WinAPI_SelectClipPath()
+Global Const $RGN_AND = 1
+Global Const $RGN_OR = 2
+Global Const $RGN_XOR = 3
+Global Const $RGN_DIFF = 4
+Global Const $RGN_COPY = 5
+
 ; _WinAPI_GetArcDirection(), _WinAPI_SetArcDirection()
 Global Const $AD_COUNTERCLOCKWISE = 1
 Global Const $AD_CLOCKWISE = 2
+
+; Type of the resulting region from region's combine
+Global Const $ERRORREGION = 0
+Global Const $NULLREGION = 1
+Global Const $SIMPLEREGION = 2
+Global Const $COMPLEXREGION = 3
+
+; Background mix modes
+Global Const $TRANSPARENT = 1
+Global Const $OPAQUE = 2
 
 ; _WinAPI_GetBoundsRect(), _WinAPI_SetBoundsRect()
 Global Const $DCB_ACCUMULATE = 0x02
@@ -464,4 +572,19 @@ Global Const $PT_BEZIERTO = 4
 Global Const $PT_LINETO = 2
 Global Const $PT_MOVETO = 6
 Global Const $PT_CLOSEFIGURE = 1
+
+; _WinAPI_RedrawWindow() Constants
+Global Const $RDW_ERASE = 0x0004 ; Causes the window to receive a WM_ERASEBKGND message when the window is repainted
+Global Const $RDW_FRAME = 0x0400 ; Causes any part of the nonclient area of the window that intersects the update region to receive a WM_NCPAINT message
+Global Const $RDW_INTERNALPAINT = 0x0002 ; Causes a WM_PAINT message to be posted to the window regardless of whether any portion of the window is invalid
+Global Const $RDW_INVALIDATE = 0x0001 ; Invalidates DllStructGetData($tRECT or $hRegion, "") If both are 0, the entire window is invalidated
+Global Const $RDW_NOERASE = 0x0020 ; Suppresses any pending WM_ERASEBKGND messages
+Global Const $RDW_NOFRAME = 0x0800 ; Suppresses any pending WM_NCPAINT messages
+Global Const $RDW_NOINTERNALPAINT = 0x0010 ; Suppresses any pending internal WM_PAINT messages
+Global Const $RDW_VALIDATE = 0x0008 ; Validates Rect or hRegion
+Global Const $RDW_ERASENOW = 0x0200 ; Causes the affected windows to receive WM_NCPAINT and WM_ERASEBKGND messages
+Global Const $RDW_UPDATENOW = 0x0100 ; Causes the affected windows to receive WM_NCPAINT, WM_ERASEBKGND, and WM_PAINT messages
+Global Const $RDW_ALLCHILDREN = 0x0080 ; Includes child windows in the repainting operation
+Global Const $RDW_NOCHILDREN = 0x0040 ; Excludes child windows from the repainting operation
+
 ; ===============================================================================================================================

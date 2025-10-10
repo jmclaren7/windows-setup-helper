@@ -1,14 +1,16 @@
-#include-once
 #ignorefunc __SQLite_Inline_Version, __SQLite_Inline_Modified
 
-#include "FileConstants.au3"
-#include "InetConstants.au3"
+#include-once
+
 #include "Array.au3" ; Using : _ArrayAdd(), _ArrayDelete(), _ArraySearch()
+#include "AutoItConstants.au3"
 #include "File.au3" ; Using : _TempFile()
+#include "SQLite.dll.au3"
+#include "StringConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: SQLite
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist access to an SQLite database.
 ; Author(s) .....: Fida Florian (piccaso), jchd, jpm
@@ -79,6 +81,7 @@ Global Const $SQLITE_TYPE_NULL = 5
 ; _SQLite_Startup
 ; _SQLite_Shutdown
 ; _SQLite_Open
+; _SQLite_ForeignKeys
 ; _SQLite_Close
 ; _SQLite_GetTable
 ; _SQLite_Exec
@@ -255,7 +258,7 @@ EndFunc   ;==>_SQLite_Shutdown
 ; Author ........: piccaso (Fida Florian)
 ; Modified.......: jchd, jpm
 ; ===============================================================================================================================
-Func _SQLite_Open($sDatabase_Filename = Default, $iAccessMode = Default, $iEncoding = Default)
+Func _SQLite_Open($sDatabase_Filename = Default, $iAccessMode = Default, $iEncoding = Default, $bFKConstraints = Default)
 	If Not $__g_hDll_SQLite Then Return SetError(3, $SQLITE_MISUSE, 0)
 	If $sDatabase_Filename = Default Or Not IsString($sDatabase_Filename) Then $sDatabase_Filename = ":memory:"
 	Local $tFilename = __SQLite_StringToUtf8Struct($sDatabase_Filename)
@@ -282,8 +285,37 @@ Func _SQLite_Open($sDatabase_Filename = Default, $iAccessMode = Default, $iEncod
 		Local $aEncoding[3] = ["8", "16", "16be"]
 		_SQLite_Exec($avRval[2], 'PRAGMA encoding="UTF-' & $aEncoding[$iEncoding] & '";')
 	EndIf
+
+	If $bFKConstraints = Default Or Not $bFKConstraints Then
+		$bFKConstraints = False
+	Else
+		_SQLite_Exec($avRval[2], 'PRAGMA foreign_keys = ON;')
+	EndIf
+
 	Return SetExtended($avRval[0], $avRval[2])
 EndFunc   ;==>_SQLite_Open
+
+; #FUNCTION# ====================================================================================================================
+; Author ........: Argumentum
+; Modified.......:
+; ===============================================================================================================================
+Func _SQLite_ForeignKeys($hDB = -1, $bFKConstraints = Default)
+	If __SQLite_hChk($hDB, 2) Then Return SetError(@error, 0, $SQLITE_MISUSE)
+
+	If $bFKConstraints = Default Then
+		Local $aRow
+		Local $iQueryRet = _SQLite_QuerySingleRow($hDB, 'PRAGMA foreign_keys;', $aRow)
+		If @error Then Return SetError(4, @error, $iQueryRet)
+		Return ($aRow[0] = 1 ? True : False)
+	EndIf
+
+	Local $iExecRet = _SQLite_Exec($hDB, 'PRAGMA foreign_keys = ' & ($bFKConstraints ? 'ON' : 'OFF') & ';')
+	If $iExecRet = $SQLITE_OK Then
+		Return ($bFKConstraints ? True : False)
+	Else
+		Return SetError(3, @error, $iExecRet)
+	EndIf
+EndFunc   ;==>_SQLite_ForeignKeys
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: piccaso (Fida Florian)
@@ -615,7 +647,9 @@ Func _SQLite_SetTimeout($hDB = -1, $iTimeout = 1000)
 	If $iTimeout = Default Then $iTimeout = 1000
 	Local $avRval = DllCall($__g_hDll_SQLite, "int:cdecl", "sqlite3_busy_timeout", "ptr", $hDB, "int", $iTimeout)
 	If @error Then Return SetError(1, @error, $SQLITE_MISUSE) ; DllCall error
-	If $avRval[0] <> $SQLITE_OK Then SetError(-1)
+	If $avRval[0] <> $SQLITE_OK Then
+		SetError(-1)
+	EndIf
 	Return $avRval[0]
 EndFunc   ;==>_SQLite_SetTimeout
 
@@ -747,7 +781,9 @@ Func _SQLite_QueryFinalize($hQuery)
 	Local $avRval = DllCall($__g_hDll_SQLite, "int:cdecl", "sqlite3_finalize", "ptr", $hQuery)
 	If @error Then Return SetError(1, @error, $SQLITE_MISUSE) ; DllCall error
 	__SQLite_hDel($__g_ahQuerys_SQLite, $hQuery)
-	If $avRval[0] <> $SQLITE_OK Then SetError(-1)
+	If $avRval[0] <> $SQLITE_OK Then
+		SetError(-1)
+	EndIf
 	Return $avRval[0]
 EndFunc   ;==>_SQLite_QueryFinalize
 
@@ -758,7 +794,9 @@ Func _SQLite_QueryReset($hQuery)
 	If __SQLite_hChk($hQuery, 2, False) Then Return SetError(@error, 0, $SQLITE_MISUSE)
 	Local $avRval = DllCall($__g_hDll_SQLite, "int:cdecl", "sqlite3_reset", "ptr", $hQuery)
 	If @error Then Return SetError(1, @error, $SQLITE_MISUSE) ; DllCall error
-	If $avRval[0] <> $SQLITE_OK Then SetError(-1)
+	If $avRval[0] <> $SQLITE_OK Then
+		SetError(-1)
+	EndIf
 	Return $avRval[0]
 EndFunc   ;==>_SQLite_QueryReset
 
@@ -832,9 +870,9 @@ Func _SQLite_SQLiteExe($sDatabaseFile, $sInput, ByRef $sOutput, $sSQLiteExeFilen
 		FileWrite($hInputFile, $sInput)
 		FileClose($hInputFile)
 		Local $sCmd = @ComSpec & " /c " & FileGetShortName($sSQLiteExeFilename) & '  "' _
-				 & FileGetShortName($sDatabaseFile) _
-				 & '" > "' & FileGetShortName($sOutputFile) _
-				 & '" < "' & FileGetShortName($sInputFile) & '"'
+				& FileGetShortName($sDatabaseFile) _
+				& '" > "' & FileGetShortName($sOutputFile) _
+				& '" < "' & FileGetShortName($sInputFile) & '"'
 		Local $nErrorLevel = RunWait($sCmd, @WorkingDir, @SW_HIDE)
 		If $bDebug = True Then
 			Local $nErrorTemp = @error

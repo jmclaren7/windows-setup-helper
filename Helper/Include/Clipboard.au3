@@ -4,7 +4,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Clipboard
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with Clipboard management.
 ;                  The clipboard is a set of functions and messages that enable applications to transfer data.
@@ -144,7 +144,7 @@ EndFunc   ;==>_ClipBoard_FormatStr
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......: Gary Frost,
 ; ===============================================================================================================================
-Func _ClipBoard_GetData($iFormat = 1)
+Func _ClipBoard_GetData($iFormat = $CF_TEXT)
 	If Not _ClipBoard_IsFormatAvailable($iFormat) Then Return SetError(-1, 0, 0)
 	If Not _ClipBoard_Open(0) Then Return SetError(-2, 0, 0)
 	Local $hMemory = _ClipBoard_GetDataEx($iFormat)
@@ -179,6 +179,7 @@ Func _ClipBoard_GetData($iFormat = 1)
 		Case $CF_UNICODETEXT
 			; Round() shouldn't be necessary, as CF_UNICODETEXT should be 2-bytes wide & thus evenly-divisible
 			$iDataSize = Round($iDataSize / 2)
+			ConsoleWrite('@@ Debug(' & @ScriptLineNumber & ') : $iDataSize = ' & $iDataSize & @CRLF & '>Error code: ' & @error & '    Extended code: ' & @extended & ' (0x' & Hex(@extended) & ')' & @CRLF) ;### Debug Console
 			$tData = DllStructCreate("wchar[" & $iDataSize & "]", $pMemoryBlock)
 		Case Else
 			; Binary data return for all other formats
@@ -199,7 +200,7 @@ EndFunc   ;==>_ClipBoard_GetData
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......:
 ; ===============================================================================================================================
-Func _ClipBoard_GetDataEx($iFormat = 1)
+Func _ClipBoard_GetDataEx($iFormat = $CF_TEXT)
 	Local $aCall = DllCall("user32.dll", "handle", "GetClipboardData", "uint", $iFormat)
 	If @error Then Return SetError(@error, @extended, 0)
 	Return $aCall[0]
@@ -307,7 +308,7 @@ EndFunc   ;==>_ClipBoard_RegisterFormat
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......: Ascend4nt
 ; ===============================================================================================================================
-Func _ClipBoard_SetData($vData, $iFormat = 1)
+Func _ClipBoard_SetData($vData, $iFormat = $CF_TEXT)
 	Local $tData, $hLock, $hMemory, $iSize
 
 	; Special NULL case? (the option to provide clipboard formats upon request)
@@ -370,7 +371,7 @@ EndFunc   ;==>_ClipBoard_SetData
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......:
 ; ===============================================================================================================================
-Func _ClipBoard_SetDataEx(ByRef $hMemory, $iFormat = 1)
+Func _ClipBoard_SetDataEx(ByRef $hMemory, $iFormat = $CF_TEXT)
 	Local $aCall = DllCall("user32.dll", "handle", "SetClipboardData", "uint", $iFormat, "handle", $hMemory)
 	If @error Then Return SetError(@error, @extended, 0)
 	Return $aCall[0]

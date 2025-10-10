@@ -3,6 +3,7 @@
 #include "DateTimeConstants.au3"
 #include "Memory.au3"
 #include "Security.au3"
+#include "StringConstants.au3"
 #include "StructureConstants.au3"
 #include "WinAPIError.au3"
 #include "WinAPIHObj.au3"
@@ -10,7 +11,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Date
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with Date/Time management.
 ;                  There are five time formats: System, File, Local, MS-DOS and Windows.  Time related functions return  time  in
@@ -97,6 +98,7 @@
 ; ===============================================================================================================================
 
 ; #INTERNAL_USE_ONLY# ===========================================================================================================
+; __DateDiffYear
 ; __DateIsMonth
 ; __DateIsYear
 ; __Date_Time_CloneSystemTime
@@ -104,19 +106,19 @@
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: Jos van der Zande
-; Modified.......:
+; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _DateAdd($sType, $iNumber, $sDate)
+Func _DateAdd($sType, $vNumber, $sDate)
 	Local $asTimePart[4]
 	Local $asDatePart[4]
 	Local $iJulianDate
 	; Verify that $sType is Valid
 	$sType = StringLeft($sType, 1)
-	If StringInStr("D,M,Y,w,h,n,s", $sType) = 0 Or $sType = "" Then
+	If StringInStr("a,D,M,Y,w,h,n,s", $sType) = 0 Or $sType = "" Then
 		Return SetError(1, 0, 0)
 	EndIf
 	; Verify that Value to Add  is Valid
-	If Not StringIsInt($iNumber) Then
+	If Not StringIsInt($vNumber) And ($sType = "a" And Not IsArray($vNumber)) Then
 		Return SetError(2, 0, 0)
 	EndIf
 	; Verify If InputDate is valid
@@ -130,15 +132,18 @@ Func _DateAdd($sType, $iNumber, $sDate)
 	; adding days then get the julian date
 	; add the number of day
 	; and convert back to Gregorian
-	If $sType = "d" Or $sType = "w" Then
-		If $sType = "w" Then $iNumber = $iNumber * 7
+	If $sType = "d" Or $sType = "w" Or $sType = "a" Then
+		Local $iNumber
+		If $sType = "d" Then $iNumber = $vNumber
+		If $sType = "w" Then $iNumber = $vNumber * 7
+		If $sType = "a" Then $iNumber = $vNumber[0]
 		$iJulianDate = _DateToDayValue($asDatePart[1], $asDatePart[2], $asDatePart[3]) + $iNumber
 		_DayValueToDate($iJulianDate, $asDatePart[1], $asDatePart[2], $asDatePart[3])
 	EndIf
 	; ====================================================
 	; adding Months
 	If $sType = "m" Then
-		$asDatePart[2] = $asDatePart[2] + $iNumber
+		$asDatePart[2] = $asDatePart[2] + $vNumber
 		; pos number of months
 		While $asDatePart[2] > 12
 			$asDatePart[2] = $asDatePart[2] - 12
@@ -153,15 +158,20 @@ Func _DateAdd($sType, $iNumber, $sDate)
 	; ====================================================
 	; adding Years
 	If $sType = "y" Then
-		$asDatePart[1] = $asDatePart[1] + $iNumber
+		$asDatePart[1] = $asDatePart[1] + $vNumber
 	EndIf
 	; ====================================================
 	; adding Time value
-	If $sType = "h" Or $sType = "n" Or $sType = "s" Then
+	If $sType = "h" Or $sType = "n" Or $sType = "s" Or $sType = "a" Then
 		Local $iTimeVal = _TimeToTicks($asTimePart[1], $asTimePart[2], $asTimePart[3]) / 1000
-		If $sType = "h" Then $iTimeVal = $iTimeVal + $iNumber * 3600
-		If $sType = "n" Then $iTimeVal = $iTimeVal + $iNumber * 60
-		If $sType = "s" Then $iTimeVal = $iTimeVal + $iNumber
+        If $sType = "h" Then $iTimeVal = $iTimeVal + $vNumber * 3600
+        If $sType = "n" Then $iTimeVal = $iTimeVal + $vNumber * 60
+        If $sType = "s" Then $iTimeVal = $iTimeVal + $vNumber
+        If $sType = "a" Then
+            $iTimeVal = $iTimeVal + $vNumber[1] * 3600
+            $iTimeVal = $iTimeVal + $vNumber[2] * 60
+            $iTimeVal = $iTimeVal + $vNumber[3]
+        EndIf
 		; calculated days to add
 		Local $iDay2Add = Int($iTimeVal / (24 * 60 * 60))
 		$iTimeVal = $iTimeVal - $iDay2Add * 24 * 60 * 60
@@ -172,7 +182,7 @@ Func _DateAdd($sType, $iNumber, $sDate)
 		$iJulianDate = _DateToDayValue($asDatePart[1], $asDatePart[2], $asDatePart[3]) + $iDay2Add
 		; calculate the julian back to date
 		_DayValueToDate($iJulianDate, $asDatePart[1], $asDatePart[2], $asDatePart[3])
-		; caluculate the new time
+		; calculate the new time
 		_TicksToTime($iTimeVal * 1000, $asTimePart[1], $asTimePart[2], $asTimePart[3])
 	EndIf
 	; ====================================================
@@ -224,12 +234,12 @@ EndFunc   ;==>_DateDaysInMonth
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: Jos van der Zande
-; Modified.......:
+; Modified.......: Jpm
 ; ===============================================================================================================================
 Func _DateDiff($sType, $sStartDate, $sEndDate)
 	; Verify that $sType is Valid
 	$sType = StringLeft($sType, 1)
-	If StringInStr("d,m,y,w,h,n,s", $sType) = 0 Or $sType = "" Then
+	If StringInStr("a,d,m,y,w,h,n,s", $sType) = 0 Or $sType = "" Then
 		Return SetError(1, 0, 0)
 	EndIf
 	; Verify If StartDate is valid
@@ -246,25 +256,32 @@ Func _DateDiff($sType, $sStartDate, $sEndDate)
 	; split the End  Date and time into arrays
 	_DateTimeSplit($sEndDate, $asEndDatePart, $asEndTimePart)
 	; ====================================================
-	; Get the differens in days between the 2 dates
-	Local $aDaysDiff = _DateToDayValue($asEndDatePart[1], $asEndDatePart[2], $asEndDatePart[3]) - _DateToDayValue($asStartDatePart[1], $asStartDatePart[2], $asStartDatePart[3])
+	; Get the difference in days between the 2 dates
+	Local $iDaysDiff = _DateToDayValue($asEndDatePart[1], $asEndDatePart[2], $asEndDatePart[3]) - _DateToDayValue($asStartDatePart[1], $asStartDatePart[2], $asStartDatePart[3])
 	; ====================================================
 	Local $iTimeDiff, $iYearDiff, $iStartTimeInSecs, $iEndTimeInSecs
-	; Get the differens in Seconds between the 2 times when specified
+	; Get the difference in Seconds between the 2 times when specified
 	If $asStartTimePart[0] > 1 And $asEndTimePart[0] > 1 Then
 		$iStartTimeInSecs = $asStartTimePart[1] * 3600 + $asStartTimePart[2] * 60 + $asStartTimePart[3]
 		$iEndTimeInSecs = $asEndTimePart[1] * 3600 + $asEndTimePart[2] * 60 + $asEndTimePart[3]
 		$iTimeDiff = $iEndTimeInSecs - $iStartTimeInSecs
 		If $iTimeDiff < 0 Then
-			$aDaysDiff = $aDaysDiff - 1
+			$iDaysDiff = $iDaysDiff - 1
 			$iTimeDiff = $iTimeDiff + 24 * 60 * 60
 		EndIf
 	Else
 		$iTimeDiff = 0
 	EndIf
 	Select
+		Case $sType = "a"
+			Local $aDateDiff[4]
+			$aDateDiff[0] = $iDaysDiff
+			$aDateDiff[1] = $iDaysDiff * 24 + Int($iTimeDiff / 3600)
+			$aDateDiff[2] = Int($iTimeDiff / 60) - $aDateDiff[1] * 60
+			$aDateDiff[3] = $iTimeDiff - $aDateDiff[1] * 3600 - $aDateDiff[2] * 60
+			Return $aDateDiff
 		Case $sType = "d"
-			Return $aDaysDiff
+			Return $iDaysDiff
 		Case $sType = "m"
 			$iYearDiff = $asEndDatePart[1] - $asStartDatePart[1]
 			Local $iMonthDiff = $asEndDatePart[2] - $asStartDatePart[2] + $iYearDiff * 12
@@ -275,24 +292,44 @@ Func _DateDiff($sType, $sStartDate, $sEndDate)
 			If $asEndDatePart[3] = $asStartDatePart[3] And $iTimeDiff < 0 Then $iMonthDiff = $iMonthDiff - 1
 			Return $iMonthDiff
 		Case $sType = "y"
-			$iYearDiff = $asEndDatePart[1] - $asStartDatePart[1]
-			If $asEndDatePart[2] < $asStartDatePart[2] Then $iYearDiff = $iYearDiff - 1
-			If $asEndDatePart[2] = $asStartDatePart[2] And $asEndDatePart[3] < $asStartDatePart[3] Then $iYearDiff = $iYearDiff - 1
-			$iStartTimeInSecs = $asStartTimePart[1] * 3600 + $asStartTimePart[2] * 60 + $asStartTimePart[3]
-			$iEndTimeInSecs = $asEndTimePart[1] * 3600 + $asEndTimePart[2] * 60 + $asEndTimePart[3]
-			$iTimeDiff = $iEndTimeInSecs - $iStartTimeInSecs
-			If $asEndDatePart[2] = $asStartDatePart[2] And $asEndDatePart[3] = $asStartDatePart[3] And $iTimeDiff < 0 Then $iYearDiff = $iYearDiff - 1
-			Return $iYearDiff
+			Return __DateDiffYear($asStartDatePart, $asStartTimePart, $asEndDatePart, $asEndTimePart)
 		Case $sType = "w"
-			Return Int($aDaysDiff / 7)
+			Return Int($iDaysDiff / 7)
 		Case $sType = "h"
-			Return $aDaysDiff * 24 + Int($iTimeDiff / 3600)
+			Return $iDaysDiff * 24 + Int($iTimeDiff / 3600)
 		Case $sType = "n"
-			Return $aDaysDiff * 24 * 60 + Int($iTimeDiff / 60)
+			Return $iDaysDiff * 24 * 60 + Int($iTimeDiff / 60)
 		Case $sType = "s"
-			Return $aDaysDiff * 24 * 60 * 60 + $iTimeDiff
+			Return $iDaysDiff * 24 * 60 * 60 + $iTimeDiff
 	EndSelect
 EndFunc   ;==>_DateDiff
+
+; #INTERNAL_USE_ONLY# ===========================================================================================================
+; Name...........: __DateDiffYear
+; Description ...: Checks a given number to see if it is a valid month.
+; Syntax.........: __DateDiffYear ( $asStartDatePart, $asStartTimePart, $asEndDatePart, $asEndTimePart )
+; Parameters ....: $asStartDatePart - Part of the StartDate.
+;                  $asStartTimePart - Part of the StartTime.
+;                  $asEndDatePart - Part of the EndDate.
+;                  $asEndTimePart - Part of the SEndTime.
+; Return values .: Success - Returns Diff Year.
+; Author ........: Jpm
+; Modified.......:
+; Remarks .......:
+; Related .......:
+; Link ..........:
+; Example .......:
+; ===============================================================================================================================
+Func __DateDiffYear($asStartDatePart, $asStartTimePart, $asEndDatePart, $asEndTimePart)
+	Local $iYearDiff = $asEndDatePart[1] - $asStartDatePart[1]
+	If $asEndDatePart[2] < $asStartDatePart[2] Then $iYearDiff = $iYearDiff - 1
+	If $asEndDatePart[2] = $asStartDatePart[2] And $asEndDatePart[3] < $asStartDatePart[3] Then $iYearDiff = $iYearDiff - 1
+	Local $iStartTimeInSecs = $asStartTimePart[1] * 3600 + $asStartTimePart[2] * 60 + $asStartTimePart[3]
+	Local $iEndTimeInSecs = $asEndTimePart[1] * 3600 + $asEndTimePart[2] * 60 + $asEndTimePart[3]
+	Local $iTimeDiff = $iEndTimeInSecs - $iStartTimeInSecs
+	If $asEndDatePart[2] = $asStartDatePart[2] And $asEndDatePart[3] = $asStartDatePart[3] And $iTimeDiff < 0 Then $iYearDiff = $iYearDiff - 1
+	Return $iYearDiff
+EndFunc   ;==>__DateDiffYear
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: Jeremy Landes <jlandes at landeserve dot com>
@@ -604,7 +641,7 @@ EndFunc   ;==>_DateNextMonthYear
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: Jos van der Zande <jdeb at autoitscript dot com>
-; Modified.......:
+; Modified.......: argumentum
 ; ===============================================================================================================================
 Func _DateTimeFormat($sDate, $sType)
 	Local $asDatePart[4], $asTimePart[4]
@@ -667,6 +704,14 @@ Func _DateTimeFormat($sDate, $sType)
 		Case 5
 			If $asTimePart[0] > 1 Then
 				$sTempTime = "hh:mm:ss"
+			EndIf
+		Case 6
+			If $asTimePart[0] > 1 Then
+				$sTempTime = "hh:mm tt"
+			EndIf
+		Case 7
+			If $asTimePart[0] > 1 Then
+				$sTempTime = "hh:mm:ss tt"
 			EndIf
 	EndSwitch
 	; Format DATE
@@ -756,6 +801,7 @@ Func _DateTimeSplit($sDate, ByRef $aDatePart, ByRef $aTimePart)
 		EndIf
 	Else
 		Dim $aTimePart[4]
+		$aTimePart[0] = 0
 	EndIf
 
 	; update the array to contain numbers not strings
@@ -871,7 +917,7 @@ EndFunc   ;==>_DayValueToDate
 
 ; #NO_DOC_FUNCTION# =============================================================================================================
 ; Name...........: _Date_JulianDayNo
-; Description ...: Returns the the julian date in format YYDDD
+; Description ...: Returns the julian date in format YYDDD
 ; Syntax.........: _Date_JulianDayNo ( $iYear, $iMonth, $iDay )
 ; Parameters ....: $iJulianDate - Julian date number
 ;                  $iYear       - Year in format YYYY
@@ -906,7 +952,7 @@ EndFunc   ;==>_Date_JulianDayNo
 
 ; #NO_DOC_FUNCTION# =============================================================================================================
 ; Name...........: _JulianToDate
-; Description ...: Returns the the julian date in format YYDDD
+; Description ...: Returns the julian date in format YYDDD
 ; Syntax.........: _JulianToDate ($iJDay [, $sSep = "/"] )
 ; Parameters ....: $iJDate  - Julian date number
 ;                  $sSep    - Seperator character
@@ -958,7 +1004,7 @@ Func _NowCalc()
 	Local $tLocalTime = _Date_Time_GetLocalTime()
 	If @error Then Return SetError(@error, @extended, "")
 	Return $tLocalTime.Year & "/" & StringRight('00' & $tLocalTime.Month, 2) & "/" & StringRight('00' & $tLocalTime.Day, 2) & " " & _
-		StringRight('00' & $tLocalTime.Hour, 2) & ":" & StringRight('00' & $tLocalTime.Minute, 2) & ":" & StringRight('00' & $tLocalTime.Second, 2)
+			StringRight('00' & $tLocalTime.Hour, 2) & ":" & StringRight('00' & $tLocalTime.Minute, 2) & ":" & StringRight('00' & $tLocalTime.Second, 2)
 EndFunc   ;==>_NowCalc
 
 ; #FUNCTION# ====================================================================================================================
@@ -1746,22 +1792,22 @@ Func _Date_Time_SystemTimeToDateTimeStr(ByRef $tSYSTEMTIME, $iFmt = 0, $iType = 
 			$sRet = _WinAPI_GetDateFormat($LOCALE_INVARIANT, $tSYSTEMTIME, 0, 'yyyy/MM/dd ')
 			$sRet &= _WinAPI_GetTimeFormat($LOCALE_INVARIANT, $tSYSTEMTIME)
 		Case 2
-			; GMT formatting
-			; Fri, 30 May 2014 20:38:36 GMT
+			; UTC formatting
+			; Fri, 30 May 2014 20:38:36 UTC
 			Local $tTemp
 			If $iType Then
-				$tTemp = $tSYSTEMTIME ; already system time = GMT time
+				$tTemp = $tSYSTEMTIME ; already system time = UTC time
 			Else
 				$tTemp = _Date_Time_TzSpecificLocalTimeToSystemTime($tSYSTEMTIME)
 			EndIf
 			$sRet = _WinAPI_GetDateFormat($LOCALE_INVARIANT, $tTemp, 0, 'ddd, dd MMM yyyy') & " "
-			$sRet &= _WinAPI_GetTimeFormat($LOCALE_INVARIANT, $tTemp) & " GMT"
+			$sRet &= _WinAPI_GetTimeFormat($LOCALE_INVARIANT, $tTemp) & " UTC"
 		Case 3
 			; ISO 8601
-			; type=0 local time  2020-10-15T20:44:03-02:00
+			; type=0 local time  2020-10-15T20:11:03-02:00
 			; type=1 system time 2020-10-15T18:44:03Z
 			Local $aFlag = _Date_Time_GetTimeZoneInformation()
-			Local $iBias = $aFlag[1] + $aFlag[7]
+			Local $iBias = $aFlag[1] + ($aFlag[0] - 1) * $aFlag[7]
 			$sRet = _WinAPI_GetDateFormat($LOCALE_INVARIANT, $tSYSTEMTIME, 0, 'yyyy-MM-dd') & "T"
 			$sRet &= _WinAPI_GetTimeFormat($LOCALE_INVARIANT, $tSYSTEMTIME)
 			If $iType Then
@@ -1771,10 +1817,10 @@ Func _Date_Time_SystemTimeToDateTimeStr(ByRef $tSYSTEMTIME, $iFmt = 0, $iType = 
 					Local $iS = Mod($iBias, 60)
 					Local $iH = (Abs($iBias) + $iS) / 60
 					If $iBias < 0 Then
-						$sRet &= "-"
+						$sRet &= "+"
 						$iS = -$iS
 					Else
-						$sRet &= "+"
+						$sRet &= "-"
 					EndIf
 					$sRet &= StringFormat("%02d:%02d", $iH, $iS)
 				EndIf

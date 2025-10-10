@@ -2,11 +2,11 @@
 
 #include "AutoItConstants.au3"
 #include "FileConstants.au3"
-#include "MsgBoxConstants.au3"
+#include "ProcessConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPIxxx.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -27,6 +27,8 @@ Global Const $IMAGE_ICON = 1
 Global Const $IMAGE_CURSOR = 2
 Global Const $IMAGE_ENHMETAFILE = 3
 
+; Pixel Format constants
+; Moved in GDIPlusConstants.au3
 ; _WinAPI_LoadImage(), _WinAPI_CopyImage()
 Global Const $LR_DEFAULTCOLOR = 0x0000
 Global Const $LR_MONOCHROME = 0x0001
@@ -75,6 +77,7 @@ Global Const $__tagCURSORINFO = "dword Size;dword Flags;handle hCursor;" & "stru
 ; _WinAPI_GetCursorInfo
 ; _WinAPI_LoadImage
 ; _WinAPI_LoadLibrary
+; _WinAPI_ShowCursor
 ;
 ; Doc in WinAPISys
 ; _WinAPI_GetModuleHandle
@@ -86,11 +89,10 @@ Global Const $__tagCURSORINFO = "dword Size;dword Flags;handle hCursor;" & "stru
 ; $__tagCURSORINFO
 ; __CheckErrorArrayBounds
 ; __CheckErrorCloseHandle
+; __ConvProcesDesiredAccess
 ; __DLL
 ; __EnumWindowsProc
-; __FatalExit
 ; __Inc
-; __RGB
 ; ===============================================================================================================================
 
 #EndRegion Functions list
@@ -287,6 +289,17 @@ Func _WinAPI_ReadFile($hFile, $pBuffer, $iToRead, ByRef $iRead, $tOverlapped = 0
 EndFunc   ;==>_WinAPI_ReadFile
 
 ; #FUNCTION# ====================================================================================================================
+; Author ........: Paul Campbell (PaulIA)
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_ShowCursor($bShow)
+	Local $aCall = DllCall("user32.dll", "int", "ShowCursor", "bool", $bShow)
+	If @error Then Return SetError(@error, @extended, 0)
+
+	Return $aCall[0]
+EndFunc   ;==>_WinAPI_ShowCursor
+
+; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
@@ -325,6 +338,11 @@ EndFunc   ;==>_WinAPI_WriteFile
 #EndRegion Public Functions
 
 #Region Internal Functions
+
+Func __ConvProcesDesiredAccess($iAccess = 0)
+	Local Static $bVersion = _WinAPI_GetVersion() < 6.0
+	Return $bVersion ? ($PROCESS_QUERY_INFORMATION + $iAccess) : ($PROCESS_QUERY_LIMITED_INFORMATION + $iAccess)
+EndFunc   ;==>__ConvProcesDesiredAccess
 
 Func __CheckErrorArrayBounds(Const ByRef $aData, ByRef $iStart, ByRef $iEnd, $nDim = 1, $iDim = $UBOUND_DIMENSIONS)
 	; Bounds checking
@@ -374,11 +392,6 @@ Func __EnumWindowsProc($hWnd, $bVisible)
 	Return 1
 EndFunc   ;==>__EnumWindowsProc
 
-Func __FatalExit($iCode, $sText = '')
-	If $sText Then MsgBox($MB_SYSTEMMODAL, 'AutoIt', $sText)
-	DllCall('kernel32.dll', 'none', 'FatalExit', 'int', $iCode) ; _WinAPI_FatalExit($iCode)
-EndFunc   ;==>__FatalExit
-
 Func __Inc(ByRef $aData, $iIncrement = 100)
 	Select
 		Case UBound($aData, $UBOUND_COLUMNS)
@@ -404,12 +417,5 @@ Func __Inc(ByRef $aData, $iIncrement = 100)
 	EndSelect
 	Return 1
 EndFunc   ;==>__Inc
-
-Func __RGB($iColor)
-	If $__g_iRGBMode Then
-		$iColor = _WinAPI_SwitchColor($iColor)
-	EndIf
-	Return $iColor
-EndFunc   ;==>__RGB
 
 #EndRegion Internal Functions

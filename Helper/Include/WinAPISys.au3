@@ -1,17 +1,20 @@
 #include-once
 
 #include "APISysConstants.au3"
+#include "AutoItConstants.au3"
+#include "StringConstants.au3"
+#include "StructureConstants.au3"
 #include "WinAPIConv.au3"
 #include "WinAPIError.au3"
-#include "WinAPIGdiInternals.au3"
-#include "WinAPIHObj.au3"
-#include "WinAPIIcons.au3"
+#include "WinAPILocale.au3"
 #include "WinAPIMem.au3"
-#include "WinAPISysWin.au3"
+
+#include "WinAPISysInternals.au3"
+#include "WindowsNotifsConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPISys.au3
 ; Author(s) .....: Yashied, jpm
 ; ===============================================================================================================================
@@ -36,6 +39,16 @@ Global Const $tagRID_INFO_KEYBOARD = 'dword Size;dword Type;' & $tagRID_DEVICE_I
 Global Const $tagRID_INFO_HID = 'dword Size;dword Type;' & $tagRID_DEVICE_INFO_HID & ';dword Unused[2]'
 ; ??? Global Const $tagSHELLHOOKINFO = 'hwnd hWnd;' & $tagRECT
 Global Const $tagUSEROBJECTFLAGS = 'int Inherit;int Reserved;dword Flags'
+
+; for _WinAPI_SendInput()
+Global Const $INPUT_MOUSE = 0
+Global Const $INPUT_KEYBOARD = 1
+Global Const $INPUT_HARDWARE = 2
+
+Global Const $tagHARDWAREINPUT = "dword type;struct;dword uMsg;word wParamL;word wParamH;endstruct"
+Global Const $tagKEYBDINPUT = "dword type;struct;word wVk;word wScan;dword dwFlags;dword time;ulong_ptr dwExtraInfo;byte filler[8];endstruct"
+Global Const $tagMOUSEINPUT = "dword type;struct;long dx;long dy;dword mouseData;dword dwflags;dword time;ulong_ptr dwExtraInfo;endstruct"
+
 ; ===============================================================================================================================
 #EndRegion Global Variables and Constants
 
@@ -61,6 +74,7 @@ Global Const $tagUSEROBJECTFLAGS = 'int Inherit;int Reserved;dword Flags'
 ; _WinAPI_ExpandEnvironmentStrings
 ; _WinAPI_GetActiveWindow
 ; _WinAPI_GetAsyncKeyState
+; _WinAPI_GetCapture
 ; _WinAPI_GetClipboardSequenceNumber
 ; _WinAPI_GetCurrentHwProfile
 ; _WinAPI_GetDefaultPrinter
@@ -69,6 +83,7 @@ Global Const $tagUSEROBJECTFLAGS = 'int Inherit;int Reserved;dword Flags'
 ; _WinAPI_GetHandleInformation
 ; _WinAPI_GetIdleTime
 ; _WinAPI_GetKeyboardLayout
+; _WinAPI_GetKeyboardLayoutLocale
 ; _WinAPI_GetKeyboardLayoutList
 ; _WinAPI_GetKeyboardState
 ; _WinAPI_GetKeyboardType
@@ -111,13 +126,17 @@ Global Const $tagUSEROBJECTFLAGS = 'int Inherit;int Reserved;dword Flags'
 ; _WinAPI_OpenDesktop
 ; _WinAPI_OpenInputDesktop
 ; _WinAPI_OpenWindowStation
+; _WinAPI_QueryDiskUsage
 ; _WinAPI_QueryPerformanceCounter
 ; _WinAPI_QueryPerformanceFrequency
+; _WinAPI_QueryProcessCycleTime
+; _WinAPI_QueryProcessorUsage
 ; _WinAPI_RegisterHotKey
 ; _WinAPI_RegisterPowerSettingNotification
 ; _WinAPI_RegisterRawInputDevices
 ; _WinAPI_ReleaseCapture
 ; _WinAPI_RemoveClipboardFormatListener
+; _WinAPI_SendInput
 ; _WinAPI_SetActiveWindow
 ; _WinAPI_SetCapture
 ; _WinAPI_SetDefaultPrinter
@@ -140,6 +159,7 @@ Global Const $tagUSEROBJECTFLAGS = 'int Inherit;int Reserved;dword Flags'
 ; _WinAPI_UnloadKeyboardLayout
 ; _WinAPI_UnregisterHotKey
 ; _WinAPI_UnregisterPowerSettingNotification
+; _WinAPI_WaitSystemIdle
 ; ===============================================================================================================================
 #EndRegion Functions list
 
@@ -208,7 +228,7 @@ EndFunc   ;==>_WinAPI_CloseWindowStation
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_CompressBuffer($pUncompressedBuffer, $iUncompressedSize, $pCompressedBuffer, $iCompressedSize, $iFormatAndEngine = 0x0002)
+Func _WinAPI_CompressBuffer($pUncompressedBuffer, $iUncompressedSize, $pCompressedBuffer, $iCompressedSize, $iFormatAndEngine = $COMPRESSION_FORMAT_LZNT1)
 	Local $aCall, $pWorkSpace = 0, $iError = 0
 	Do
 		$aCall = DllCall('ntdll.dll', 'uint', 'RtlGetCompressionWorkSpaceSize', 'ushort', $iFormatAndEngine, 'ulong*', 0, 'ulong*', 0)
@@ -258,7 +278,7 @@ EndFunc   ;==>_WinAPI_ComputeCrc32
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_CreateDesktop($sName, $iAccess = 0x0002, $iFlags = 0, $iHeap = 0, $tSecurity = 0)
+Func _WinAPI_CreateDesktop($sName, $iAccess = $DESKTOP_CREATEWINDOW, $iFlags = 0, $iHeap = 0, $tSecurity = 0)
 	Local $aCall
 	If $iHeap Then
 		$aCall = DllCall('user32.dll', 'handle', 'CreateDesktopExW', 'wstr', $sName, 'ptr', 0, 'ptr', 0, 'dword', $iFlags, _
@@ -290,7 +310,7 @@ EndFunc   ;==>_WinAPI_CreateWindowStation
 ; Author.........: Yashied
 ; Modified.......: jpm
 ; ===============================================================================================================================
-Func _WinAPI_DecompressBuffer($pUncompressedBuffer, $iUncompressedSize, $pCompressedBuffer, $iCompressedSize, $iFormat = 0x0002)
+Func _WinAPI_DecompressBuffer($pUncompressedBuffer, $iUncompressedSize, $pCompressedBuffer, $iCompressedSize, $iFormat = $COMPRESSION_FORMAT_LZNT1)
 	Local $aCall = DllCall('ntdll.dll', 'long', 'RtlDecompressBuffer', 'ushort', $iFormat, 'struct*', $pUncompressedBuffer, _
 			'ulong', $iUncompressedSize, 'struct*', $pCompressedBuffer, 'ulong', $iCompressedSize, 'ulong*', 0)
 	If @error Then Return SetError(@error, @extended, 0)
@@ -459,6 +479,17 @@ Func _WinAPI_GetAsyncKeyState($iKey)
 EndFunc   ;==>_WinAPI_GetAsyncKeyState
 
 ; #FUNCTION# ====================================================================================================================
+; Author ........: jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_GetCapture()
+	Local $aCall = DllCall("user32.dll", "hwnd", "GetCapture")
+	If @error Then Return SetError(@error, @extended, 0)
+
+	Return $aCall[0]
+EndFunc   ;==>_WinAPI_GetCapture
+
+; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
@@ -572,16 +603,30 @@ EndFunc   ;==>_WinAPI_GetIdleTime
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_GetKeyboardLayout($hWnd)
-	Local $aCall = DllCall('user32.dll', 'dword', 'GetWindowThreadProcessId', 'hwnd', $hWnd, 'ptr', 0)
-	If @error Or Not $aCall[0] Then Return SetError(@error + 10, @extended, 0)
+Func _WinAPI_GetKeyboardLayout($hWnd = 0)
+	If $hWnd Then
+		Local $aCall = DllCall('user32.dll', 'dword', 'GetWindowThreadProcessId', 'hwnd', $hWnd, 'ptr', 0)
+		If @error Or Not $aCall[0] Then Return SetError(@error + 10, @extended, 0)
+		$hWnd = $aCall[0]
+	EndIf
 
-	$aCall = DllCall('user32.dll', 'handle', 'GetKeyboardLayout', 'dword', $aCall[0])
+	$aCall = DllCall('user32.dll', 'handle', 'GetKeyboardLayout', 'dword', $hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 	; If Not $aCall[0] Then Return SetError(1000, 0, 0)
 
 	Return $aCall[0]
 EndFunc   ;==>_WinAPI_GetKeyboardLayout
+
+; #FUNCTION# ====================================================================================================================
+; Author.........: Jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_GetKeyboardLayoutLocale($hWnd = 0)
+	Local $hKL = _WinAPI_GetKeyboardLayout($hWnd)
+	If $hKL = 0 Then Return ""
+	Local $sStr = _WinAPI_GetLocaleInfo(_WinAPI_HiWord($hKL), $LOCALE_SENGLANGUAGE)
+	Return $sStr
+EndFunc   ;==>_WinAPI_GetKeyboardLayoutLocale
 
 ; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
@@ -652,7 +697,7 @@ EndFunc   ;==>_WinAPI_GetKeyState
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _WinAPI_GetModuleHandleEx($sModule, $iFlags = 0)
+Func _WinAPI_GetModuleHandleEx($sModule, $iFlags = $GET_MODULE_HANDLE_EX_FLAG_DEFAULT)
 	If StringStripWS($sModule, $STR_STRIPLEADING + $STR_STRIPTRAILING) = "" Then $sModule = Null
 
 	Local $aCall = DllCall('kernel32.dll', 'bool', 'GetModuleHandleExW', 'dword', $iFlags, "wstr", $sModule, 'ptr*', 0)
@@ -890,18 +935,19 @@ EndFunc   ;==>_WinAPI_GetSystemInfo
 ; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_GetSystemPowerStatus()
-	Local $tagSYSTEM_POWER_STATUS = 'byte ACLineStatus;byte BatteryFlag;byte BatteryLifePercent;byte Reserved1;' & _
+	Local $tagSYSTEM_POWER_STATUS = 'byte ACLineStatus;byte BatteryFlag;byte BatteryLifePercent;byte SystemStatusFlag;' & _
 			'int BatteryLifeTime;int BatteryFullLifeTime'
 	Local $tSYSTEM_POWER_STATUS = DllStructCreate($tagSYSTEM_POWER_STATUS)
 	Local $aCall = DllCall('kernel32.dll', 'bool', 'GetSystemPowerStatus', 'struct*', $tSYSTEM_POWER_STATUS)
 	If @error Or Not $aCall[0] Then Return SetError(@error + 10, @extended, 0)
 
-	Local $aRet[5]
+	Local $aRet[6]
 	$aRet[0] = DllStructGetData($tSYSTEM_POWER_STATUS, 1)
 	$aRet[1] = DllStructGetData($tSYSTEM_POWER_STATUS, 2)
 	$aRet[2] = DllStructGetData($tSYSTEM_POWER_STATUS, 3)
 	$aRet[3] = DllStructGetData($tSYSTEM_POWER_STATUS, 5)
 	$aRet[4] = DllStructGetData($tSYSTEM_POWER_STATUS, 6)
+	$aRet[5] = DllStructGetData($tSYSTEM_POWER_STATUS, 4)
 	Return $aRet
 EndFunc   ;==>_WinAPI_GetSystemPowerStatus
 
@@ -1154,6 +1200,41 @@ Func _WinAPI_OpenWindowStation($sName, $iAccess = 0, $bInherit = False)
 EndFunc   ;==>_WinAPI_OpenWindowStation
 
 ; #FUNCTION# ====================================================================================================================
+; Author.........: Jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_QueryDiskUsage($bToolTip = False)
+	Static Local $iCurTotalIO = 0
+	Static Local $iCurTickCount = DllCall('kernel32.dll', 'uint64', 'GetTickCount64')[0]
+
+	Local $aProcesses = ProcessList()
+	Local $iTotalIO = 0
+	Local $aIO
+	For $i = 1 To $aProcesses[0][0]
+		If $aProcesses[$i][0] = "taskmgr.exe" Or $aProcesses[$i][0] = "dwm.exe" Then ContinueLoop  ; to avoid processes interacting with the Screen
+		If $aProcesses[$i][1] = @AutoItPID Or $aProcesses[$i][1] = 4 Then ContinueLoop ; Avoid running script or System process
+		$aIO = ProcessGetStats($aProcesses[$i][1], $PROCESS_STATS_IO)
+		If @error Then ContinueLoop
+		$iTotalIO += $aIO[0] + $aIO[1] + $aIO[2]
+	Next
+	Local $iDiffTotalIO = $iTotalIO - $iCurTotalIO
+	Local $iDiffTickCount = (DllCall('kernel32.dll', 'uint64', 'GetTickCount64')[0] - $iCurTickCount) * 1000
+	$iCurTickCount = DllCall('kernel32.dll', 'uint64', 'GetTickCount64')[0]
+
+	If $iCurTotalIO = 0 Then
+		; first call need to be recalled to have a valid $iCurTotalIO
+		$iCurTotalIO = $iTotalIO
+		Return _WinAPI_QueryDiskUsage(False)
+	EndIf
+	$iCurTotalIO = $iTotalIO
+
+	Local $fPercent = Round($iDiffTotalIO / $iDiffTickCount * 100, 1)
+	If $bToolTip And $fPercent > 0 Then ToolTip("IO " & $fPercent & "%", Default, Default, "", $TIP_NOICON, $TIP_BALLOON)
+
+	Return $fPercent
+EndFunc   ;==>_WinAPI_QueryDiskUsage
+
+; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
 ; Modified.......: Jpm
 ; ===============================================================================================================================
@@ -1175,6 +1256,55 @@ Func _WinAPI_QueryPerformanceFrequency()
 
 	Return $aCall[1]
 EndFunc   ;==>_WinAPI_QueryPerformanceFrequency
+
+; #FUNCTION# ====================================================================================================================
+; Author.........: Jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_QueryProcessCycleTime($iPID = 0)
+	If Not $iPID Then $iPID = @AutoItPID
+
+	Local $hProcess = DllCall('kernel32.dll', 'handle', 'OpenProcess', 'dword', __ConvProcesDesiredAccess(), _
+			'bool', 0, 'dword', $iPID)
+	If @error Or Not $hProcess[0] Then Return SetError(@error + 20, @extended, 0)
+	Local $aCall = DllCall('kernel32.dll', 'bool', 'QueryProcessCycleTime', 'handle', $hProcess[0], 'uint64*', 0)
+	If __CheckErrorCloseHandle($aCall, $hProcess[0]) Then Return SetError(@error, @extended, 0)
+
+	Return $aCall[2]
+EndFunc   ;==>_WinAPI_QueryProcessCycleTime
+
+; #FUNCTION# ====================================================================================================================
+; Author.........: Jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_QueryProcessorUsage($bToolTip = False)
+	Static Local $fFrequency = 1.0 / DllCall('kernel32.dll', 'bool', 'QueryPerformanceFrequency', 'uint64*', 0)[1] ; / 1000.0
+	Static Local $iCurTotalTickCount = 0
+	Static Local $iCurTickCount = DllCall('kernel32.dll', 'uint64', 'GetTickCount64')[0]
+
+	Local $aProcesses = ProcessList()
+	Local $iTotalTickCount = 0
+	For $i = 1 To $aProcesses[0][0]
+		If $aProcesses[$i][0] = "taskmgr.exe" Or $aProcesses[$i][0] = "dwm.exe" Then ContinueLoop  ; to avoid processes interacting with the Screen
+		If $aProcesses[$i][1] = @AutoItPID Or $aProcesses[$i][1] = 4 Then ContinueLoop ; Avoid running script or System process
+		$iTotalTickCount += _WinAPI_QueryProcessCycleTime($aProcesses[$i][1])
+	Next
+	Local $iDiffTotalTickCount = $iTotalTickCount - $iCurTotalTickCount
+	Local $iDiffTickCount = DllCall('kernel32.dll', 'uint64', 'GetTickCount64')[0] - $iCurTickCount
+	$iCurTickCount = DllCall('kernel32.dll', 'uint64', 'GetTickCount64')[0]
+
+	If $iCurTotalTickCount = 0 Then
+		; first call need to be recalled to have a valid $iCurTotalTickCount
+		$iCurTotalTickCount = $iTotalTickCount
+		Return _WinAPI_QueryProcessorUsage(False)
+	EndIf
+	$iCurTotalTickCount = $iTotalTickCount
+
+	Local $fPercent = Round($iDiffTotalTickCount / $iDiffTickCount * $fFrequency * 100, 1)
+	If $bToolTip And $fPercent > 0 Then ToolTip("CPU " & $fPercent & "%", Default, Default, "", $TIP_NOICON, $TIP_BALLOON)
+
+	Return $fPercent
+EndFunc   ;==>_WinAPI_QueryProcessorUsage
 
 ; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
@@ -1239,6 +1369,37 @@ Func _WinAPI_RemoveClipboardFormatListener($hWnd)
 
 	Return $aCall[0]
 EndFunc   ;==>_WinAPI_RemoveClipboardFormatListener
+
+; #FUNCTION# ====================================================================================================================
+; Author.........: Jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_SendInput($iType, $nInputs, $tInputArray)
+	If ($iType < 0) Or ($iType > 2) Then Return SetError(10, 0, 0) ; wrong $iType
+	Local $nSize = DllStructGetSize($tInputArray)
+	If Mod($nSize, $nInputs) Then Return SetError(11, 0, 0) ; wrong $tInputArray size
+
+	; size of one entry
+	$nSize /= $nInputs
+
+	; update type of each entry
+	Local $tInput
+	For $i = 1 To $nInputs
+		$tInput = DllStructCreate("dword type", DllStructGetPtr($tInputArray) + ($i - 1) * $nSize)
+		DllStructSetData($tInput, "type", $iType)
+	Next
+
+	Local $aResult = DllCall('user32.dll', 'uint', 'SendInput', _
+			'uint', $nInputs, _
+			'struct*', $tInputArray, _
+			'int', $nSize)
+	If @error Then Return SetError(@error, @extended, 0)
+
+	If $aResult[0] = 0 Then Return SetError(12, _WinAPI_GetLastError(), 0)
+	If $aResult[0] <> $nInputs Then Return SetError(13, _WinAPI_GetLastError(), $aResult[0])
+
+	Return $aResult[0]
+EndFunc   ;==>_WinAPI_SendInput
 
 ; #FUNCTION# ====================================================================================================================
 ; Author.........: Yashied
@@ -1375,7 +1536,7 @@ EndFunc   ;==>_WinAPI_SetWindowsHookEx
 ; Author.........: KaFu
 ; Modified.......: Yashied, Jpm
 ; ===============================================================================================================================
-Func _WinAPI_SetWinEventHook($iEventMin, $iEventMax, $pEventProc, $iPID = 0, $iThreadId = 0, $iFlags = 0)
+Func _WinAPI_SetWinEventHook($iEventMin, $iEventMax, $pEventProc, $iPID = 0, $iThreadId = 0, $iFlags = $WINEVENT_OUTOFCONTEXT)
 	Local $aCall = DllCall('user32.dll', 'handle', 'SetWinEventHook', 'uint', $iEventMin, 'uint', $iEventMax, 'ptr', 0, _
 			'ptr', $pEventProc, 'dword', $iPID, 'dword', $iThreadId, 'uint', $iFlags)
 	If @error Then Return SetError(@error, @extended, 0)
@@ -1519,6 +1680,37 @@ Func _WinAPI_UnregisterPowerSettingNotification($hNotify)
 
 	Return $aCall[0]
 EndFunc   ;==>_WinAPI_UnregisterPowerSettingNotification
+
+; #FUNCTION# ====================================================================================================================
+; Author.........: Jpm
+; Modified.......:
+; ===============================================================================================================================
+Func _WinAPI_WaitSystemIdle($bToolTip = False, $nMaxLoop = Default, $fSystemPercent = 1.0, $fIOPercent = 1.0, $iRefresh = 2)
+	$iRefresh *= 1000 ; Sleep need msec
+	If $nMaxLoop = Default Then $nMaxLoop = 9999999999
+
+	Local $fCurSystem, $fCurIO, $nSystemSleep = 0, $nIOSleep = 0
+	BlockInput($BI_DISABLE)
+
+	Do
+		$nSystemSleep += 1
+		If $nSystemSleep > $nMaxLoop Then ExitLoop
+		Sleep($iRefresh)
+		$fCurSystem = _WinAPI_QueryProcessorUsage($bToolTip)
+	Until $fCurSystem < $fSystemPercent
+	Do
+		;in case the processor is not really idle !!!
+		$nIOSleep += 1
+		If $nSystemSleep > $nMaxLoop Then ExitLoop
+		Sleep($iRefresh)
+		$fCurIO = _WinAPI_QueryDiskUsage($bToolTip)
+	Until $fCurIO < $fIOPercent
+
+	BlockInput($BI_ENABLE)
+
+	If $nSystemSleep > $nMaxLoop Then Return SetError(1, $nIOSleep, $nSystemSleep)
+	Return SetExtended($nIOSleep, $nSystemSleep)
+EndFunc   ;==>_WinAPI_WaitSystemIdle
 
 Func __EnumPageFilesProc($iSize, $pInfo, $pFile)
 	Local $tEPFI = DllStructCreate('dword;dword;ulong_ptr;ulong_ptr;ulong_ptr', $pInfo)

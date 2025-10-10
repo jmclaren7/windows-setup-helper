@@ -4,10 +4,11 @@
 #include "FontConstants.au3"
 #include "StructureConstants.au3"
 #include "WinAPIError.au3"
+#include <WinAPIvkeysConstants.au3>
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Misc
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with Common Dialogs.
 ; Author(s) .....: Gary Frost, Florian Fida (Piccaso), Dale (Klaatu) Thompson, Valik, ezzetabi, Jon, Paul Campbell (PaulIA)
@@ -280,10 +281,26 @@ EndFunc   ;==>__ChooseColor_StructToArray
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: Gary Frost (gafrost)
-; Modified.......:
+; Modified.......: argumentum
 ; ===============================================================================================================================
-Func _ChooseFont($sFontName = "Courier New", $iPointSize = 10, $iFontColorRef = 0, $iFontWeight = 0, $bItalic = False, $bUnderline = False, $bStrikethru = False, $hWndOwner = 0)
-	Local $iItalic = 0, $iUnderline = 0, $iStrikeout = 0
+Func _ChooseFont($sFontName = "Courier New", $iPointSize = 10, $iFontColorRef = Default, $iFontWeight = 0, $bItalic = False, $bUnderline = False, $bStrikethru = False, $hWndOwner = 0)
+	Local $iItalic = 0, $iUnderline = 0, $iStrikeout = 0, $iRetExtended = 0
+	If $sFontName = Default Then $sFontName = "Courier New"
+	If $iPointSize = Default Then $iPointSize = 10
+	If $iFontColorRef = Default Then
+		$iFontColorRef = 0
+		Local $aRet = DllCall("user32.dll", "int", "GetSysColor", "int", 18) ; $COLOR_BTNTEXT
+		If @error Then
+			$iRetExtended = @error
+		Else
+			$iFontColorRef = $aRet[0]
+		EndIf
+	EndIf
+	If $iFontWeight = Default Then $iFontWeight = 0
+	If $bItalic = Default Then $bItalic = False
+	If $bUnderline = Default Then $bUnderline = False
+	If $bStrikethru = Default Then $bStrikethru = False
+	If $hWndOwner = Default Then $hWndOwner = 0
 	$iFontColorRef = BitOR(BitShift(BitAND($iFontColorRef, 0x000000FF), -16), BitAND($iFontColorRef, 0x0000FF00), BitShift(BitAND($iFontColorRef, 0x00FF0000), 16))
 
 	Local $hDC = __MISC_GetDC(0)
@@ -309,8 +326,8 @@ Func _ChooseFont($sFontName = "Courier New", $iPointSize = 10, $iFontColorRef = 
 	DllStructSetData($tLogFont, "FaceName", $sFontName)
 
 	Local $aCall = DllCall("comdlg32.dll", "bool", "ChooseFontW", "struct*", $tChooseFont)
-	If @error Then Return SetError(@error, @extended, -1)
-	If $aCall[0] = 0 Then Return SetError(-3, -3, -1) ; user selected cancel or struct settings incorrect
+	If @error Then Return SetError(@error, @extended, -2) ; ..to differentiate from the error below
+	If $aCall[0] = 0 Then Return SetError(-3, $iRetExtended, -1) ; user selected cancel or struct settings incorrect
 
 	Local $sFaceName = DllStructGetData($tLogFont, "FaceName")
 	If StringLen($sFaceName) = 0 And StringLen($sFontName) > 0 Then $sFaceName = $sFontName
@@ -326,7 +343,8 @@ Func _ChooseFont($sFontName = "Courier New", $iPointSize = 10, $iFontColorRef = 
 
 	Local $sColor_picked = Hex(String($iColorRef), 6)
 
-	Return StringSplit($iAttributes & "," & $sFaceName & "," & $iSize & "," & $iWeight & "," & $iColorRef & "," & '0x' & $sColor_picked & "," & '0x' & StringMid($sColor_picked, 5, 2) & StringMid($sColor_picked, 3, 2) & StringMid($sColor_picked, 1, 2), ",")
+	Return SetError(0, $iRetExtended, StringSplit($iAttributes & "," & $sFaceName & "," & $iSize & "," & $iWeight & "," & $iColorRef & "," & _
+			'0x' & $sColor_picked & "," & '0x' & StringMid($sColor_picked, 5, 2) & StringMid($sColor_picked, 3, 2) & StringMid($sColor_picked, 1, 2), ","))
 EndFunc   ;==>_ChooseFont
 
 ; #FUNCTION# ====================================================================================================================
@@ -481,21 +499,75 @@ EndFunc   ;==>_Singleton
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: ezzetabi and Jon
-; Modified.......:
+; Modified.......: Jpm
 ; ===============================================================================================================================
-Func _IsPressed($sHexKey, $vDLL = "user32.dll")
-	Local $aCall = DllCall($vDLL, "short", "GetAsyncKeyState", "int", "0x" & $sHexKey)
-	If @error Then Return SetError(@error, @extended, False)
-	Return BitAND($aCall[0], 0x8000) <> 0
+Func _IsPressed($vKey = Default, $vDLL = Default, $bCheckModifierKey = False)
+	Local Static $hDLL = Null
+	If $vKey = Default Then
+		If $hDLL = Null Then
+			Return 0 ; no previous _IsPressed(...) called
+		Else
+			; to DLLClose the default Dll created by the previous _IsPressed_(...)
+			DllClose($hDLL)
+			$hDLL = Null
+			Return 1
+		EndIf
+	EndIf
+
+	Local $bDefaultDll = ($vDLL = Default Or $vDLL = "user32.dll" Or $vDLL = "")
+	If ($hDLL = Null) And $bDefaultDll Then $hDLL = DllOpen("user32.dll")
+	If $bDefaultDll Then $vDLL = $hDLL
+
+	Local Static $iKeyDown = 0x8000
+	Local Static $aModifierKeys[6] = [0, $VK_SHIFT, $VK_CONTROL, $VK_MENU, $VK_LWIN, $VK_RWIN]
+	If $bCheckModifierKey = Default Then $bCheckModifierKey = False
+
+	If IsString($vKey) Then $vKey = "0x" & $vKey
+
+	Local $aCall, $aKeys[1]
+	If IsArray($vKey) Then
+		; will check if of them
+		$aKeys = $vKey
+	Else
+		$aKeys[0] = $vKey
+	EndIf
+
+	If $bCheckModifierKey Then ; check no modifier keys
+		For $i = 1 To 5
+			If BitAND(DllCall($vDLL, "short", "GetAsyncKeyState", "int", $aModifierKeys[$i])[0], $iKeyDown) Then
+				If $bCheckModifierKey == True Then ; check Wait key released
+					Do
+						Sleep(250)
+					Until BitAND(DllCall($vDLL, "short", "GetAsyncKeyState", "int", $aModifierKeys[$i])[0], $iKeyDown) = 0
+				EndIf
+				Return SetExtended($i, 0)
+			EndIf
+		Next
+	EndIf
+
+	For $i = 0 To UBound($aKeys) - 1
+		$aCall = DllCall($vDLL, "short", "GetAsyncKeyState", "int", $aKeys[$i])
+		If BitAND($aCall[0], $iKeyDown) Then Return SetExtended(BitAND($aCall[0], 0x01), $i + 1) ; $aKeys[$i] has be pressed
+	Next
+
+	Return 0 ; no Array key(s) pressed
+
 EndFunc   ;==>_IsPressed
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: Valik
-; Modified.......:
+; Modified.......: jpm
 ; ===============================================================================================================================
 Func _VersionCompare($sVersion1, $sVersion2)
 	If $sVersion1 = $sVersion2 Then Return 0
+
 	Local $sSubVersion1 = "", $sSubVersion2 = ""
+
+	; suppress leading and trailing blanks
+	$sVersion1 = StringStripWS($sVersion1, 3)
+	$sVersion2 = StringStripWS($sVersion2, 3)
+
+	; Avoid version such as 11.0a
 	If StringIsAlpha(StringRight($sVersion1, 1)) Then
 		$sSubVersion1 = StringRight($sVersion1, 1)
 		$sVersion1 = StringTrimRight($sVersion1, 1)
@@ -505,6 +577,7 @@ Func _VersionCompare($sVersion1, $sVersion2)
 		$sVersion2 = StringTrimRight($sVersion2, 1)
 	EndIf
 
+	; make versions with same number of subparts
 	Local $aVersion1 = StringSplit($sVersion1, ".,"), _
 			$aVersion2 = StringSplit($sVersion2, ".,")
 	Local $iPartDifference = ($aVersion1[0] - $aVersion2[0])
@@ -522,27 +595,33 @@ Func _VersionCompare($sVersion1, $sVersion2)
 		For $i = (UBound($aVersion2) - Abs($iPartDifference)) To $aVersion2[0]
 			$aVersion2[$i] = "0"
 		Next
+	Else
 	EndIf
+
+	; Allow version such as V11.0
+	If StringLeft($aVersion1[1], 1) = "v" Then $aVersion1[1] = StringTrimLeft($aVersion1[1], 1)
+	If StringLeft($aVersion2[1], 1) = "v" Then $aVersion2[1] = StringTrimLeft($aVersion2[1], 1)
+
 	For $i = 1 To $aVersion1[0]
 		; Compare this segment as numbers
 		If StringIsDigit($aVersion1[$i]) And StringIsDigit($aVersion2[$i]) Then
 			If Number($aVersion1[$i]) > Number($aVersion2[$i]) Then
-				Return SetExtended(2, 1) ; @extended set to 2 for number comparison.
+				Return SetExtended(10, 1) ; @extended set to 10 for number comparison.
 			ElseIf Number($aVersion1[$i]) < Number($aVersion2[$i]) Then
-				Return SetExtended(2, -1) ; @extended set to 2 for number comparison.
+				Return SetExtended(10, -1) ; @extended set to 10 for number comparison.
 			ElseIf $i = $aVersion1[0] Then
-				; compare extra version informtion as string
+				; compare extra version information as string
 				If $sSubVersion1 > $sSubVersion2 Then
-					Return SetExtended(3, 1) ; @extended set to 3 for subversion comparison.
+					Return SetExtended(11, 1) ; @extended set to 11 for subversion comparison.
 				ElseIf $sSubVersion1 < $sSubVersion2 Then
-					Return SetExtended(3, -1) ; @extended set to 3 for subversion comparison.
+					Return SetExtended(11, -1) ; @extended set to 11 for subversion comparison.
 				EndIf
 			EndIf
 		Else ; Compare the segment as strings
 			If $aVersion1[$i] > $aVersion2[$i] Then
-				Return SetExtended(1, 1) ; @extended set to 1 for string comparison.
+				Return SetExtended(21, 1) ; @extended set to 21 for string comparison.
 			ElseIf $aVersion1[$i] < $aVersion2[$i] Then
-				Return SetExtended(1, -1) ; @extended set to 1 for string comparison.
+				Return SetExtended(21, -1) ; @extended set to 21 for string comparison.
 			EndIf
 		EndIf
 	Next

@@ -1,16 +1,16 @@
 #include-once
 
 #include "GuiCtrlInternals.au3"
-#include "Memory.au3"
 #include "SendMessage.au3"
-#include "StatusBarConstants.au3"
-#include "UDFGlobalID.au3"
-#include "WinAPIConv.au3"
-#include "WinAPISysInternals.au3"
+#include "StatusBarConstants.au3"        ; $SB_SIMPLE
+#include "StructureConstants.au3"        ; $tagRECT
+#include "WinAPIConv.au3"                ; _WinAPI_MakeLong)
+
+#include "WinAPISysInternals.au3"        ; _WinAPI_ShowWindow()
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: StatusBar
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with StatusBar control management.
 ;                  A status bar is a horizontal window at the bottom of a parent window in which an application can display
@@ -88,7 +88,7 @@ Global Const $tagBORDERS = "int BX;int BY;int RX"
 Func _GUICtrlStatusBar_Create($hWnd, $vPartEdge = -1, $vPartText = "", $iStyles = -1, $iExStyles = 0x00000000)
 	If Not IsHWnd($hWnd) Then Return SetError(1, 0, 0) ; Invalid Window handle for _GUICtrlStatusBar_Create 1st parameter
 
-	Local $iStyle = BitOR($__UDFGUICONSTANT_WS_CHILD, $__UDFGUICONSTANT_WS_VISIBLE)
+	Local $iStyle = BitOR($__GUICTRLCONSTANT_WS_CHILD, $__GUICTRLCONSTANT_WS_VISIBLE)
 
 	If $iStyles = -1 Then $iStyles = 0x00000000
 	If $iExStyles = -1 Then $iExStyles = 0x00000000
@@ -129,11 +129,11 @@ Func _GUICtrlStatusBar_Create($hWnd, $vPartEdge = -1, $vPartText = "", $iStyles 
 		If @NumParams > 3 Then $iStyle = BitOR($iStyle, $iStyles)
 	EndIf
 
-	Local $nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	Local $nCtrlID = __GUICtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	Local $hWndSBar = _WinAPI_CreateWindowEx($iExStyles, $__STATUSBARCONSTANT_ClassName, "", $iStyle, 0, 0, 0, 0, $hWnd, $nCtrlID)
-	If @error Then Return SetError(@error, @extended, 0)
+	If @error Then Return SetError(@error + 10, @extended, 0)
 
 	If @NumParams > 1 Then ; set the parts/text
 		_GUICtrlStatusBar_SetParts($hWndSBar, UBound($aPartWidth), $aPartWidth)
@@ -149,25 +149,9 @@ EndFunc   ;==>_GUICtrlStatusBar_Create
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_Destroy(ByRef $hWnd)
-	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 2, False)
+	Local $bDestroyed = __GUICtrl_Destroy($hWnd, $__STATUSBARCONSTANT_ClassName)
 
-	Local $iDestroyed = 0
-	If IsHWnd($hWnd) Then
-		If _WinAPI_InProcess($hWnd, $__g_hGUICtrl_LastWnd) Then
-			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
-			Local $hParent = _WinAPI_GetParent($hWnd)
-			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
-			If Not $iRet Then
-				; can check for errors here if needed, for debug
-			EndIf
-		Else
-			; Not Allowed to Destroy Other Applications Control(s)
-			Return SetError(1, 1, False)
-		EndIf
-	EndIf
-	If $iDestroyed Then $hWnd = 0
-	Return $iDestroyed <> 0
+	Return SetError(@error, @extended, $bDestroyed)
 EndFunc   ;==>_GUICtrlStatusBar_Destroy
 
 ; #FUNCTION# ====================================================================================================================
@@ -175,6 +159,8 @@ EndFunc   ;==>_GUICtrlStatusBar_Destroy
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_EmbedControl($hWnd, $iPart, $hControl, $iFit = 4)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	Local $aRect = _GUICtrlStatusBar_GetRect($hWnd, $iPart)
 	Local $iBarX = $aRect[0]
 	Local $iBarY = $aRect[1]
@@ -214,10 +200,12 @@ EndFunc   ;==>_GUICtrlStatusBar_EmbedControl
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetBorders($hWnd)
+	Local $aBorders[3]
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, $aBorders)
+
 	Local $tBorders = DllStructCreate($tagBORDERS)
 	Local $iRet = __GUICtrl_SendMsg($hWnd, $SB_GETBORDERS, 0, $tBorders, 0, True)
 
-	Local $aBorders[3]
 	If $iRet = 0 Then Return SetError(-1, -1, $aBorders)
 	$aBorders[0] = DllStructGetData($tBorders, "BX")
 	$aBorders[1] = DllStructGetData($tBorders, "BY")
@@ -231,6 +219,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetBorders
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetBordersHorz($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, -1)
+
 	Local $aBorders = _GUICtrlStatusBar_GetBorders($hWnd)
 	Return SetError(@error, @extended, $aBorders[0])
 EndFunc   ;==>_GUICtrlStatusBar_GetBordersHorz
@@ -240,6 +230,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetBordersHorz
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetBordersRect($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, -1)
+
 	Local $aBorders = _GUICtrlStatusBar_GetBorders($hWnd)
 	Return SetError(@error, @extended, $aBorders[2])
 EndFunc   ;==>_GUICtrlStatusBar_GetBordersRect
@@ -249,6 +241,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetBordersRect
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetBordersVert($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, -1)
+
 	Local $aBorders = _GUICtrlStatusBar_GetBorders($hWnd)
 	Return SetError(@error, @extended, $aBorders[1])
 EndFunc   ;==>_GUICtrlStatusBar_GetBordersVert
@@ -258,6 +252,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetBordersVert
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetCount($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, 0)
+
 	Return _SendMessage($hWnd, $SB_GETPARTS)
 EndFunc   ;==>_GUICtrlStatusBar_GetCount
 
@@ -266,6 +262,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetCount
 ; Modified.......: Gary Frost (gafrost) Removed dot notation
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetHeight($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, 0)
+
 	Local $tRECT = _GUICtrlStatusBar_GetRectEx($hWnd, 0)
 	Return DllStructGetData($tRECT, "Bottom") - DllStructGetData($tRECT, "Top") - (_GUICtrlStatusBar_GetBordersVert($hWnd) * 2)
 EndFunc   ;==>_GUICtrlStatusBar_GetHeight
@@ -275,6 +273,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetHeight
 ; Modified.......: Gary Frost (GaryFrost)
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetIcon($hWnd, $iIndex = 0)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, 0)
+
 	Return _SendMessage($hWnd, $SB_GETICON, $iIndex, 0, 0, "wparam", "lparam", "handle")
 EndFunc   ;==>_GUICtrlStatusBar_GetIcon
 
@@ -283,6 +283,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetIcon
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetParts($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, 0)
+
 	Local $iCount = _GUICtrlStatusBar_GetCount($hWnd)
 	Local $tParts = DllStructCreate("int[" & $iCount & "]")
 	Local $aParts[$iCount + 1]
@@ -300,9 +302,11 @@ EndFunc   ;==>_GUICtrlStatusBar_GetParts
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetRect($hWnd, $iPart)
+	Local $aRect[4]
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, $aRect)
+
 	Local $tRECT = _GUICtrlStatusBar_GetRectEx($hWnd, $iPart)
 	If @error Then Return SetError(@error, 0, 0)
-	Local $aRect[4]
 	$aRect[0] = DllStructGetData($tRECT, "Left")
 	$aRect[1] = DllStructGetData($tRECT, "Top")
 	$aRect[2] = DllStructGetData($tRECT, "Right")
@@ -316,6 +320,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetRect
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetRectEx($hWnd, $iPart)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, 0)
+
 	Local $tRECT = DllStructCreate($tagRECT)
 	Local $iRet = __GUICtrl_SendMsg($hWnd, $SB_GETRECT, $iPart, $tRECT, 0, True)
 
@@ -327,8 +333,7 @@ EndFunc   ;==>_GUICtrlStatusBar_GetRectEx
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetText($hWnd, $iPart)
-	Local $iBuffer = _GUICtrlStatusBar_GetTextLength($hWnd, $iPart) + 1
-	If $iBuffer = 1 Then Return SetError(1, 0, "")
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, "")
 
 	Local $tBuffer, $iMsg
 	If _GUICtrlStatusBar_GetUnicodeFormat($hWnd) Then
@@ -348,6 +353,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetText
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetTextFlags($hWnd, $iPart)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, -1)
+
 	If _GUICtrlStatusBar_GetUnicodeFormat($hWnd) Then
 		Return _SendMessage($hWnd, $SB_GETTEXTLENGTHW, $iPart)
 	Else
@@ -360,6 +367,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetTextFlags
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetTextLength($hWnd, $iPart)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, 0)
+
 	Return _WinAPI_LoWord(_GUICtrlStatusBar_GetTextFlags($hWnd, $iPart))
 EndFunc   ;==>_GUICtrlStatusBar_GetTextLength
 
@@ -368,6 +377,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetTextLength
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetTextLengthEx($hWnd, $iPart)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, -1)
+
 	Return _WinAPI_HiWord(_GUICtrlStatusBar_GetTextFlags($hWnd, $iPart))
 EndFunc   ;==>_GUICtrlStatusBar_GetTextLengthEx
 
@@ -376,6 +387,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetTextLengthEx
 ; Modified.......: Gary Frost (GaryFrost)
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetTipText($hWnd, $iPart)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, "")
+
 	Local $tBuffer, $iMsg
 	If _GUICtrlStatusBar_GetUnicodeFormat($hWnd) Then
 		$tBuffer = $__g_tSBBuffer
@@ -394,6 +407,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetTipText
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetUnicodeFormat($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	If Not IsDllStruct($__g_tSBBuffer) Then
 		$__g_tSBBuffer = DllStructCreate("wchar Text[4096]")
 		$__g_tSBBufferANSI = DllStructCreate("char Text[4096]", DllStructGetPtr($__g_tSBBuffer))
@@ -407,6 +422,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetUnicodeFormat
 ; Modified.......: Gary Frost (gafrost) Removed dot notation
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_GetWidth($hWnd, $iPart)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, 0)
+
 	Local $tRECT = _GUICtrlStatusBar_GetRectEx($hWnd, $iPart)
 
 	Return DllStructGetData($tRECT, "Right") - DllStructGetData($tRECT, "Left") - (_GUICtrlStatusBar_GetBordersHorz($hWnd) * 2)
@@ -417,6 +434,8 @@ EndFunc   ;==>_GUICtrlStatusBar_GetWidth
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_IsSimple($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	Return _SendMessage($hWnd, $SB_ISSIMPLE) <> 0
 EndFunc   ;==>_GUICtrlStatusBar_IsSimple
 
@@ -425,6 +444,8 @@ EndFunc   ;==>_GUICtrlStatusBar_IsSimple
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_Resize($hWnd)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	_SendMessage($hWnd, $__STATUSBARCONSTANT_WM_SIZE)
 EndFunc   ;==>_GUICtrlStatusBar_Resize
 
@@ -433,6 +454,8 @@ EndFunc   ;==>_GUICtrlStatusBar_Resize
 ; Modified.......: Gary Frost (gafrost), jpm
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_SetBkColor($hWnd, $iColor)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, -1)
+
 	$iColor = _SendMessage($hWnd, $SB_SETBKCOLOR, 0, $iColor)
 EndFunc   ;==>_GUICtrlStatusBar_SetBkColor
 
@@ -441,19 +464,23 @@ EndFunc   ;==>_GUICtrlStatusBar_SetBkColor
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_SetIcon($hWnd, $iPart, $hIcon = -1, $sIconFile = "")
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(10, 0, False)
+
 	If $hIcon = -1 Then Return _SendMessage($hWnd, $SB_SETICON, $iPart, $hIcon, 0, "wparam", "handle") <> 0 ; Remove Icon
 	If StringLen($sIconFile) <= 0 Then Return _SendMessage($hWnd, $SB_SETICON, $iPart, $hIcon) <> 0 ; set icon from icon handle
 
 	; set icon from file
 	Local $tIcon = DllStructCreate("handle")
 	Local $vResult = DllCall("shell32.dll", "uint", "ExtractIconExW", "wstr", $sIconFile, "int", $hIcon, "ptr", 0, "struct*", $tIcon, "uint", 1)
-	If @error Then Return SetError(@error, @extended, False)
-	$vResult = $vResult[0]
-	If $vResult > 0 Then $vResult = _SendMessage($hWnd, $SB_SETICON, $iPart, DllStructGetData($tIcon, 1), 0, "wparam", "handle")
-	DllCall("user32.dll", "bool", "DestroyIcon", "handle", DllStructGetData($tIcon, 1))
-	; No need to test @error.
-
-	Return $vResult
+	If @error Then Return SetError(@error, 0, False)
+	If $vResult[0] = 4294967295 Then ; UINT_MAX error (based on MSDN)
+		$vResult = _WinAPI_GetLastError()
+		Return SetError(11, $vResult, False) ; to differentiate from the @error of DllCall
+	EndIf
+	If Not $vResult[0] Then Return SetError(-1, 0, False) ; no icon returned
+	$vResult = _SendMessage($hWnd, $SB_SETICON, $iPart, DllStructGetData($tIcon, 1), 0, "wparam", "handle")
+	If Not $vResult Then Return SetError(12, 0, False)
+	Return DllStructGetData($tIcon, 1)
 EndFunc   ;==>_GUICtrlStatusBar_SetIcon
 
 ; #FUNCTION# ====================================================================================================================
@@ -461,6 +488,8 @@ EndFunc   ;==>_GUICtrlStatusBar_SetIcon
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_SetMinHeight($hWnd, $iMinHeight)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	_SendMessage($hWnd, $SB_SETMINHEIGHT, $iMinHeight)
 	_GUICtrlStatusBar_Resize($hWnd)
 EndFunc   ;==>_GUICtrlStatusBar_SetMinHeight
@@ -470,6 +499,8 @@ EndFunc   ;==>_GUICtrlStatusBar_SetMinHeight
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_SetParts($hWnd, $vPartEdge = -1, $vPartWidth = 25)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	If IsArray($vPartEdge) And IsArray($vPartWidth) Then Return False
 
 	;== start sizing parts
@@ -521,6 +552,8 @@ EndFunc   ;==>_GUICtrlStatusBar_SetParts
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_SetSimple($hWnd, $bSimple = True)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	_SendMessage($hWnd, $SB_SIMPLE, $bSimple)
 EndFunc   ;==>_GUICtrlStatusBar_SetSimple
 
@@ -529,6 +562,8 @@ EndFunc   ;==>_GUICtrlStatusBar_SetSimple
 ; Modified.......: Gary Frost (gafrost) re-written also added $iUFlag
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_SetText($hWnd, $sText = "", $iPart = 0, $iUFlag = 0)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	Local $iBuffer = StringLen($sText) + 1
 	Local $tText, $iMsg
 	If _GUICtrlStatusBar_GetUnicodeFormat($hWnd) Then
@@ -550,6 +585,8 @@ EndFunc   ;==>_GUICtrlStatusBar_SetText
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_SetTipText($hWnd, $iPart, $sText)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	Local $iBuffer = StringLen($sText) + 1
 	Local $tText, $iMsg
 	If _GUICtrlStatusBar_GetUnicodeFormat($hWnd) Then
@@ -569,6 +606,8 @@ EndFunc   ;==>_GUICtrlStatusBar_SetTipText
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_SetUnicodeFormat($hWnd, $bUnicode = True)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	Return _SendMessage($hWnd, $SB_SETUNICODEFORMAT, $bUnicode)
 EndFunc   ;==>_GUICtrlStatusBar_SetUnicodeFormat
 
@@ -577,6 +616,8 @@ EndFunc   ;==>_GUICtrlStatusBar_SetUnicodeFormat
 ; Modified.......:
 ; ===============================================================================================================================
 Func _GUICtrlStatusBar_ShowHide($hWnd, $iState)
+	If Not _WinAPI_IsClassName($hWnd, $__STATUSBARCONSTANT_ClassName) Then Return SetError(2, 0, False)
+
 	If $iState <> @SW_HIDE And $iState <> @SW_SHOW Then Return SetError(1, 1, False)
 	Return _WinAPI_ShowWindow($hWnd, $iState)
 EndFunc   ;==>_GUICtrlStatusBar_ShowHide

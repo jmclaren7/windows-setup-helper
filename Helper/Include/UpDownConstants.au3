@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: UpDown_Constants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: <a href="../appendix/GUIStyles.htm#UpDown">GUI control UpDown styles</a> and much more constants.
 ; Author(s) .....: Valik, Gary Frost, ...

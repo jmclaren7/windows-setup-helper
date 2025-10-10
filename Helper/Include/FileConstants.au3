@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: File_Constants
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants to be included in an AutoIt v3 script when using File functions.
 ; Author(s) .....: Valik, Gary Frost, ...
@@ -92,8 +92,8 @@ Global Const $FILE_ATTRIBUTE_ENCRYPTED = 0x00004000
 Global Const $FILE_SHARE_READ = 0x00000001
 Global Const $FILE_SHARE_WRITE = 0x00000002
 Global Const $FILE_SHARE_DELETE = 0x00000004
-Global Const $FILE_SHARE_READWRITE = BitOR($FILE_SHARE_READ, $FILE_SHARE_WRITE)
-Global Const $FILE_SHARE_ANY = BitOR($FILE_SHARE_READ, $FILE_SHARE_WRITE, $FILE_SHARE_DELETE)
+Global Const $FILE_SHARE_READWRITE = 0x00000003 ; BitOR($FILE_SHARE_READ, $FILE_SHARE_WRITE)
+Global Const $FILE_SHARE_ANY = 0x00000007 ; BitOR($FILE_SHARE_READ, $FILE_SHARE_WRITE, $FILE_SHARE_DELETE)
 
 Global Const $GENERIC_ALL = 0x10000000
 Global Const $GENERIC_EXECUTE = 0x20000000

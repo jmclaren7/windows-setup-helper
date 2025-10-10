@@ -14,26 +14,33 @@
 #include "APIShPathConstants.au3"
 #include "APISysConstants.au3"
 #include "APIThemeConstants.au3"
+#include "AutoItConstants.au3" ; "Constants.au3"
 #include "BorderConstants.au3"
-#include "ColorConstants.au3"
-#include "Constants.au3"
-#include "DirConstants.au3"
-#include "FileConstants.au3"
+#include "ColorConstants.au3" ; "Constants.au3"
+;~ #include "Constants.au3"
+#include "DirConstants.au3" ; "Constants.au3"
+#include "FileConstants.au3" ; "Constants.au3"
 #include "FontConstants.au3"
 #include "FrameConstants.au3"
 #include "GUIConstants.au3"
 #include "MemoryConstants.au3"
 #include "MenuConstants.au3"
-#include "ProcessConstants.au3"
+#include "MsgBoxConstants.au3" ; "Constants.au3"
+#include "ProcessConstants.au3" ; "Constants.au3"
 #include "SecurityConstants.au3"
+#include "StringConstants.au3" ; "Constants.au3"
+#include "TrayConstants.au3" ; "Constants.au3"
 #include "WinAPIConstants.au3"
 #include "WinAPIsysinfoConstants.au3"
 #include "WinAPIvkeysConstants.au3"
 #include "WindowsConstants.au3"
+#include "WindowsNotifsConstants.au3"
+#include "WindowsStylesConstants.au3"
+#include "WindowsSysColorConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: API Constants UDF WinAPI Libraries for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants that can be used with UDF WinAPI libraries
 ; Author(s) .....: Yashied, jpm

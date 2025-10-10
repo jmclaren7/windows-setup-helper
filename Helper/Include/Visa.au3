@@ -1,10 +1,10 @@
-#include "MsgBoxConstants.au3"
-
 #include-once
+
+#include "MsgBoxConstants.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Visa
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: VISA (GPIB & TCP) library for AutoIt.
 ;                  Functions that allow controlling instruments (e.g. oscilloscopes,

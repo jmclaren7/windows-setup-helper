@@ -2,7 +2,7 @@
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPISys Constants UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Constants that can be used with UDF library
 ; Author(s) .....: Yashied, Jpm
@@ -99,6 +99,11 @@ Global Const $WINSTA_ALL_ACCESS = BitOR($WINSTA_ACCESSCLIPBOARD, $WINSTA_ACCESSG
 
 Global Const $CWF_CREATE_ONLY = 0x01
 
+; _WinAPI_GetAncestor()
+Global Const $GA_PARENT = 1
+Global Const $GA_ROOT = 2
+Global Const $GA_ROOTOWNER = 3
+
 ; _WinAPI_GetClassLongEx(), _WinAPI_SetClassLongEx()
 Global Const $GCL_CBCLSEXTRA = -20
 Global Const $GCL_CBWNDEXTRA = -18
@@ -146,6 +151,104 @@ Global Const $PROCESSOR_INTEL_486 = 486
 Global Const $PROCESSOR_INTEL_PENTIUM = 586
 Global Const $PROCESSOR_INTEL_IA64 = 2200
 Global Const $PROCESSOR_AMD_X8664 = 8664
+
+; _WinAPI_GetSystemMetrics Constants
+Global Const $SM_CXSCREEN = 0
+Global Const $SM_CYSCREEN = 1
+Global Const $SM_CXVSCROLL = 2
+Global Const $SM_CYHSCROLL = 3
+Global Const $SM_CYCAPTION = 4
+Global Const $SM_CXBORDER = 5
+Global Const $SM_CYBORDER = 6
+Global Const $SM_CXFIXEDFRAME = 7
+Global Const $SM_CXDLGFRAME = $SM_CXFIXEDFRAME
+Global Const $SM_CYFIXEDFRAME = 8
+Global Const $SM_CYDLGFRAME = $SM_CYFIXEDFRAME
+Global Const $SM_CYVTHUMB = 9
+Global Const $SM_CXHTHUMB = 10
+Global Const $SM_CXICON = 11
+Global Const $SM_CYICON = 12
+Global Const $SM_CXCURSOR = 13
+Global Const $SM_CYCURSOR = 14
+Global Const $SM_CYMENU = 15
+Global Const $SM_CXFULLSCREEN = 16
+Global Const $SM_CYFULLSCREEN = 17
+Global Const $SM_CYKANJIWINDOW = 18
+Global Const $SM_MOUSEPRESENT = 19
+Global Const $SM_CYVSCROLL = 20
+Global Const $SM_CXHSCROLL = 21
+Global Const $SM_DEBUG = 22
+Global Const $SM_SWAPBUTTON = 23
+Global Const $SM_RESERVED1 = 24
+Global Const $SM_RESERVED2 = 25
+Global Const $SM_RESERVED3 = 26
+Global Const $SM_RESERVED4 = 27
+Global Const $SM_CXMIN = 28
+Global Const $SM_CYMIN = 29
+Global Const $SM_CXSIZE = 30
+Global Const $SM_CYSIZE = 31
+Global Const $SM_CXSIZEFRAME = 32
+Global Const $SM_CXFRAME = $SM_CXSIZEFRAME
+Global Const $SM_CYSIZEFRAME = 33
+Global Const $SM_CYFRAME = $SM_CYSIZEFRAME
+Global Const $SM_CXMINTRACK = 34
+Global Const $SM_CYMINTRACK = 35
+Global Const $SM_CXDOUBLECLK = 36
+Global Const $SM_CYDOUBLECLK = 37
+Global Const $SM_CXICONSPACING = 38
+Global Const $SM_CYICONSPACING = 39
+Global Const $SM_MENUDROPALIGNMENT = 40
+Global Const $SM_PENWINDOWS = 41
+Global Const $SM_DBCSENABLED = 42
+Global Const $SM_CMOUSEBUTTONS = 43
+Global Const $SM_SECURE = 44
+Global Const $SM_CXEDGE = 45
+Global Const $SM_CYEDGE = 46
+Global Const $SM_CXMINSPACING = 47
+Global Const $SM_CYMINSPACING = 48
+Global Const $SM_CXSMICON = 49
+Global Const $SM_CYSMICON = 50
+Global Const $SM_CYSMCAPTION = 51
+Global Const $SM_CXSMSIZE = 52
+Global Const $SM_CYSMSIZE = 53
+Global Const $SM_CXMENUSIZE = 54
+Global Const $SM_CYMENUSIZE = 55
+Global Const $SM_ARRANGE = 56
+Global Const $SM_CXMINIMIZED = 57
+Global Const $SM_CYMINIMIZED = 58
+Global Const $SM_CXMAXTRACK = 59
+Global Const $SM_CYMAXTRACK = 60
+Global Const $SM_CXMAXIMIZED = 61
+Global Const $SM_CYMAXIMIZED = 62
+Global Const $SM_NETWORK = 63
+Global Const $SM_CLEANBOOT = 67
+Global Const $SM_CXDRAG = 68
+Global Const $SM_CYDRAG = 69
+Global Const $SM_SHOWSOUNDS = 70
+Global Const $SM_CXMENUCHECK = 71
+Global Const $SM_CYMENUCHECK = 72
+Global Const $SM_SLOWMACHINE = 73
+Global Const $SM_MIDEASTENABLED = 74
+Global Const $SM_MOUSEWHEELPRESENT = 75
+Global Const $SM_XVIRTUALSCREEN = 76
+Global Const $SM_YVIRTUALSCREEN = 77
+Global Const $SM_CXVIRTUALSCREEN = 78
+Global Const $SM_CYVIRTUALSCREEN = 79
+Global Const $SM_CMONITORS = 80
+Global Const $SM_SAMEDISPLAYFORMAT = 81
+Global Const $SM_IMMENABLED = 82
+Global Const $SM_CXFOCUSBORDER = 83
+Global Const $SM_CYFOCUSBORDER = 84
+Global Const $SM_TABLETPC = 86
+Global Const $SM_MEDIACENTER = 87
+Global Const $SM_STARTER = 88
+Global Const $SM_SERVERR2 = 89
+Global Const $SM_CMETRICS = 90
+
+Global Const $SM_REMOTESESSION = 0x1000
+Global Const $SM_SHUTTINGDOWN = 0x2000
+Global Const $SM_REMOTECONTROL = 0x2001
+Global Const $SM_CARETBLINKINGENABLED = 0x2002
 
 ; _WinAPI_GetUserObjectInformation(), _WinAPI_SetUserObjectInformation()
 Global Const $UOI_FLAGS = 1
@@ -198,9 +301,11 @@ Global Const $PF_XMMI_INSTRUCTIONS_AVAILABLE = 6
 Global Const $PF_XMMI64_INSTRUCTIONS_AVAILABLE = 10
 Global Const $PF_XSAVE_ENABLED = 17
 
-; _WinAPI_Keybd_Event()
+; _WinAPI_Keybd_Event(), _WinAPI_SendInput()
 Global Const $KEYEVENTF_EXTENDEDKEY = 0x01
 Global Const $KEYEVENTF_KEYUP = 0x02
+Global Const $KEYEVENTF_UNICODE = 0x04
+Global Const $KEYEVENTF_SCANCODE = 0x08
 
 ; _WinAPI_LoadIconMetric()
 Global Const $LIM_SMALL = 0
@@ -264,6 +369,10 @@ Global Const $INPUTLANGCHANGE_BACKWARD = 0x0004
 Global Const $INPUTLANGCHANGE_FORWARD = 0x0002
 Global Const $INPUTLANGCHANGE_SYSCHARSET = 0x0001
 
+; _WinAPI_SetLayeredWindowAttributes()
+Global Const $LWA_ALPHA = 0x2
+Global Const $LWA_COLORKEY = 0x1
+
 ; _WinAPI_SetWinEventHook()
 Global Const $EVENT_MIN = 0x00000001
 Global Const $EVENT_SYSTEM_SOUND = 0x00000001
@@ -290,6 +399,13 @@ Global Const $EVENT_SYSTEM_SWITCHEND = 0x00000015
 Global Const $EVENT_SYSTEM_MINIMIZESTART = 0x00000016
 Global Const $EVENT_SYSTEM_MINIMIZEEND = 0x00000017
 Global Const $EVENT_SYSTEM_DESKTOPSWITCH = 0x00000020
+Global Const $EVENT_CONSOLE_CARET = 0x00004001 ; https://learn.microsoft.com/en-us/windows/console/console-winevents
+Global Const $EVENT_CONSOLE_UPDATE_REGION = 0x00004002
+Global Const $EVENT_CONSOLE_UPDATE_SIMPLE = 0x00004003
+Global Const $EVENT_CONSOLE_UPDATE_SCROLL = 0x00004004
+Global Const $EVENT_CONSOLE_LAYOUT = 0x00004005
+Global Const $EVENT_CONSOLE_START_APPLICATION = 0x00004006
+Global Const $EVENT_CONSOLE_END_APPLICATION = 0x4007
 Global Const $EVENT_OBJECT_CREATE = 0x00008000
 Global Const $EVENT_OBJECT_DESTROY = 0x00008001
 Global Const $EVENT_OBJECT_SHOW = 0x00008002
@@ -318,6 +434,8 @@ Global Const $WINEVENT_INCONTEXT = 0x04
 Global Const $WINEVENT_OUTOFCONTEXT = 0x00
 Global Const $WINEVENT_SKIPOWNPROCESS = 0x02
 Global Const $WINEVENT_SKIPOWNTHREAD = 0x01
+
+Global Const $MN_GETHMENU = 0x01E1
 
 ; _WinAPI_TrackMouseEvent()
 Global Const $TME_CANCEL = 0x80000000

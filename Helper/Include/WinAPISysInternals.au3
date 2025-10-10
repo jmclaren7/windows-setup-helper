@@ -2,11 +2,12 @@
 
 #include "SendMessage.au3"
 #include "StructureConstants.au3"
+
 #include "WinAPIInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: WinAPI Extended UDF Library for AutoIt3
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Description ...: Additional variables, constants and functions for the WinAPISys.au3
 ; Author(s) .....: jpm
 ; ===============================================================================================================================
@@ -343,28 +344,17 @@ EndFunc   ;==>_WinAPI_GetWindowWidth
 
 ; #FUNCTION# ====================================================================================================================
 ; Author ........: Paul Campbell (PaulIA)
-; Modified.......:
+; Modified.......: jpm
 ; ===============================================================================================================================
 Func _WinAPI_InProcess($hWnd, ByRef $hLastWnd)
 	If $hWnd = $hLastWnd Then Return True
-	For $iI = $__g_aInProcess_WinAPI[0][0] To 1 Step -1
-		If $hWnd = $__g_aInProcess_WinAPI[$iI][0] Then
-			If $__g_aInProcess_WinAPI[$iI][1] Then
-				$hLastWnd = $hWnd
-				Return True
-			Else
-				Return False
-			EndIf
-		EndIf
-	Next
 	Local $iPID
 	_WinAPI_GetWindowThreadProcessId($hWnd, $iPID)
-	Local $iCount = $__g_aInProcess_WinAPI[0][0] + 1
-	If $iCount >= 64 Then $iCount = 1
-	$__g_aInProcess_WinAPI[0][0] = $iCount
-	$__g_aInProcess_WinAPI[$iCount][0] = $hWnd
-	$__g_aInProcess_WinAPI[$iCount][1] = ($iPID = @AutoItPID)
-	Return $__g_aInProcess_WinAPI[$iCount][1]
+	If ($iPID = @AutoItPID) Then
+		$hLastWnd = $hWnd
+		Return True
+	EndIf
+	Return False
 EndFunc   ;==>_WinAPI_InProcess
 
 ; #FUNCTION# ====================================================================================================================
@@ -486,7 +476,7 @@ EndFunc   ;==>_WinAPI_SetWindowText
 ; Author ........: Paul Campbell (PaulIA)
 ; Modified.......:
 ; ===============================================================================================================================
-Func _WinAPI_ShowWindow($hWnd, $iCmdShow = 5)
+Func _WinAPI_ShowWindow($hWnd, $iCmdShow = @SW_SHOW)
 	Local $aCall = DllCall("user32.dll", "bool", "ShowWindow", "hwnd", $hWnd, "int", $iCmdShow)
 	If @error Then Return SetError(@error, @extended, False)
 

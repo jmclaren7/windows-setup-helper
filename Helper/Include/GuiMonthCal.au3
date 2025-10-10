@@ -1,18 +1,17 @@
 #include-once
 
-#include "DateTimeConstants.au3"
 #include "GUICtrlInternals.au3"
-#include "Memory.au3"
+
+#include "DateTimeConstants.au3"
 #include "SendMessage.au3"
 #include "StructureConstants.au3"
-#include "UDFGlobalID.au3"
 #include "WinAPIConv.au3"
-;~ #include "WinAPIMisc.au3"
+
 #include "WinAPISysInternals.au3"
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: MonthCalendar
-; AutoIt Version : 3.3.16.0
+; AutoIt Version : 3.3.18.0
 ; Language ......: English
 ; Description ...: Functions that assist with MonthCalendar control management.
 ;                  A month calendar control implements a calendar-like user  interface.  This  provides  the  user  with  a  very
@@ -100,9 +99,9 @@ Func _GUICtrlMonthCal_Create($hWnd, $iX, $iY, $iStyle = 0x00000000, $iExStyle = 
 	If $iStyle = -1 Then $iStyle = 0x00000000
 	If $iExStyle = -1 Then $iExStyle = 0x00000000
 
-	$iStyle = BitOR($iStyle, $__UDFGUICONSTANT_WS_CHILD, $__UDFGUICONSTANT_WS_VISIBLE)
+	$iStyle = BitOR($iStyle, $__GUICTRLCONSTANT_WS_CHILD, $__GUICTRLCONSTANT_WS_VISIBLE)
 
-	$nCtrlID = __UDF_GetNextGlobalID($hWnd)
+	$nCtrlID = __GuiCtrl_GetNextGlobalID($hWnd)
 	If @error Then Return SetError(@error, @extended, 0)
 
 	$hMonCal = _WinAPI_CreateWindowEx($iExStyle, $__MONTHCALCONSTANT_ClassName, "", $iStyle, $iX, $iY, 0, 0, $hWnd, $nCtrlID)
@@ -123,7 +122,7 @@ Func _GUICtrlMonthCal_Destroy(ByRef $hWnd)
 			Local $nCtrlID = _WinAPI_GetDlgCtrlID($hWnd)
 			Local $hParent = _WinAPI_GetParent($hWnd)
 			$iDestroyed = _WinAPI_DestroyWindow($hWnd)
-			Local $iRet = __UDF_FreeGlobalID($hParent, $nCtrlID)
+			Local $iRet = __GuiCtrl_FreeGlobalID($hParent, $nCtrlID)
 			If Not $iRet Then
 				; can check for errors here if needed, for debug
 			EndIf
