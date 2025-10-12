@@ -11,23 +11,30 @@ $NetBirdMgmtURL = ""
 $NetBirdPSK = ""
 
 ;==============================================================================
-
-#include <CommonFunctions.au3>
+#Include "CommonFunctions.au3"
 
 Global $Title = "PENetBird"
-Global $LogFullPath = StringTrimRight(@ScriptFullPath, 3) & "log"
-Global $IsPE = StringInStr(@WindowsDir, "X:")
-If Not $IsPE Then Exit
+Global $LogFullPath = @ScriptFullPath & ".log"
+Global $NetBirdConfig = "Settings.ini"
 FileChangeDir(@ScriptDir)
-If $NetBirdSetupKey = "" Or Not FileExists("netbird.exe") Then Exit
-
 _Log($Title)
 _Log("@WorkingDir=" & @WorkingDir)
 _Log("@ScriptDir=" & @ScriptDir)
 
+Global $IsPE = StringInStr(@WindowsDir, "X:")
+If Not $IsPE Then
+	_Log("Not running in WinPE.")
+	Exit
+EndIf
+
+If Not FileExists("netbird.exe") Then
+	_Log("Netbird.exe not found.")
+	Exit
+EndIf
+
 OnAutoItExitRegister("_Exit")
 
-_UpdateStatusBar("NetBird Wait")
+_UpdateStatusBar("NetBird: Wait")
 
 ; Wait for network
 For $i = 1 To 10
@@ -36,15 +43,37 @@ For $i = 1 To 10
 	Sleep(1000)
 Next
 
-$Command = "netbird.exe service install"
-$Run = _RunWait($Command)
-_Log("$Run=" & $Run & "  @error=" & @error & "  $Command=" & $Command)
+$ConfigKey = IniRead($NetBirdConfig,"Settings","Key", "")
+$KeyURL = IniRead($NetBirdConfig,"Settings","KeyURL", "")
+$KeyURLData = ""
+If $KeyURL <> "" Then $KeyURLData = BinaryToString(InetRead($KeyURL))
 
-_UpdateStatusBar("NetBird Start")
+If $KeyURLData <> "" Then
+	$NetBirdSetupKey = $KeyURLData
+	_Log("Using key from " & $KeyURL)
+ElseIf $ConfigKey <> "" Then
+	$NetBirdSetupKey = $ConfigKey
+	_Log("Using key from " & $NetBirdConfig)
+Elseif $NetBirdSetupKey <> "" Then
+	_Log("Using built-in key")
+Else
+	_Log("No key found")
+	Exit
+EndIf
+
+_Log("$NetBirdSetupKey=" & $NetBirdSetupKey)
+
+$Command = "netbird.exe service install"
+_Log("$Command=" & $Command)
+$Run = _RunWait($Command)
+_Log("$Run=" & $Run & "  @error=" & @error)
+
+_UpdateStatusBar("NetBird: Start")
 
 $Command = "netbird.exe service start"
+_Log("$Command=" & $Command)
 $Run = _RunWait($Command)
-_Log("$Run=" & $Run & "  @error=" & @error & "  $Command=" & $Command)
+_Log("$Run=" & $Run & "  @error=" & @error)
 
 $Command = "netbird.exe up"
 If $NetBirdSetupKey <> "" Then $Command &= " --setup-key " & $NetBirdSetupKey
@@ -59,7 +88,7 @@ _Log("$Run=" & $Run & "  @error=" & @error & "  $Command=" & $Command)
 While 1
 	$Command = "netbird.exe status"
 	$Run = _RunWait($Command)
-	If StringInStr($Run, "Signal: Connected") Then _UpdateStatusBar("NetBird Up")
+	If StringInStr($Run, "Signal: Connected") Then _UpdateStatusBar("NetBird: Up")
 	Sleep(2000)
 WEnd
 
