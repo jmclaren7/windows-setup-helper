@@ -234,6 +234,7 @@ WinSetTitle($GUIMain, "", $Title)
 
 ; Generate Script List
 _PopulateScripts($PEInstallTreeView, "Scripts*")
+_PopulateScripts($PEInstallTreeView, "Apps*")
 _PopulateScripts($PEScriptTreeView, "Tools*")
 
 ; Variables used in GUI loop
@@ -959,7 +960,7 @@ Func _PopulateScripts($TreeID, $Folder)
 		$aOtherFolders = _GetSimilarPaths($Folder)
 
 		; Run _PopulateScripts on the similar folders
-		For $i = 1 To $aOtherFolders[0]
+		For $i = 1 To Ubound($aOtherFolders) - 1 ;$aOtherFolders[0]
 			_Log("  " & $aOtherFolders[$i])
 
 			; The list will include the folder we just proccessed so skip it
