@@ -95,7 +95,7 @@ Func _UpdateStatusBar()
 	Local $Port = RegRead($VNCRegPath, "rfbport")
 
 	$hFile = FileOpen ($Path, 2)
-	FileWrite($hFile, "VNC Up" & @CRLF & "VNC Port: " & $Port & " VNC Password: " & $SetPass)
+	FileWrite($hFile, "VNC: Up" & @CRLF & "VNC Port: " & $Port & " VNC Password: " & $SetPass)
 
 	FileClose($hFile)
 EndFunc
