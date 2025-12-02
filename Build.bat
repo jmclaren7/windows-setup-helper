@@ -1,7 +1,7 @@
 @ECHO OFF
 REM == Settings You Need To Change =================================
 REM Path of the ISO file to extract
-set sourceiso=E:\Windows Images\Windows 11 25H2 MCT 2510.iso
+set sourceiso=E:\Windows Images\Windows 11 Original.iso
 
 REM Directory to extract the ISO to (no trailing slash)
 set mediapath=E:\Windows Images\11
