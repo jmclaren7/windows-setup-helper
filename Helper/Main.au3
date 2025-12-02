@@ -1,4 +1,10 @@
 #RequireAdmin
+
+If StringInStr(@SystemDir, "X:") And StringInStr($CmdLineRaw, "UpdateIncludes") Then
+	RegWrite("HKEY_CURRENT_USER\Software\AutoIt v3\AutoIt", "Include", "REG_SZ", @ScriptDir & ";" & @ScriptDir & "\IncludeExt\")
+	Exit
+EndIf
+
 #include "AutoItConstants.au3"
 #include "ButtonConstants.au3"
 #include "ComboConstants.au3"
@@ -91,48 +97,54 @@ _Log("@ComputerName=" & @ComputerName)
 If $IsPE Then _Log("PATH=" & EnvGet("PATH"))
 
 ; Access restriction
-Local $AccessSecret = IniRead($MainConfig, "Access", "Secret", "")
+Local $AccessOTPSecret = IniRead($MainConfig, "Access", "OTPSecret", "")
 Local $AccessSalt = IniRead($MainConfig, "Access", "Salt", "3b194da2")
 Local $AccessPasswordHash = IniRead($MainConfig, "Access", "PasswordSHA256", "")
-Local $AccessNetworking = IniRead($MainConfig, "Access", "PromptStage", "False")
-Local $AccessPEAutoRun = IniRead($MainConfig, "Access", "PEAutoRun", "False")
+Local $AccessNetworking = IniRead($MainConfig, "Access", "StartNetworkingBeforeAuth", "False")
+Local $AccessPEAutoRun = IniRead($MainConfig, "Access", "PEAutoRunBeforeAuth", "False")
+Local $AccessEnableAuth = IniRead($MainConfig, "Access", "EnableAuth", "False")
 Local $NetworkStarted = False
 Local $PEAutoRunStarted = False
 
 ; Start PE networking before auth if configured
-If $IsPE And $AccessNetworking = "True" Then
+If $AccessEnableAuth And $IsPE And $AccessNetworking = "True" Then
 	Run(@ComSpec & " /c " & 'wpeinit.exe', @SystemDir, @SW_HIDE, $RUN_CREATE_NEW_CONSOLE)
 	$NetworkStarted = True
 EndIf
 
 ; Run automatic setup scripts before auth if configured
-If $IsPE And $AccessPEAutoRun = "True" Then
+If $AccessEnableAuth And $IsPE And $AccessPEAutoRun = "True" Then
 	_RunFolder("PEAutoRun")
 	$PEAutoRunStarted = True
 EndIf
 
 ; Prompt for password
-If $AccessPasswordHash <> "" Or $AccessSecret <> "" Then
-	Local $AccessChallenge = _RandomString(8, 8, "1234567890ABCDEFGHJKMNPQRSTUVWXYZ")
-	Local $AccessChallengeDisplay = StringLeft($AccessChallenge, 4) & "-" & StringRight($AccessChallenge, 4)
+If $AccessEnableAuth = "True" And ($AccessPasswordHash <> "" Or $AccessOTPSecret <> "") Then
+	$ChallengeResponseLength = 6
+	$AccessChallenge = _RandomString($ChallengeResponseLength, $ChallengeResponseLength, "1234567890ABCDEFGHJKMNPQRSTUVWXYZ")
+	$AccessChallengeDisplay = StringLeft($AccessChallenge, $ChallengeResponseLength / 2) & "-" & StringRight($AccessChallenge, $ChallengeResponseLength / 2)
 	_Log("$AccessChallengeDisplay= " & $AccessChallengeDisplay)
 
-	Local $AccessCode = StringRight(_Crypt_HashData($AccessSecret & $AccessChallenge & $AccessSalt, $CALG_SHA_256), 8)
-	$Code = StringLeft($AccessCode, 4) & "-" & StringRight($AccessCode, 4)
 
+	$ValidOTPResponse = StringRight(_Crypt_HashData($AccessOTPSecret & StringLower($AccessChallenge) & $AccessSalt, $CALG_SHA_256), $ChallengeResponseLength)
 
 	Local $AccessResponseMessage = ""
 	While 1
-		Local $AccessInput = InputBox("Access Restricted - " & $TitleShort, "Enter the password to continue, canceling will restart the system, timeout in 10 minutes." & @CRLF & @CRLF & $AccessChallengeDisplay & $AccessResponseMessage, "", "*", 330, 170, Default, Default, 600, $_hLogWindow)
-		If @error = 1 Then Exit
+		$Input = InputBox("Access Restricted - " & $TitleShort, "Enter the password to continue, canceling will restart the system, timeout in 10 minutes." & @CRLF & @CRLF & $AccessChallengeDisplay & $AccessResponseMessage, "", "*", 330, 170, Default, Default, 600, $_hLogWindow)
+		If @error Then Exit ; Cancel or Timeout
 
-		Local $AccessCodeInput = StringStripWS($AccessInput, $STR_STRIPALL)
-		$AccessCodeInput = StringReplace($AccessInput, "-", "")
-		If $AccessSecret <> "" And $AccessCodeInput = $AccessCode Then ExitLoop
+		If $AccessOTPSecret <> "" Then
+			$ResponseInput = StringStripWS($Input, $STR_STRIPALL)
+			$ResponseInput = StringReplace($Input, "-", "")
+			_Log("$ResponseInput=" & $ResponseInput)
+			If $ResponseInput = $ValidOTPResponse Then ExitLoop
+		EndIf
 
-		Local $AccessPasswordHashInput = StringTrimLeft(_Crypt_HashData($AccessInput & $AccessSalt, $CALG_SHA_256), 2)
-		_Log("$PasswordHashInput=" & $AccessPasswordHashInput)
-		If $AccessPasswordHash <> "" And $AccessPasswordHashInput = $AccessPasswordHash Then ExitLoop
+		If $AccessPasswordHash <> ""  Then
+			$PasswordHashInput = StringTrimLeft(_Crypt_HashData($Input & $AccessSalt, $CALG_SHA_256), 2)
+			_Log("$PasswordHashInput=" & $PasswordHashInput)
+			If $PasswordHashInput = $AccessPasswordHash Then ExitLoop
+		Endif
 
 		$AccessResponseMessage = "     Response was invalid, try again."
 		Sleep(10)
@@ -348,7 +360,7 @@ While 1
 			$LanguageInput = GUICtrlCreateInput("", 408, 320, 121, 21)
 			$Label8 = GUICtrlCreateLabel("Language", 348, 324, 52, 17)
 			GUICtrlCreateGroup("", -99, -99, 1, 1)
-			$SourcesGroup = GUICtrlCreateGroup("SourcesGroup", 16, 7, 528, 133)
+			$SourcesGroup = GUICtrlCreateGroup("Sources", 16, 7, 528, 133)
 			$EditionCombo = GUICtrlCreateCombo("", 143, 101, 281, 25, BitOR($GUI_SS_DEFAULT_COMBO,$CBS_SIMPLE))
 			$Label3 = GUICtrlCreateLabel("Edition", 98, 105, 36, 17)
 			$WIMBrowseButton = GUICtrlCreateButton("Browse...", 427, 63, 75, 25)
