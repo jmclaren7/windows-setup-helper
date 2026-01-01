@@ -4,7 +4,7 @@ REM Path of the ISO file to extract
 set sourceiso=E:\Windows Images\Windows 11 Original.iso
 
 REM Directory to extract the ISO to (no trailing slash)
-set mediapath=E:\Windows Images\11
+set temp_path=E:\Windows Images\Temp
 
 REM (Optional) Directory of extra files to add to the image (no trailing slash)
 set extrafiles=E:\Windows Images\Additions
@@ -17,7 +17,7 @@ REM == Other Settings ==============================================
 REM The index of the boot.wim image you want to modify eg: "/Index:2" or "/Name:name"
 set wimindex=/Name:"Microsoft Windows Setup (amd64)"
 set helperrepo=%~dp0
-set sourcewim=%mediapath%\sources\boot.wim
+set sourcewim=%temp_path%\sources\boot.wim
 set mountpath=%temp%\WIMMount
 set adk=%ProgramFiles(x86)%\Windows Kits\10\Assessment and Deployment Kit
 
@@ -37,7 +37,7 @@ set "auto_setresolution_detail=1024x768"
 
 REM == Basic Checks ================================================
 Call :Admin
-if not exist "%mediapath%\" ( echo Media path not found, reconfigure batch file & pause & exit)
+if not exist "%temp_path%\" ( echo Media path not found, reconfigure batch file & pause & exit)
 REM if not exist "%sourcewim%" ( echo Boot.wim not found & pause & exit)
 if "%helperrepo:~-1%"=="\" SET helperrepo=%helperrepo:~0,-1%
 if not exist "%helperrepo%\Helper\Main.au3" ( echo Main.au3 not found & pause & exit)
@@ -48,11 +48,11 @@ set pauseafter=true
 set returnafter=false
 cls
 echo  Source ISO = %sourceiso%
-echo  Media folder = %mediapath%
+echo  Temp folder = %temp_path%
 echo  Output ISO = %outputiso%
 echo.
-echo  Q^|1. %auto_extractiso%Extract ISO to media folder
-echo  W^|2. %auto_mountwim%Mount boot.wim from media folder
+echo  Q^|1. %auto_extractiso%Extract ISO to Temp folder
+echo  W^|2. %auto_mountwim%Mount boot.wim from Temp folder
 echo  E^|3. %auto_copyfiles%Copy Helper files to mounted image
 echo  R^|4. %auto_addpackages%Add packages to mounted image (requires matching version of ADK)
 echo  T^|5. %auto_disabledpi%Apply registry settings to disable DPI scaling in PE
@@ -60,7 +60,7 @@ echo  Y^|6. %auto_unmountcommit%Unmount and commit changes to WIM
 echo  U^|7. %auto_setresolution%(Not Working) Use Bcdedit to set media boot resolution to: %auto_setresolution_detail% (G to change)
 echo  I^|8. %auto_trimimages%Trim boot.wim (Trims other indexes and removes unused files)
 echo  O^|9. %auto_removeinstaller%Remove Install.wim and Related Install Components from Media
-echo  P^|0. %auto_makeiso%Make ISO from media folder (requires ADK)
+echo  P^|0. %auto_makeiso%Make ISO from Temp folder (requires ADK)
 echo.
 echo  F. Automatically run the * steps (enter a step # to toggle its inclusion)
 echo.
@@ -189,12 +189,12 @@ REM == Extract From ISO ============================================
 :extractiso
 
 echo.
-echo [96mExtracting ISO to media folder[0m
+echo [96mExtracting ISO to Temp folder[0m
 echo.
 
-rmdir /s /q "%mediapath%"
-mkdir "%mediapath%"
-"%~dp0Helper\Tools\7-Zip\7z.exe" x -y -o"%mediapath%" "%sourceiso%"
+rmdir /s /q "%temp_path%"
+mkdir "%temp_path%"
+"%~dp0Helper\Tools\7-Zip\7z.exe" x -y -o"%temp_path%" "%sourceiso%"
 
 echo.
 if %pauseafter%==true ( pause )
@@ -352,21 +352,21 @@ REM == Make ISO ====================================================
 
 echo.
 echo [96mCreating ISO[0m
-echo Input: "%mediapath%" 
+echo Input: "%temp_path%" 
 echo Output: "%outputiso%"
 echo.
 
 set oscdimg=%adk%\Deployment Tools\amd64\Oscdimg
 
-set BOOTDATA=1#pEF,e,b"%mediapath%\efi\microsoft\boot\efisys.bin"
-if exist "%mediapath%\boot\etfsboot.com" (
-  set BOOTDATA=2#p0,e,b"%mediapath%\boot\etfsboot.com"#pEF,e,b"%mediapath%\efi\microsoft\boot\efisys.bin"
+set BOOTDATA=1#pEF,e,b"%temp_path%\efi\microsoft\boot\efisys.bin"
+if exist "%temp_path%\boot\etfsboot.com" (
+  set BOOTDATA=2#p0,e,b"%temp_path%\boot\etfsboot.com"#pEF,e,b"%temp_path%\efi\microsoft\boot\efisys.bin"
 )
 
 del /F /Q "%outputiso%"
 if %errorlevel% NEQ 0 ( echo [91mFailed to delete "%DEST%".[0m && pause && goto mainmenu )
 
-"%oscdimg%\oscdimg" -bootdata:%BOOTDATA% -u1 -udfver102 "%mediapath%" "%outputiso%"
+"%oscdimg%\oscdimg" -bootdata:%BOOTDATA% -u1 -udfver102 "%temp_path%" "%outputiso%"
 if %errorlevel% NEQ 0 ( echo [91mFailed to create ISO.[0m && pause && goto mainmenu )
 
 echo.
@@ -396,7 +396,7 @@ echo.
 echo [96mConverting ESD to WIM[0m
 echo.
 
-Dism /Export-Image /SourceImageFile:"%mediapath%\sources\install.esd" /SourceIndex:1 /DestinationImageFile:"%mediapath%\sources\install.wim" /Compress:Max
+Dism /Export-Image /SourceImageFile:"%temp_path%\sources\install.esd" /SourceIndex:1 /DestinationImageFile:"%temp_path%\sources\install.wim" /Compress:Max
 if %errorlevel% NEQ 0 ( echo [91mError converting install.esd, aborting[0m && pause && goto mainmenu )
 
 echo.
@@ -411,7 +411,7 @@ echo.
 echo [96mConverting WIM to ESD[0m
 echo.
 
-Dism /Export-Image /SourceImageFile:"%mediapath%\sources\install.wim" /SourceIndex:1 /DestinationImageFile:"%mediapath%\sources\install.esd" /Compress:Max
+Dism /Export-Image /SourceImageFile:"%temp_path%\sources\install.wim" /SourceIndex:1 /DestinationImageFile:"%temp_path%\sources\install.esd" /Compress:Max
 if %errorlevel% NEQ 0 ( echo [91mError converting install.wim, aborting[0m && pause && goto mainmenu )
 
 echo.
@@ -427,10 +427,10 @@ echo [96mExtracting WinRE[0m
 echo.
 
 mkdir %mountpath%
-Dism /Mount-image /ReadOnly /imagefile:"%mediapath%\sources\install.wim" /Index:1 /MountDir:"%mountpath%" /Optimize /ReadOnly
+Dism /Mount-image /ReadOnly /imagefile:"%temp_path%\sources\install.wim" /Index:1 /MountDir:"%mountpath%" /Optimize /ReadOnly
 if %errorlevel% NEQ 0 ( echo [91mError mounting install.wim, aborting[0m && pause && goto mainmenu )
 
-start explorer "%mediapath%\sources"
+start explorer "%temp_path%\sources"
 
 echo.
 pause
@@ -446,10 +446,10 @@ echo.
 echo [96mExporting boot.wim image using  %sourcewimindex%[0m
 echo.
 
-Dism /Export-Image /SourceImageFile:"%sourcewim%" %sourcewimindex% /DestinationImageFile:"%mediapath%\sources\boot2.wim" /Compress:Max
+Dism /Export-Image /SourceImageFile:"%sourcewim%" %sourcewimindex% /DestinationImageFile:"%temp_path%\sources\boot2.wim" /Compress:Max
 if %errorlevel% NEQ 0 ( echo [91mError exporting, aborting[0m && pause && goto mainmenu )
 
-move /Y "%mediapath%\sources\boot2.wim" "%sourcewim%"
+move /Y "%temp_path%\sources\boot2.wim" "%sourcewim%"
 if %errorlevel% NEQ 0 ( echo [91mError overwriting boot.wim, aborting[0m && pause && goto mainmenu )
 
 echo.
@@ -465,10 +465,10 @@ echo.
 echo [96mSet Resolution[0m
 echo.
 if "%auto_setresolution_detail%"=="Highest" ( 
-  bcdedit.exe /store "%mediapath%\boot\bcd" /set {default} highestmode on 
+  bcdedit.exe /store "%temp_path%\boot\bcd" /set {default} highestmode on 
 ) else (
   echo other
-  bcdedit.exe /store "%mediapath%\boot\bcd" /set {default} graphicsresolution %auto_setresolution_detail%
+  bcdedit.exe /store "%temp_path%\boot\bcd" /set {default} graphicsresolution %auto_setresolution_detail%
 )
 echo.
 if %pauseafter%==true ( pause )
@@ -501,13 +501,13 @@ echo.
 echo [Remove Installer WIM and Related[0m
 echo.
 
-rmdir /s /q "%mediapath%\support"
-del "%mediapath%\setup.exe"
-del "%mediapath%\autorun.inf"
-move /Y "%mediapath%\Sources\boot.wim" "%mediapath%\"
-rmdir /s /q "%mediapath%\Sources"
-mkdir "%mediapath%\Sources"
-move /Y "%mediapath%\boot.wim" "%mediapath%\Sources\boot.wim"
+rmdir /s /q "%temp_path%\support"
+del "%temp_path%\setup.exe"
+del "%temp_path%\autorun.inf"
+move /Y "%temp_path%\Sources\boot.wim" "%temp_path%\"
+rmdir /s /q "%temp_path%\Sources"
+mkdir "%temp_path%\Sources"
+move /Y "%temp_path%\boot.wim" "%temp_path%\Sources\boot.wim"
 
 echo.
 if %pauseafter%==true ( pause )
