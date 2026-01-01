@@ -70,7 +70,7 @@ Global $DefaultComputerName = "WINDOWS-" & _RandomString(7, 7, "0123456789ABCDEF
 Global $DefaultWIMPath = "D:\sources\install.wim"
 Global $DefaultAutounattend = @ScriptDir & "\autounattend.xml"
 Global $SelectedAutounattendFile = $DefaultAutounattend
-Global $DefaultEdition = "Windows 11 Pro"
+Global $aDefaultEdition = ["Windows 11 Pro", "Windows 11 IoT Enterprise LTSC", "Not Specified"]
 Global $DefaultAdminPassword = "1234"
 Global $DefaultLanguage = "en-US"
 
@@ -493,6 +493,12 @@ While 1
 						ElseIf StringInStr($EdditionChoice, "Pro") Then
 							$sAutounattendData = StringReplace($sAutounattendData, "<!--KeyPro", "")
 							$sAutounattendData = StringReplace($sAutounattendData, "KeyPro-->", "")
+						ElseIf StringInStr($EdditionChoice, "Enterprise") Then
+							$sAutounattendData = StringReplace($sAutounattendData, "<!--KeyEnterprise", "")
+							$sAutounattendData = StringReplace($sAutounattendData, "KeyEnterprise-->", "")
+						Else
+							; Remove all <ProductKey> sections
+							$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<ProductKey>.*?</ProductKey>)", "")
 						EndIf
 
 						; Computer name
@@ -741,7 +747,8 @@ EndFunc   ;==>_WM_SIZE
 
 ; Update installer GUI items based on WIM contents
 Func _UpdateWIMDependents()
-	Global $WIMInput
+	Global $WIMInput, $aDefaultEdition
+	Local $aDefaultEditionCurrent = $aDefaultEdition
 
 	; Get editions from wim/esd
 	Local $sWIMPath = GUICtrlRead($WIMInput)
@@ -758,12 +765,15 @@ Func _UpdateWIMDependents()
 	; <InstallFrom>*<Value>?</Value>*</InstallFrom>
 	Local $aMatch = StringRegExp($sAutounattendData, '(?si)<InstallFrom>.*<Value>(.*?)</Value>.*</InstallFrom>', $STR_REGEXPARRAYMATCH)
 	If Not @error And $aMatch[0] <> "" Then
-		_GUICtrlComboBox_SelectString($EditionCombo, $aMatch[0])
-	Else
-		If _GUICtrlComboBox_SelectString($EditionCombo, $DefaultEdition) = -1 Then
-			_GUICtrlComboBox_SelectString($EditionCombo, "Not Specified")
-		EndIf
+		_ArrayInsert($aDefaultEditionCurrent, 0, $aMatch[0])
 	EndIf
+
+	$ArraySize = UBound($aDefaultEditionCurrent) -1
+	For $i = 0 To $ArraySize
+		If _GUICtrlComboBox_SelectString($EditionCombo, $aDefaultEditionCurrent[$i]) <> -1 Then
+			ExitLoop
+		EndIf
+	Next
 
 EndFunc   ;==>_UpdateWIMDependents
 
