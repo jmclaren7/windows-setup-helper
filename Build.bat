@@ -9,6 +9,9 @@ set mediapath=E:\Windows Images\11
 REM (Optional) Directory of extra files to add to the image (no trailing slash)
 set extrafiles=E:\Windows Images\Additions
 
+REM (Optional) Location of $OEM$ directory to be copied to the sources folder of the finished ISO (no $OEM$, no trailing slash)
+set oemfiles=E:\Windows Images
+
 REM Path to the new ISO file
 set outputiso=E:\Windows Images\Windows11.iso
 
@@ -195,6 +198,8 @@ echo.
 rmdir /s /q "%mediapath%"
 mkdir "%mediapath%"
 "%~dp0Helper\Tools\7-Zip\7z.exe" x -y -o"%mediapath%" "%sourceiso%"
+
+if exist "%oemfiles%\$OEM$\" ( robocopy "%oemfiles%\$OEM$" "%mediapath%\sources\$OEM$" /E /R:2 /W:55 /NFL /NDL /NJH /NJS /NP)
 
 echo.
 if %pauseafter%==true ( pause )
