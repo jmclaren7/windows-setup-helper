@@ -31,7 +31,7 @@ $Run = Get-ChildItem -Include $FileTypes -Exclude '.*' -Recurse -Depth 0  | Wher
 # Get subfolder launch files
 $Run += Get-ChildItem -Include $LaunchFiles -Exclude '.*' -Recurse -Depth 1  | Where-Object { $_.Directory -inotlike (Get-Location).Path }
 
-# Filter out system files unless specified
+# Filter out [system] files unless specified
 if ($args[0] -eq 'system') {
     $Run = $Run | Where-Object { $_.FullName -ilike '*`[system`]*' }
 }
@@ -62,6 +62,29 @@ $Run | ForEach-Object {
         Start-Sleep 4
     }
 
+    # If the file name contains [internet] or [internet##], wait for internet connectivity, timeout after 1 minute (or specified minutes, 0 = no timeout)
+    if ($_.Name -match '\[internet(\d{1,2})?\]') {
+        $TimeoutMinutes = if ($Matches[1]) { [int]$Matches[1] } else { 1 }
+        
+        if ($TimeoutMinutes -eq 0) {
+            _Log("Waiting for internet connectivity (no timeout)...")
+            $Timeout = $null
+        } else {
+            _Log("Waiting for internet connectivity (timeout: $TimeoutMinutes minutes)...")
+            $Timeout = (Get-Date).AddMinutes($TimeoutMinutes)
+        }
+
+        while (-not (Test-Connection -ComputerName "www.google.com" -Count 1 -Quiet)) {
+            if ($Timeout -and (Get-Date) -gt $Timeout) {
+                _Log("Timeout waiting for internet connectivity, continuing anyway...")
+                Break
+            }
+
+            Start-Sleep 5
+        }
+
+    }
+
     # Run the file
     if ($Execute) { 
         if ($_.Extension -eq ".reg") {
@@ -77,7 +100,7 @@ $Run | ForEach-Object {
             $Proc = Start-Process $_.FullName -PassThru
         }
 
-        # If the file name noes not have [background] in it, wait for it to finish, 20 second timeout
+        # If the file name does not have [background] in it, wait for it to finish, 20 second timeout
         if ($_.Name -inotlike '*`[background`]*') { 
 
             Start-Sleep 2
