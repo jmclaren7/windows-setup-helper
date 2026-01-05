@@ -1,4 +1,8 @@
 #include-once
+;===============================================================================
+; Miscellaneous Helper Functions
+;===============================================================================
+#include <Array.au3>
 
 Func _Win11Bypass()
 	RegWrite("HKEY_LOCAL_MACHINE\SYSTEM\Setup\LabConfig", "BypassSecureBootCheck", "REG_DWORD", 1)

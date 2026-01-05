@@ -4,7 +4,7 @@
 		<property name="Left" vt="Int16">968</property>
 		<property name="Top" vt="Int16">512</property>
 		<property name="Width" vt="Int16">574</property>
-		<property name="Height" vt="Int16">447</property>
+		<property name="Height" vt="Int16">449</property>
 		<property name="Caption" vt="String">Install Options</property>
 		<property name="Color" vt="Int32">16382457</property>
 		<property name="Font.Charset" vt="Ident">DEFAULT_CHARSET</property>
@@ -141,7 +141,7 @@
 				<property name="Height" vt="Int16">133</property>
 				<property name="CtrlStyle" vt="Int32">1342308359</property>
 				<property name="CtrlExStyle" vt="Int8">0</property>
-				<property name="Caption" vt="String">SourcesGroup</property>
+				<property name="Caption" vt="String">Source</property>
 				<property name="TabOrder" vt="Int8">3</property>
 				<property name="Resizing" vt="Set"/>
 			</properties>
@@ -383,10 +383,24 @@
 			<properties>
 				<property name="Left" vt="Int8">16</property>
 				<property name="Top" vt="Int16">376</property>
-				<property name="Width" vt="Int16">265</property>
+				<property name="Width" vt="Int16">137</property>
 				<property name="Height" vt="Int8">17</property>
-				<property name="Caption" vt="String">Bypass Windows 11 System Requirements Check</property>
+				<property name="Caption" vt="String">Bypass Win11 Checks</property>
 				<property name="TabOrder" vt="Int8">5</property>
+				<property name="CtrlStyle" vt="Int32">1342242819</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set">DockHeight</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TACheckbox" name="PreviewXMLCheckbox">
+			<properties>
+				<property name="Left" vt="Int16">164</property>
+				<property name="Top" vt="Int16">376</property>
+				<property name="Width" vt="Int16">145</property>
+				<property name="Height" vt="Int8">17</property>
+				<property name="Caption" vt="String">Preview AutoUnattend.xml</property>
+				<property name="TabOrder" vt="Int8">6</property>
 				<property name="CtrlStyle" vt="Int32">1342242819</property>
 				<property name="CtrlExStyle" vt="Int8">0</property>
 				<property name="Resizing" vt="Set">DockHeight</property>

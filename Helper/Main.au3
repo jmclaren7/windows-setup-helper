@@ -1,5 +1,9 @@
 #RequireAdmin
+;===============================================================================
+; Windows Setup Helper - Main Script File For WinPE GUI
+;===============================================================================
 
+; Update the include paths used when running in WinPE with UpdateIncludes argument
 If StringInStr(@SystemDir, "X:") And StringInStr($CmdLineRaw, "UpdateIncludes") Then
 	RegWrite("HKEY_CURRENT_USER\Software\AutoIt v3\AutoIt", "Include", "REG_SZ", @ScriptDir & ";" & @ScriptDir & "\IncludeExt\")
 	Exit
@@ -37,7 +41,8 @@ EndIf
 
 ; https://github.com/jmclaren7/autoit-scripts/blob/master/CommonFunctions.au3
 #include "IncludeExt\CommonFunctions.au3"
-#include "IncludeExt\Misc.au3"
+#include "IncludeExt\WSHelper_Misc.au3"
+#include "IncludeExt\XML.au3"
 
 ; Register a function to run whenever the script exits
 OnAutoItExitRegister("_Exit")
@@ -349,8 +354,9 @@ While 1
 
 			GUISetState(@SW_DISABLE, $GUIMain)
 
+			; Reminder: $GUIAutoInstall needs $GUIMain set as it's parent window
 			#Region ### START Koda GUI section ###
-			$AutoInstallForm = GUICreate("Install Options", 559, 409, -1, -1, -1, -1, $GUIMain)
+			$GUIAutoInstall = GUICreate("Install Options", 559, 409, -1, -1, -1, -1, $GUIMain)
 			GUISetBkColor(0xF9F9F9)
 			$CancelButton = GUICtrlCreateButton("Cancel", 446, 373, 91, 25)
 			$InstallButton = GUICtrlCreateButton("Install", 338, 373, 91, 25)
@@ -360,7 +366,7 @@ While 1
 			$LanguageInput = GUICtrlCreateInput("", 408, 320, 121, 21)
 			$Label8 = GUICtrlCreateLabel("Language", 348, 324, 52, 17)
 			GUICtrlCreateGroup("", -99, -99, 1, 1)
-			$SourcesGroup = GUICtrlCreateGroup("Sources", 16, 7, 528, 133)
+			$SourcesGroup = GUICtrlCreateGroup("Source", 16, 7, 528, 133)
 			$EditionCombo = GUICtrlCreateCombo("", 143, 101, 281, 25, BitOR($GUI_SS_DEFAULT_COMBO,$CBS_SIMPLE))
 			$Label3 = GUICtrlCreateLabel("Edition", 98, 105, 36, 17)
 			$WIMBrowseButton = GUICtrlCreateButton("Browse...", 427, 63, 75, 25)
@@ -379,7 +385,8 @@ While 1
 			$WindowsDiskCheckbox = GUICtrlCreateCheckbox("Let Windows setup prompt for disk selection instead", 116, 260, 273, 17)
 			$Label5 = GUICtrlCreateLabel("Select Disk", 51, 204, 58, 17)
 			GUICtrlCreateGroup("", -99, -99, 1, 1)
-			$Bypass11Checkbox = GUICtrlCreateCheckbox("Bypass Windows 11 System Requirements Check", 16, 376, 265, 17)
+			$Bypass11Checkbox = GUICtrlCreateCheckbox("Bypass Win11 Checks", 16, 376, 137, 17)
+			$PreviewXMLCheckbox = GUICtrlCreateCheckbox("Preview AutoUnattend.xml", 164, 376, 145, 17)
 			#EndRegion ### END Koda GUI section ###
 
 			_GUICtrlComboBox_SetDroppedWidth($TimezoneCombo, 400)
@@ -425,20 +432,20 @@ While 1
 				GUICtrlSetState($DiskList, $GUI_DISABLE)
 			EndIf
 
-			GUISetState(@SW_SHOW, $AutoInstallForm)
+			GUISetState(@SW_SHOW, $GUIAutoInstall)
 
 			While 1
-				$nAutoInstallFormMsg = GUIGetMsg()
-				Switch $nAutoInstallFormMsg
+				$nGUIAutoInstallMsg = GUIGetMsg()
+				Switch $nGUIAutoInstallMsg
 					Case $GUI_EVENT_CLOSE, $CancelButton
 						GUISetState(@SW_ENABLE, $GUIMain)
-						GUIDelete($AutoInstallForm)
+						GUIDelete($GUIAutoInstall)
 						ContinueLoop 2
 
 					; WIM Browse Button
 					Case $WIMBrowseButton
 						$SaveWorkingDir = @WorkingDir
-						$FileSelection = FileOpenDialog("Select Windows Install Image", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "Windows Images (*.wim;*.esd)|All (*.*)", $FD_FILEMUSTEXIST, "", $AutoInstallForm)
+						$FileSelection = FileOpenDialog("Select Windows Install Image", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "Windows Images (*.wim;*.esd)|All (*.*)", $FD_FILEMUSTEXIST, "", $GUIAutoInstall)
 						If FileExists($FileSelection) Then
 							GUICtrlSetData($WIMInput, $FileSelection)
 							_UpdateWIMDependents()
@@ -448,14 +455,14 @@ While 1
 					; Autounattend.xml Browse Button
 					Case $AutounattendBrowseButton
 						$SaveWorkingDir = @WorkingDir
-						$FileSelection = FileOpenDialog("Select Windows Answer File", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "XML File (*.xml)|All (*.*)", $FD_FILEMUSTEXIST, "", $AutoInstallForm)
+						$FileSelection = FileOpenDialog("Select Windows Answer File", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}", "XML File (*.xml)|All (*.*)", $FD_FILEMUSTEXIST, "", $GUIAutoInstall)
 						If FileExists($FileSelection) Then
 							$SelectedAutounattendFile = $FileSelection
 							GUICtrlSetData($AutounattendInput, $SelectedAutounattendFile)
 							; Read the autounattend.xml file
 							$sAutounattendData = FileRead($SelectedAutounattendFile)
 							_UpdateXMLDependents($sAutounattendData)
-							_UpdateWIMDependents()
+							;_UpdateWIMDependents() ; shouldnt need this 1-2-26
 						EndIf
 						FileChangeDir($SaveWorkingDir)
 
@@ -468,63 +475,66 @@ While 1
 						EndIf
 
 					Case $InstallButton
-						GUISetState(@SW_DISABLE, $AutoInstallForm)
+						GUISetState(@SW_DISABLE, $GUIAutoInstall)
 
-						; ================ Start modifications to autounattend.xml ================
-						; Read the answers file again in case the user had an error during modification and had to start over
-						$sAutounattendData = FileRead($SelectedAutounattendFile)
+						; ================ Start modifications to autounattend.xml using Microsoft.XMLDOM ================
+						_Log("Loading autounattend.xml for modification")
 
-						; WIM/ESD Path
-						; <InstallFrom>*<Path>?</Path>*</InstallFrom>
-						$WIMInputText = GUICtrlRead($WIMInput)
-						$WIMInputText = StringReplace($WIMInputText, "\", "\\")
-						_Log("$WIMInputText=" & $WIMInputText)
-						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<InstallFrom>.*?<Path>).*?(</Path>.*?</InstallFrom>)", "${1}" & $WIMInputText & "${2}")
-						_Log("StringRegExpReplace @error=" & @error)
-
-						; Edition and key
-						$EdditionChoice = GUICtrlRead($EditionCombo)
-						$RegExReplacement = "${1}${2}" & $EdditionChoice & "${3}${4}"
-						If $EdditionChoice = "Not Specified" Then $RegExReplacement = "${1}${4}"
-						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<InstallFrom>.*?)(<Value>).*?(</Value>)(.*?</InstallFrom>)", $RegExReplacement)
-						If StringInStr($EdditionChoice, "Home") Then
-							$sAutounattendData = StringReplace($sAutounattendData, "<!--KeyHome", "")
-							$sAutounattendData = StringReplace($sAutounattendData, "KeyHome-->", "")
-						ElseIf StringInStr($EdditionChoice, "Pro") Then
-							$sAutounattendData = StringReplace($sAutounattendData, "<!--KeyPro", "")
-							$sAutounattendData = StringReplace($sAutounattendData, "KeyPro-->", "")
-						ElseIf StringInStr($EdditionChoice, "Enterprise") Then
-							$sAutounattendData = StringReplace($sAutounattendData, "<!--KeyEnterprise", "")
-							$sAutounattendData = StringReplace($sAutounattendData, "KeyEnterprise-->", "")
-						Else
-							; Remove all <ProductKey> sections
-							$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<ProductKey>.*?</ProductKey>)", "")
+						; Load the XML file using Microsoft.XMLDOM
+						Local $oXML = _XMLLoad($SelectedAutounattendFile, True)
+						If Not IsObj($oXML) Then
+							MsgBox($MB_ICONERROR, "Error - " & $TitleShort, "Failed to parse autounattend.xml file")
+							GUISetState(@SW_ENABLE, $GUIAutoInstall)
+							ContinueLoop
 						EndIf
 
-						; Computer name
-						; <ComputerName>?</ComputerName>
+						; WIM/ESD Path - update //InstallFrom/Path
+						$WIMInputText = GUICtrlRead($WIMInput)
+						_Log("$WIMInputText=" & $WIMInputText)
+						_XMLSetValue($oXML, "//InstallFrom/Path", $WIMInputText)
+
+						; Edition - update //InstallFrom/MetaData/Value
+						$EdditionChoice = GUICtrlRead($EditionCombo)
+						_Log("$EdditionChoice=" & $EdditionChoice)
+						If $EdditionChoice = "Not Specified" Then
+							; Remove the Value element within InstallFrom if not specified
+							_XMLRemoveNodes($oXML, "//InstallFrom/MetaData/Value")
+						Else
+							_XMLSetValue($oXML, "//InstallFrom/MetaData/Value", $EdditionChoice)
+						EndIf
+
+						; Handle product key based on edition
+						#cs
+						; Shoudln't usually need to set any keys
+ 						If StringInStr($EdditionChoice, "Home") Then
+							_XMLUncommentSection($oXML, "KeyHome")
+						ElseIf StringInStr($EdditionChoice, "Pro") Then
+							_XMLUncommentSection($oXML, "KeyPro")
+						ElseIf StringInStr($EdditionChoice, "Enterprise") Then
+							_XMLUncommentSection($oXML, "KeyEnterprise")
+						Else
+							; Remove all <ProductKey> sections
+							;_XMLRemoveNodes($oXML, "//ProductKey")
+						EndIf 
+						#ce
+
+						; Computer name - update all //ComputerName elements
 						$ComputerName = GUICtrlRead($ComputerNameInput)
 						_Log("$ComputerName=" & $ComputerName)
-						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<ComputerName>).*?(</ComputerName>)", "${1}" & $ComputerName & "${2}")
-						_Log("StringRegExpReplace @error=" & @error)
+						_XMLSetValue($oXML, "//ComputerName", $ComputerName)
 
-						; Administrator password
-						; <AdministratorPassword>*<Value>?</Value>*</AdministratorPassword>
+						; Administrator password - update //Password/Value and //AdministratorPassword/Value
 						$AdminPassword = GUICtrlRead($AdminPasswordInput)
-						_Log("$AdminPassword=" & $AdminPassword)
-						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<Password>.*?<Value>).*?(</Value>.*?</Password>)", "${1}" & $AdminPassword & "${2}")
-						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<AdministratorPassword>.*<Value>).*?(</Value>.*</AdministratorPassword>)", "${1}" & $AdminPassword & "${2}")
-						_Log("StringRegExpReplace @error=" & @error)
+						_Log("$AdminPassword set (hidden)")
+						_XMLSetValue($oXML, "//Password/Value", $AdminPassword)
+						_XMLSetValue($oXML, "//AdministratorPassword/Value", $AdminPassword)
 
 						; Disk/format options
-
 						If GUICtrlRead($WindowsDiskCheckbox) = $GUI_UNCHECKED And $EnableFormatGUI = "True" Then
 							If EnvGet("firmware_type") = "Legacy" Then
-								$sAutounattendData = StringReplace($sAutounattendData, "<!--FormatBIOS", "")
-								$sAutounattendData = StringReplace($sAutounattendData, "FormatBIOS-->", "")
+								_XMLUncommentSection($oXML, "FormatBIOS")
 							Else
-								$sAutounattendData = StringReplace($sAutounattendData, "<!--FormatUEFI", "")
-								$sAutounattendData = StringReplace($sAutounattendData, "FormatUEFI-->", "")
+								_XMLUncommentSection($oXML, "FormatUEFI")
 							EndIf
 
 							; Set the target disk
@@ -533,7 +543,7 @@ While 1
 
 							If StringInStr($DiskListText, "USB", 0) Then
 								If MsgBox($MB_OK + $MB_ICONWARNING, $TitleShort, "The selected drive might be a USB drive and not the intended target disk") <> $MB_OK Then
-									GUISetState(@SW_ENABLE, $AutoInstallForm)
+									GUISetState(@SW_ENABLE, $GUIAutoInstall)
 									ContinueLoop
 								EndIf
 							EndIf
@@ -541,52 +551,63 @@ While 1
 							$aTargetDisk = StringRegExp($DiskListText, '(?i)Disk (\d{1}) ', $STR_REGEXPARRAYMATCH)
 							If @error Then
 								MsgBox(0, "Select Disk - " & $TitleShort, "Error selecting disk: " & @error)
-								GUISetState(@SW_ENABLE, $AutoInstallForm)
+								GUISetState(@SW_ENABLE, $GUIAutoInstall)
 								ContinueLoop
 							EndIf
-							$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<DiskID>).*?(</DiskID>)", "${1}" & $aTargetDisk[0] & "${2}")
+							_XMLSetValue($oXML, "//DiskID", $aTargetDisk[0])
 						EndIf
 
-						; Timezone
-						; <TimeZone>?</TimeZone>
+						; Timezone - update all //TimeZone elements
 						$sTimezoneText = GUICtrlRead($TimezoneCombo)
 						_Log("$sTimezoneText=" & $sTimezoneText)
 						$aTimezoneText = StringRegExp($sTimezoneText, "\(([^)(]*(?:\((?:[^)(]+|\([^)(]*\))*\)[^)(]*)*)\)(?!.*\()", 1)
 						If Not @error Then
 							_Log("$aTimezoneText[0]=" & $aTimezoneText[0])
-							$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<TimeZone>).*?(</TimeZone>)", "${1}" & $aTimezoneText[0] & "${2}")
-							_Log("StringRegExpReplace @error=" & @error)
+							_XMLSetValue($oXML, "//TimeZone", $aTimezoneText[0])
 						Else
 							_Log("$aTimezoneText @error=" & @error)
 						EndIf
 
-						; <SystemLocale>en-US</SystemLocale>
-						; <UILanguage>en-US</UILanguage>
-						; <UserLocale>en-US</UserLocale>
+						; Language settings - update SystemLocale, UILanguage, UserLocale
 						$LanguageText = GUICtrlRead($LanguageInput)
 						_Log("$LanguageText=" & $LanguageText)
-						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<SystemLocale>).*?(</SystemLocale>)", "${1}" & $LanguageText & "${2}")
-						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<UILanguage>).*?(</UILanguage>)", "${1}" & $LanguageText & "${2}")
-						$sAutounattendData = StringRegExpReplace($sAutounattendData, "(?si)(<UserLocale>).*?(</UserLocale>)", "${1}" & $LanguageText & "${2}")
-						_Log("StringRegExpReplace @error=" & @error)
+						_XMLSetValue($oXML, "//SystemLocale", $LanguageText)
+						_XMLSetValue($oXML, "//UILanguage", $LanguageText)
+						_XMLSetValue($oXML, "//UserLocale", $LanguageText)
 
 						; Windows 11 requirements bypass
 						If GUICtrlRead($Bypass11Checkbox) = $GUI_CHECKED And $IsPE And @OSVersion = "WIN_11" Then _Win11Bypass()
 
 						; (Legacy) Replace instances of Windows 11 if running a Windows 10 ISO
+						; Get the XML string for final text-based replacements
+						Local $sAutounattendData = _XMLToString($oXML)
 						If @OSVersion = "WIN_10" Then $sAutounattendData = StringReplace($sAutounattendData, "Windows 11", "Windows 10")
 						; ================ End modifications to autounattend.xml ================
 
+						$oXML = 0 ; Release COM object
 
+						; Save modifications to autounattend.xml in new location
+						$AutounattendPath = @TempDir & "\autounattend.xml"
+						_Log("$AutounattendPath=" & $AutounattendPath)
+						$hAutounattend = FileOpen($AutounattendPath, $FO_OVERWRITE + $FO_UTF8_NOBOM)
+						FileWrite($hAutounattend, $sAutounattendData)
+						_Log("FileWrite @error=" & @error)
+						FileClose($hAutounattend)
+					
+						; If PreviewXMLCheckbox checked show the autounattend.xml file using notepad and present a confirmation dialog
+						If GUICtrlRead($PreviewXMLCheckbox) = $GUI_CHECKED Then
+							_Log("Preview AutoUnattend.xml selected")
+							ShellExecute("notepad.exe", $AutounattendPath)
+							If MsgBox($MB_YESNO + $MB_ICONQUESTION, "Confirm - " & $TitleShort, "Proceed with installation?") <> $IDYES Then
+								GUISetState(@SW_ENABLE, $GUIAutoInstall)
+								WinActivate($GUIMain)
+								ContinueLoop
+							EndIf
+						EndIf
+
+						; Start setup
 						If $IsPE Then
-							; Save modifications to autounattend.xml in new location
-							$AutounattendPath = @TempDir & "\autounattend.xml"
-							_Log("$AutounattendPath=" & $AutounattendPath)
-							$hAutounattend = FileOpen($AutounattendPath, $FO_OVERWRITE)
-							FileWrite($hAutounattend, $sAutounattendData)
-							_Log("FileWrite @error=" & @error)
-							FileClose($hAutounattend)
-
+							_Log("Starting setup.exe with autounattend.xml")
 							$hSetup = _RunFile($SystemDrive & "sources\setup.exe", "/noreboot /unattend:" & $AutounattendPath)
 
 							$NormalInstallWait = False
@@ -596,7 +617,7 @@ While 1
 						EndIf
 
 						GUISetState(@SW_ENABLE, $GUIMain)
-						GUIDelete($AutoInstallForm)
+						GUIDelete($GUIAutoInstall)
 						ContinueLoop 2
 				EndSwitch
 			WEnd
@@ -747,7 +768,7 @@ EndFunc   ;==>_WM_SIZE
 
 ; Update installer GUI items based on WIM contents
 Func _UpdateWIMDependents()
-	Global $WIMInput, $aDefaultEdition
+	Global $WIMInput, $aDefaultEdition, $sAutounattendData
 	Local $aDefaultEditionCurrent = $aDefaultEdition
 
 	; Get editions from wim/esd
@@ -761,11 +782,15 @@ Func _UpdateWIMDependents()
 		GUICtrlSetData($EditionCombo, "")
 	EndIf
 
-	; Preselect edition
-	; <InstallFrom>*<Value>?</Value>*</InstallFrom>
-	Local $aMatch = StringRegExp($sAutounattendData, '(?si)<InstallFrom>.*<Value>(.*?)</Value>.*</InstallFrom>', $STR_REGEXPARRAYMATCH)
-	If Not @error And $aMatch[0] <> "" Then
-		_ArrayInsert($aDefaultEditionCurrent, 0, $aMatch[0])
+	; Preselect edition from XML using Microsoft.XMLDOM
+	Local $oXML = _XMLLoad($sAutounattendData, False)
+	If IsObj($oXML) Then
+		Local $sEditionValue = _XMLGetValue($oXML, "//InstallFrom/MetaData/Value")
+		If $sEditionValue <> "" Then
+			_ArrayInsert($aDefaultEditionCurrent, 0, $sEditionValue)
+			_Log("_UpdateWIMDependents: Edition from XML = " & $sEditionValue)
+		EndIf
+		$oXML = 0 ; Release COM object
 	EndIf
 
 	$ArraySize = UBound($aDefaultEditionCurrent) -1
@@ -777,17 +802,28 @@ Func _UpdateWIMDependents()
 
 EndFunc   ;==>_UpdateWIMDependents
 
-; Update installer GUI items based on XML contents
+; Update installer GUI items based on XML contents using Microsoft.XMLDOM
 Func _UpdateXMLDependents($sXML)
-	Local $aMatch
+	_Log("_UpdateXMLDependents: Parsing XML")
 
-	; WIM path
-	; <InstallFrom>*<Path>?</Path>*</InstallFrom>
-	$aMatch = StringRegExp($sAutounattendData, '(?si)<InstallFrom>.*<Path>(.*?)</Path>.*</InstallFrom>', $STR_REGEXPARRAYMATCH)
-	If Not @error And $aMatch[0] <> "" Then
-		$aMatch[0] = StringStripWS($aMatch[0], 1 + 2)
-		GUICtrlSetData($WIMInput, $aMatch[0])
+	; Load XML using Microsoft.XMLDOM
+	Local $oXML = _XMLLoad($sXML, False)
+	If Not IsObj($oXML) Then
+		_Log("_UpdateXMLDependents: Failed to parse XML, using defaults")
+		GUICtrlSetData($ComputerNameInput, $DefaultComputerName)
+		GUICtrlSetData($AdminPasswordInput, $DefaultAdminPassword)
+		GUICtrlSetData($LanguageInput, $DefaultLanguage)
+		Return
+	EndIf
+
+	; WIM path - //InstallFrom/Path
+	Local $sWIMPath = _XMLGetValue($oXML, "//InstallFrom/Path")
+	If $sWIMPath <> "" Then
+		$sWIMPath = StringStripWS($sWIMPath, 1 + 2)
+		GUICtrlSetData($WIMInput, $sWIMPath)
+		_Log("_UpdateXMLDependents: WIM Path from XML = " & $sWIMPath)
 	Else
+		; Search drives for install.wim or install.esd
 		Local $aDrivesLetters = DriveGetDrive($DT_ALL)
 		For $i = 1 To $aDrivesLetters[0]
 			$aDrivesLetters[$i] = StringUpper($aDrivesLetters[$i])
@@ -806,40 +842,42 @@ Func _UpdateXMLDependents($sXML)
 	EndIf
 	_UpdateWIMDependents()
 
-	; Computer name
-	; <ComputerName>?</ComputerName>
-	$aMatch = StringRegExp($sAutounattendData, '(?i)<ComputerName>(.*?)</ComputerName>', $STR_REGEXPARRAYMATCH)
-	If Not @error And $aMatch[0] <> "" And $aMatch[0] <> "*" Then
-		GUICtrlSetData($ComputerNameInput, $aMatch[0])
+	; Computer name - //ComputerName
+	Local $sComputerName = _XMLGetValue($oXML, "//ComputerName")
+	If $sComputerName <> "" And $sComputerName <> "*" Then
+		GUICtrlSetData($ComputerNameInput, $sComputerName)
+		_Log("_UpdateXMLDependents: ComputerName from XML = " & $sComputerName)
 	Else
 		GUICtrlSetData($ComputerNameInput, $DefaultComputerName)
 	EndIf
 
-	; Administrator password
-	; <AdministratorPassword>*<Value>?</Value>*</AdministratorPassword>
-	$aMatch = StringRegExp($sAutounattendData, '(?si)<AdministratorPassword>.*<Value>(.*?)</Value>.*</AdministratorPassword>', $STR_REGEXPARRAYMATCH)
-	If Not @error And $aMatch[0] <> "" Then
-		GUICtrlSetData($AdminPasswordInput, $aMatch[0])
+	; Administrator password - //AdministratorPassword/Value
+	Local $sAdminPassword = _XMLGetValue($oXML, "//AdministratorPassword/Value")
+	If $sAdminPassword <> "" Then
+		GUICtrlSetData($AdminPasswordInput, $sAdminPassword)
+		_Log("_UpdateXMLDependents: AdminPassword from XML (hidden)")
 	Else
 		GUICtrlSetData($AdminPasswordInput, $DefaultAdminPassword)
 	EndIf
 
-	; Select timezone
-	; <TimeZone>?</TimeZone>
-	$aMatch = StringRegExp($sAutounattendData, '(?i)<TimeZone>(.*?)</TimeZone>', $STR_REGEXPARRAYMATCH)
-	If Not @error Then
-		$SearchIndex = _ArraySearch($aTimezones, $aMatch[0], Default, Default, 0, 0, 1, 1)
+	; Timezone - //TimeZone
+	Local $sTimeZone = _XMLGetValue($oXML, "//TimeZone")
+	If $sTimeZone <> "" Then
+		$SearchIndex = _ArraySearch($aTimezones, $sTimeZone, Default, Default, 0, 0, 1, 1)
 		_GUICtrlComboBox_SetCurSel($TimezoneCombo, $SearchIndex)
+		_Log("_UpdateXMLDependents: TimeZone from XML = " & $sTimeZone)
 	EndIf
 
-	; Get language
-	; <SystemLocale>?</SystemLocale>
-	$aMatch = StringRegExp($sAutounattendData, '(?i)<SystemLocale>(.*?)</SystemLocale>', $STR_REGEXPARRAYMATCH)
-	If Not @error And $aMatch[0] <> "" Then
-		GUICtrlSetData($LanguageInput, $aMatch[0])
+	; Language - //SystemLocale
+	Local $sLanguage = _XMLGetValue($oXML, "//SystemLocale")
+	If $sLanguage <> "" Then
+		GUICtrlSetData($LanguageInput, $sLanguage)
+		_Log("_UpdateXMLDependents: Language from XML = " & $sLanguage)
 	Else
 		GUICtrlSetData($LanguageInput, $DefaultLanguage)
 	EndIf
+
+	$oXML = 0 ; Release COM object
 EndFunc   ;==>_UpdateXMLDependents
 
 ; Get indexes from WIM or ESD
