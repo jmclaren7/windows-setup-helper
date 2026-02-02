@@ -41,10 +41,6 @@ Global $BootWIMMounted = False
 ; Start Program
 ;===============================================================================
 
-
-; !!!!!!  This build script is experimental !!!!!!!!
-MsgBox(48, "Warning - " & $TitleFull, "This build script is experimental and incomplete" & @CRLF & @CRLF & "Use with caution and verify all specified paths are safe to work with.")
-
 ; Change working directory to script location
 FileChangeDir(@ScriptDir)
 
@@ -61,9 +57,11 @@ OnAutoItExitRegister("_Exit")
 
 ; Settings and GUI
 _LoadSettings()
-Sleep(1000)
 _CreateGUI()
 GUISetState(@SW_SHOW, $GUIMain)
+
+; !!!!!!  This build script is experimental !!!!!!!!
+MsgBox(48, "Warning - " & $TitleFull, "This build script is experimental and incomplete" & @CRLF & @CRLF & "Use with caution and verify all specified paths are safe to work with.", 0, $GUIMain)
 
 ; Periodic GUI updates
 Global $AdlibTimer = 1000
@@ -358,6 +356,7 @@ Func _CreateInputRow($Label, $Left, $Top, $Width, $Value = "", $Tip= "", $Button
     Local $mControls[]
 
     $mControls["Label"] = GUICtrlCreateLabel($Label, $Left, $Top + 3, 100, 17)
+	GUICtrlSetTip(-1, $Tip)
 
     $mControls["Alert"]  = GUICtrlCreateLabel("", $Left + 74, $Top + 2, 4, 17)
     GUICtrlSetBkColor(-1, 0xFF0000)
@@ -386,7 +385,7 @@ Func _CreateStepRow($Label, $Left, $Top, $ChkWidth, $Checked = True, $Tip = "", 
     GUICtrlSetTip(-1, $Tip)
 
     If $ButtonText <> "" Then
-        $mControls["Button"] = GUICtrlCreateButton($ButtonText, $Left + $ChkWidth, $Top - 2, $ButtonWidth, 22)
+        $mControls["Button"] = GUICtrlCreateButton($ButtonText, $Left + $ChkWidth + 5, $Top - 2, $ButtonWidth, 22)
         GUICtrlSetTip(-1, $Tip)
     EndIf
 
@@ -535,10 +534,11 @@ Func _GUIChecks()
         GUICtrlSetState($ToolGetInfoButton, $GUI_ENABLE)
         GUICtrlSetState($mMountWIM["Button"], $GUI_ENABLE)
     ElseIf Not $BootWIMExists And Not $Alert Then
+		GUICtrlSetBkColor($mBootWIMPath["Alert"], 0xFFFF00) ; Yellow
         GUICtrlSetState($mBootWIMPath["Alert"], $GUI_SHOW)
         GUICtrlSetState($ToolGetInfoButton, $GUI_DISABLE)
         GUICtrlSetState($mMountWIM["Button"], $GUI_DISABLE)
-    EndIf  
+    EndIf
 
     ; Does ADK exist?
     $Alert = BitAND(GUICtrlGetState($mADKPath["Alert"]), $GUI_SHOW)
@@ -555,17 +555,17 @@ Func _GUIChecks()
 
     ; AddBootFilesPath
     $Alert = BitAND(GUICtrlGetState($mAddBootFilesPath["Alert"]), $GUI_SHOW)
-    If $AddBootFilesExists And $Alert Then
+    If ($AddBootFilesExists Or $AddBootFilesPath = "") And $Alert Then
         GUICtrlSetState($mAddBootFilesPath["Alert"], $GUI_HIDE)
-    ElseIf Not $AddBootFilesExists And Not $Alert Then
+    ElseIf Not $AddBootFilesExists And $AddBootFilesPath <> "" And Not $Alert Then
         GUICtrlSetState($mAddBootFilesPath["Alert"], $GUI_SHOW)
     EndIf
 
     ; AddISOFilesPath
     $Alert = BitAND(GUICtrlGetState($mAddISOFilesPath["Alert"]), $GUI_SHOW)
-    If $AddISOFilesExists And $Alert Then
+    If ($AddISOFilesExists Or $AddISOFilesPath = "") And $Alert Then
         GUICtrlSetState($mAddISOFilesPath["Alert"], $GUI_HIDE)  
-    ElseIf Not $AddISOFilesExists And Not $Alert Then
+    ElseIf Not $AddISOFilesExists And $AddISOFilesPath <> "" And Not $Alert Then
         GUICtrlSetState($mAddISOFilesPath["Alert"], $GUI_SHOW)
     EndIf
 
@@ -620,8 +620,8 @@ Func _LoadSettings()
         EndIf
     EndIf
 
-    Global $AddBootFilesPath = IniRead($ConfigFile, "Paths", "AddBootFilesPath", @ScriptDir & "\Additional Boot.wim Files")
-	Global $AddISOFilesPath = IniRead($ConfigFile, "Paths", "AddISOFilesPath", @ScriptDir & "\Additional ISO Files")
+    Global $AddBootFilesPath = IniRead($ConfigFile, "Paths", "AddBootFilesPath", "")
+	Global $AddISOFilesPath = IniRead($ConfigFile, "Paths", "AddISOFilesPath", "")
 	Global $OutputISOPath = IniRead($ConfigFile, "Paths", "OutputISOPath", "Windows11-Output.iso")
 
 EndFunc   ;==>_LoadSettings
@@ -655,7 +655,7 @@ Func _RunCmd($sCommand, $sDescription = "")
     WinSetOnTop($hConsoleWnd, "", 0)
 
     _Log("Command: " & $sCommand)
-	Local $iPID = Run(@ComSpec & ' /c "' & $sCommand & '"', @ScriptDir, @SW_HIDE);, $STDERR_MERGED)
+	Local $iPID = Run(@ComSpec & ' /c "' & $sCommand & '"', @ScriptDir, @SW_HIDE, $STDERR_MERGED)
 	If @error Then
 		_Log("Error: Failed to run command")
 		Return SetError(1, 0, "")
@@ -677,7 +677,9 @@ Func _RunCmd($sCommand, $sDescription = "")
 
 	; Log output
 	If StringStripWS($sOutput, 3) <> "" Then
-		_Log(StringStripWS($sOutput, 3))
+		_Console_SetTextAttribute(-1, BitOR($FOREGROUND_BLUE, $FOREGROUND_GREEN, $FOREGROUND_INTENSITY)) ; Cyan
+		_Log("Command Output:" & @CRLF & StringStripWS($sOutput, 3))
+		_Console_SetTextAttribute(-1, BitOR($FOREGROUND_RED, $FOREGROUND_GREEN, $FOREGROUND_BLUE)) ; Reset to white
 	EndIf
 
 	If $exitCode <> 0 Then
@@ -969,7 +971,10 @@ Func _DisableDPIScaling()
 
 	; Load registry hive
 	_RunCmd('reg load HKLM\_WinPE_Default "' & $regHive & '"', "Loading registry hive")
-	If @error Then Return False
+	If @error Then 
+		_RunCmd('reg unload HKLM\_WinPE_Default', "Unloading registry hive")
+		Return False
+	EndIf
 
 	; Add registry keys
 	_RunCmd('reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v LogPixels /t REG_DWORD /d 96 /f', "Setting LogPixels")
@@ -1110,6 +1115,7 @@ Func _UnmountDiscard()
 
 	_RunCmd('Dism /Unmount-Image /MountDir:"' & $MountPath & '" /Discard', "Discarding changes")
 	_RunCmd('Dism /Cleanup-Mountpoints', "Cleaning up mount points")
+	; DISM /Cleanup-Wim
 
 	DirRemove($MountPath, 1)
 	$BootWIMMounted = False
