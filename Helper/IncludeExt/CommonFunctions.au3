@@ -17,18 +17,194 @@
 #include <WinAPIShPath.au3>
 #include <WinAPISysWin.au3>
 #include <WindowsConstants.au3>
+
 ;===============================================================================
+; Function Name:    _GetVersion
+; Description:		Gets the version number of a file
+; Call With:		_FileGetVersion($File, $Segment)
+; Parameter(s): 	$File - [optional] Path to the file (default is the script's path)
+;					$Segment - [optional] Segment of the version to return (1 = Major, 2 = Minor, 3 = Patch, 4 = Build - default is 4)
+; Return Value(s):  On Success - Version segment as a string
+; 					On Failure - "" (Error code in @error)
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		02/24/2026  --  v1.1
+;===============================================================================
+Func _FileGetVersion($File = Default, $Segment = Default)
+	If $File = Default Then $File = @ScriptFullPath
+	If $Segment = Default Then $Segment = 4
+
+	Local $Version = FileGetVersion($File)
+	If @error Then Return SetError(1, 0, "")
+		
+	Local $aVersion = StringSplit($Version,".")
+	If @error Then Return SetError(2, 0, $Version)
+
+	Return $aVersion[$Segment]
+
+EndFunc
+;===============================================================================
+; Function Name:    _FileSigned
+; Description:		Verifies a file's digital signature
+; Call With:		_FileSigned($File)
+; Parameter(s): 	$File - Path to the file to verify
+; Return Value(s):  On Success - Array containing the status, subject, and thumbprint
+; 					On Failure - 0 (Error code in @error)
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		11/02/2025  --  v1.0
+;===============================================================================
+Func _FileSigned($File = Default)
+	If IsObj($File) And IsInt($File.scriptline) Then
+		Return SetError(1, $File.scriptline, 0)
+	ElseIf $File = Default Or $File = "" Then
+		Return SetError(2, 0, 0)
+	ElseIf Not FileExists($File) Then
+		Return SetError(3, 0, 0)
+	EndIf
+
+	Local $Run = "powershell.exe -nologo -noprofile -command (Get-AuthenticodeSignature -FilePath '" & $File & "') | Select Status,{$_.SignerCertificate.Subject},{$_.SignerCertificate.Thumbprint} | ConvertTo-XML -As String -NoTypeInformation"
+	Local $Result = _RunWait($Run)
+	;_Log($Result)
+
+	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_FileSigned")
+
+	Local $oXML = ObjCreate("Microsoft.XMLDOM")
+	If @error Then
+		Return SetError(4, 0, 0)
+	EndIf
+
+	$oXML.loadXML($Result)
+	If $oXML.parseError.errorCode <> 0 Then
+		;"XML Parse Error? Check this: $oXML.parseError.reason
+		Return SetError(5, 0, 0)
+	EndIf
+	;_Log($oXML.xml)
+
+	Local $aResult[3]
+	$aResult[0] = $oXML.selectSingleNode("/Objects/Object/Property[@Name='Status']").text
+	$aResult[1] = $oXML.selectSingleNode("/Objects/Object/Property[@Name='$_.SignerCertificate.Subject']").text
+	$aResult[2] = $oXML.selectSingleNode("/Objects/Object/Property[@Name='$_.SignerCertificate.Thumbprint']").text
+
+
+	If $aResult[0] = "Valid" Then
+		Return SetError(0, 0, $aResult)
+	Else
+		Return SetError(6, 0, 0)
+	EndIf
+EndFunc
+;===============================================================================
+; Function Name:    _HideDrive
+; Description:		Hide or show a drive from file explorer
+; Call With:		_HideDrive($DriveLetter, $Hide = True)
+; Parameter(s): 	$DriveLetter - Drive letter to hide or show
+;					$Hide - [optional] True to hide, False to show
+; Return Value(s):  None
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		11/02/2025  --  v1.0
+;===============================================================================
+Func _HideDrive($DriveLetter, $Hide = Default)
+	If $Hide = Default Then $Hide = True
+
+    Local $DriveNumber = Asc(StringUpper($DriveLetter)) - Asc("A")
+	Local $ThisMask = BitShift(1, -$DriveNumber)
+
+	; Get the current value of the NoDrives registry key
+	Local $CurrentMask = RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDrives")
+	If @error Then $CurrentMask = 0
+
+	; Calculate the new value based on if we should hide or show the drive
+	If $Hide Then
+		$ThisMask = $CurrentMask + $ThisMask
+	Else
+		$ThisMask = $CurrentMask - $ThisMask
+	EndIf
+
+	; Write the new value to the registry
+	Local $RegWrite = RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDrives", "REG_DWORD", $ThisMask)
+	If @error Then
+		_Log("Error: Could not hide drive " & $DriveLetter & ": in Explorer. Mask: " & $ThisMask & " Error: " & @error & " Result: " & $RegWrite)
+	Else
+		_Log("Success: Hid drive " & $DriveLetter & ": in Explorer.")
+	EndIf
+EndFunc
+;===============================================================================
+; Function Name:    _TextBox
+; Description:		Creates a text box with a label and OK/Cancel buttons
+; Call With:		_TextBox($Title, $Label, $Text = "", $Width = Default, $Height = Default, $Left = Default, $Top = Default, $Timeout = 0, $HWND = Default)
+; Parameter(s): 	$Title - Title of the GUI
+;					$Label - Label of the text box
+;					$Text - Text to display in the text box
+;					$Width - Width of the GUI
+;					$Height - Height of the GUI
+;					$Left - Left position of the GUI
+;					$Top - Top position of the GUI
+;					$Timeout - Timeout in seconds
+;					$HWND - Handle of the parent window
+; Return Value(s):  On Success - Text from the text box
+; 					On Failure - 0
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		11/01/2025  --  v1.0
+;===============================================================================
+Func _TextBox($Title, $Label, $Text = "", $Width = Default, $Height = Default, $Left = Default, $Top = Default, $Timeout = 0, $HWND = Default)
+	If $Width = Default Then $Width = 300
+	If $Height = Default Then $Height = 200
+	If $Left = Default Then $Left = -1
+	If $Top = Default Then $Top = -1
+	If $Timeout = Default Then $Timeout = 0
+
+	Local $hGUI = GUICreate($Title, $Width, $Height, $Left, $Top, BitOR($GUI_SS_DEFAULT_GUI,$WS_SIZEBOX,$WS_THICKFRAME), Default, $HWND)
+	Local $hLabel = GUICtrlCreateLabel($Label, 10, 10)
+	GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKSIZE)
+	Local $hEdit = GUICtrlCreateEdit($Text, 10, 30, $Width - 20, $Height - 70, BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
+	GUICtrlSetResizing(-1, $GUI_DOCKBORDERS)
+	Local $hOK = GUICtrlCreateButton("OK", $Width - 170, $Height - 32, 75, 25)
+	GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKSIZE)
+	Local $hCancel = GUICtrlCreateButton("Cancel", $Width - 85, $Height - 32, 75, 25)
+	GUICtrlSetResizing(-1, $GUI_DOCKRIGHT + $GUI_DOCKBOTTOM + $GUI_DOCKSIZE)
+	GUICtrlSetCursor($hEdit, -1)
+	GUISetState(@SW_SHOW)
+	ControlSend($hGUI, "", $hEdit, "{LEFT}")
+	While 1
+		Local $GUIEvent = GUIGetMsg()
+		Switch $GUIEvent
+			Case $GUI_EVENT_CLOSE, $hCancel
+				GUIDelete($hGUI)
+				Return SetError(1, 0, 0)
+			Case $hOK
+				Local $ReturnText = GUICtrlRead($hEdit)
+				GUIDelete($hGUI)
+				Return SetError(0, 0, $ReturnText)
+		EndSwitch
+		Sleep(10)
+	WEnd
+EndFunc
+; #FUNCTION# ====================================================================================================================
+; Name ..........: _Error
+; Description ...: Call _log and MsgBox in one command
+; Syntax ........: _Error($Message[, $iLevel = Default[, $MessageEx = ""]])
+; Parameters ....: $Title               - Window title
+;                  $Message             - Message for MsgBox and _Log.
+;                  $iLevel              - [optional]
+;                  $MessageEx           - [optional] an extra message that will only show in the log.
+; Return values .: MsgBox return value
+; Author ........: JohnMC - JohnsCS.com
+; Modified ......:
+; ===============================================================================================================================
+Func _Error($Title, $Message, $iLevel = Default, $MessageEx = "")
+	If $MessageEx <> "" Then $MessageEx = " - " & $MessageEx
+	_Log($Message & $MessageEx, $iLevel)
+	Return MsgBox(16, $Title, $Message)
+EndFunc
 
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _RandomString
-; Description ...: Generates a random string of numbers and characters
+; Description ...: Generates a random string of characters (numbers and letters by default)
 ; Syntax ........: _RandomString($Min, $Max[, $Chars = Default])
-; Parameters ....: $Min                 - Minimum string length.
-;                  $Max                 - Maximum string length.
-;                  $Chars               - [optional] String of characters to choose from. Default is all numbers and letters (upper and lower).
-; Return values .: A random string string
+; Parameters ....: $Min                 - Minimum string length
+;                  $Max                 - Maximum string length
+;                  $Chars               - [optional] String of characters to choose from. Default is all numbers and letters (upper and lower)
+; Return values .: A random string of characters
 ; Author ........: JohnMC - JohnsCS.com
-; Modified ......: 05/11/2024
+; Date/Version ..: 5/11/2024  --  v1.0
 ; ===============================================================================================================================
 Func _RandomString($iMin, $iMax, $sChars = Default)
 	If $sChars = Default Then $sChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -46,7 +222,7 @@ EndFunc   ;==>_RandomString
 ; Description ...: Creates a list select box
 ; Syntax ........: _ListSelect()
 ; Parameters ....:
-; Return values .: The text of the selected item, @extended contains the index of the slected item
+; Return values .: The text of the selected item, @extended contains the index of the selected item
 ; Author ........: JohnMC - JohnsCS.com
 ; Modified ......: 04/24/2024
 ; ===============================================================================================================================
@@ -522,221 +698,74 @@ Func _INetSmtpMailCom($sSMTPServer, $sFromName, $sFromAddress, $sToAddress, $sSu
 EndFunc   ;==>_INetSmtpMailCom
 
 ; #FUNCTION# ====================================================================================================================
-; Name ..........: _StringExtract
-; Description ...:
-; Syntax ........: _StringExtract($sString, $sStartSearch, $sEndSearch[, $iStartTrim = 0[, $iEndTrim = 0]])
-; Parameters ....: $sString             - a string value.
-;                  $sStartSearch        - a string value.
-;                  $sEndSearch          - a string value.
-;                  $iStartTrim          - [optional] an integer value. Default is 0.
-;                  $iEndTrim            - [optional] an integer value. Default is 0.
-; Return values .: None
-; Author ........: Your Name
-; Modified ......:
-; Remarks .......:
-; Related .......:
-; Link ..........:
-; Example .......: No
+; Name ...........: _StringExtract
+; Description ....: Extract a string between two search strings
+; Syntax .........: _StringExtract($sString, $sStartSearch, $sEndSearch[, $iStartTrim = 0[, $iEndTrim = 0]])
+; Parameters .....: $sString             - String to extract from
+;                   $sStartSearch        - Start search string
+;                   $sEndSearch          - End search string
+;                   $iStartTrim          - [optional] Start trim characters
+;                   $iEndTrim            - [optional] End trim characters
+; Return values ..: Extracted string
+; Author .........: JohnMC - JohnsCS.com
+; Date/Version ...: Unknown  --  v1.0
+;					11/01/2025  --  v1.1 Refactor, local variables
 ; ===============================================================================================================================
 Func _StringExtract($sString, $sStartSearch, $sEndSearch, $iStartTrim = 0, $iEndTrim = 0)
-	$iStartPos = StringInStr($sString, $sStartSearch)
+	Local $iStartPos = StringInStr($sString, $sStartSearch)
 	If Not $iStartPos Then Return SetError(1, 0, 0)
 	$iStartPos = $iStartPos + StringLen($sStartSearch)
 
-	$iCount = StringInStr($sString, $sEndSearch, 0, 1, $iStartPos)
+	Local $iCount = StringInStr($sString, $sEndSearch, 0, 1, $iStartPos)
 	If Not $iCount Then Return SetError(2, 0, 0)
 	$iCount = $iCount - $iStartPos
 
-	$sNewString = StringMid($sString, $iStartPos + $iStartTrim, $iCount + $iEndTrim - $iStartTrim)
-
-	Return $sNewString
+	Return StringMid($sString, $iStartPos + $iStartTrim, $iCount + $iEndTrim - $iStartTrim)
 
 EndFunc   ;==>_StringExtract
 
 ;===============================================================================
-;
-; Description:      GetUnixTimeStamp - Get time as Unix timestamp value for a specified date
-;                   to get the current time stamp call GetUnixTimeStamp with no parameters
-;                   beware the current time stamp has system UTC included to get timestamp with UTC + 0
-;                   substract your UTC , exemple your UTC is +2 use GetUnixTimeStamp() - 2*3600
-; Parameter(s):     Requierd : None
-;                   Optional :
-;                               - $year => Year ex : 1970 to 2038
-;                               - $mon  => Month ex : 1 to 12
-;                               - $days => Day ex : 1 to Max Day OF Month
-;                               - $hour => Hour ex : 0 to 23
-;                               - $min  => Minutes ex : 1 to 60
-;                               - $sec  => Seconds ex : 1 to 60
-; Return Value(s):  On Success - Returns Unix timestamp
-;                   On Failure - No Failure if valid parameters are valid
-; Author(s):        azrael-sub7
-; User Calltip:     GetUnixTimeStamp() (required: <_AzUnixTime.au3>)
-;
-;===============================================================================
-Func _GetUnixTimeStamp($year = 0, $mon = 0, $days = 0, $hour = 0, $Min = 0, $sec = 0)
-	If $year = 0 Then $year = Number(@YEAR)
-	If $mon = 0 Then $mon = Number(@MON)
-	If $days = 0 Then $days = Number(@MDAY)
-	If $hour = 0 Then $hour = Number(@HOUR)
-	If $Min = 0 Then $Min = Number(@MIN)
-	If $sec = 0 Then $sec = Number(@SEC)
-	Local $NormalYears = 0
-	Local $LeepYears = 0
-	For $i = 1970 To $year - 1 Step +1
-		If _BoolLeapYear($i) = True Then
-			$LeepYears = $LeepYears + 1
-		Else
-			$NormalYears = $NormalYears + 1
-		EndIf
-	Next
-	Local $yearNum = (366 * $LeepYears * 24 * 3600) + (365 * $NormalYears * 24 * 3600)
-	Local $MonNum = 0
-	For $i = 1 To $mon - 1 Step +1
-		$MonNum = $MonNum + _LastDayInMonth($year, $i)
-	Next
-	Return $yearNum + ($MonNum * 24 * 3600) + (($days - 1) * 24 * 3600) + $hour * 3600 + $Min * 60 + $sec
-EndFunc   ;==>_GetUnixTimeStamp
-
-;===============================================================================
-;
-; Description:      UnixTimeStampToTime - Converts UnixTime to Date
-; Parameter(s):     Requierd : $UnixTimeStamp => UnixTime ex : 1102141493
-;                   Optional : None
-; Return Value(s):  On Success - Returns Array
-;                               - $Array[0] => Year ex : 1970 to 2038
-;                               - $Array[1] => Month ex : 1 to 12
-;                               - $Array[2] => Day ex : 1 to Max Day OF Month
-;                               - $Array[3] => Hour ex : 0 to 23
-;                               - $Array[4] => Minutes ex : 1 to 60
-;                               - $Array[5] => Seconds ex : 1 to 60
-;                   On Failure  - No Failure if valid parameter is a valid UnixTimeStamp
-; Author(s):        azrael-sub7
-; User Calltip:     UnixTimeStampToTime() (required: <_AzUnixTime.au3>)
-;
-;===============================================================================
-Func _UnixTimeStampToTime($UnixTimeStamp)
-	Dim $pTime[6]
-	$pTime[0] = Floor($UnixTimeStamp / 31436000) + 1970 ; pTYear
-
-	Local $pLeap = Floor(($pTime[0] - 1969) / 4)
-	Local $pDays = Floor($UnixTimeStamp / 86400)
-	$pDays = $pDays - $pLeap
-	$pDaysSnEp = Mod($pDays, 365)
-
-	$pTime[1] = 1 ;$pTMon
-	$pTime[2] = $pDaysSnEp ;$pTDays
-
-	If $pTime[2] > 59 And _BoolLeapYear($pTime[0]) = True Then $pTime[2] += 1
-
-	While 1
-		If ($pTime[2] > 31) Then
-			$pTime[2] = $pTime[2] - _LastDayInMonth($pTime[1])
-			$pTime[1] = $pTime[1] + 1
-		Else
-			ExitLoop
-		EndIf
-	WEnd
-
-	Local $pSec = $UnixTimeStamp - ($pDays + $pLeap) * 86400
-
-	$pTime[3] = Floor($pSec / 3600) ; $pTHour
-	$pTime[4] = Floor(($pSec - ($pTime[3] * 3600)) / 60) ;$pTmin
-	$pTime[5] = ($pSec - ($pTime[3] * 3600)) - ($pTime[4] * 60) ; $pTSec
-
-	Return $pTime
-EndFunc   ;==>_UnixTimeStampToTime
-
-;===============================================================================
-;
-; Description:      BoolLeapYear - Check if Year is Leap Year
-; Parameter(s):     Requierd : $year => Year to check ex : 2011
-;                   Optional : None
-; Return Value(s):  True if $year is Leap Year else False
-; Author(s):        azrael-sub7
-; User Calltip:     BoolLeapYear() (required: <_AzUnixTime.au3>)
-; Credits :         Wikipedia Leap Year
-;===============================================================================
-Func _BoolLeapYear($year)
-	If Mod($year, 400) = 0 Then
-		Return True ;is_leap_year
-	ElseIf Mod($year, 100) = 0 Then
-		Return False ;is_not_leap_y
-	ElseIf Mod($year, 4) = 0 Then
-		Return True ;is_leap_year
-	Else
-		Return False ;is_not_leap_y
-	EndIf
-EndFunc   ;==>_BoolLeapYear
-
-;===============================================================================
-;
-; Description:      _LastDayInMonth
-;                   if the function is called with no parameters it returns maximum days for current system set month
-;                   else it returns maximum days for the specified month in specified year
-; Parameter(s):     Requierd : None
-;                   Optional :
-;                               - $year : year : 1970 to 2038
-;                               - $mon : month : 1 to 12
-; Return Value(s):
-; Author(s):        azrael-sub7
-; User Calltip:
-;===============================================================================
-Func _LastDayInMonth($year = @YEAR, $mon = @MON)
-	If Number($mon) = 2 Then
-		If _BoolLeapYear($year) = True Then
-			Return 29 ;is_leap_year
-		Else
-			Return 28 ;is_not_leap_y
-		EndIf
-	Else
-		If $mon < 8 Then
-			If Mod($mon, 2) = 0 Then
-				Return 30
-			Else
-				Return 31
-			EndIf
-		Else
-			If Mod($mon, 2) = 1 Then
-				Return 30
-			Else
-				Return 31
-			EndIf
-		EndIf
-	EndIf
-EndFunc   ;==>_LastDayInMonth
-
-;===============================================================================
 ; Function Name:    __StringProper
-; Description:		Improved version of _StringProper, wont capitalize after apostrophes
+; Description:		Modified version of _StringProper to lowercase after common contractions
 ; Call With:		__StringProper($s_String)
-; Parameter(s):
-; Return Value(s):  On Success -
-; 					On Failure -
-; Author(s):        JohnMC - JohnsCS.com
+; Parameter(s): 	$sString - String to properly capitalize
+; Return Value(s):  On Success - Properly capitalized string
+; 					On Failure - Empty string
+; Author(s):        Jos van der Zande <jdeb at autoitscript dot com>
+; 					JohnMC - JohnsCS.com
 ; Date/Version:		10/15/2014  --  v1.0
+;					11/01/2025  --  v1.1 Refactor, match on next two characters
 ;===============================================================================
-Func __StringProper($s_String)
-	Local $iX = 0
-	Local $CapNext = 1
-	Local $s_nStr = ""
-	Local $s_CurChar
-	For $iX = 1 To StringLen($s_String)
-		$s_CurChar = StringMid($s_String, $iX, 1)
+Func __StringProper($sString)
+	Local $bCapNext = True, $sChr = "", $sReturn = ""
+	Local $sPattern = '[a-zA-ZÃ€-Ã¿Å¡Å“Å¾Å¸]'
+	Local $iStringLength = StringLen($sString)
+	For $i = 1 To $iStringLength
+		$sChr = StringMid($sString, $i, 1)
+		$sNextTwo = StringMid($sString, $i + 1, 2)
 		Select
-			Case $CapNext = 1
-				If StringRegExp($s_CurChar, '[a-zA-ZÀ-ÿšœžŸ]') Then
-					$s_CurChar = StringUpper($s_CurChar)
-					$CapNext = 0
+			Case $bCapNext = True
+				If StringRegExp($sChr, $sPattern) Then
+					$sChr = StringUpper($sChr)
+					$bCapNext = False
 				EndIf
-			Case Not StringRegExp($s_CurChar, '[a-zA-ZÀ-ÿšœžŸ]') And $s_CurChar <> "'"
-				$CapNext = 1
+			Case $sChr = "'"
+				Switch $sNextTwo
+					Case "s ", "t ", "m ", "d ", "re ", "ve", "ll"
+						$sChr = StringUpper($sChr)
+						$bCapNext = False
+					Case Else
+						$bCapNext = True
+				EndSwitch
+			Case Not StringRegExp($sChr, $sPattern)
+				$bCapNext = True
 			Case Else
-				$s_CurChar = StringLower($s_CurChar)
+				$sChr = StringLower($sChr)
 		EndSelect
-		$s_nStr &= $s_CurChar
+		$sReturn &= $sChr
 	Next
-	Return $s_nStr
-EndFunc   ;==>__StringProper
+	Return $sReturn
+EndFunc   ;==>_StringProper
 
 ;===============================================================================
 ; Function Name:    _FileInUse()
@@ -837,6 +866,7 @@ Func _RunWait($sProgram, $Working = "", $Show = Default, $Opt = Default, $Live =
 
 	Return SetError(0, $iPid, $sData)
 EndFunc   ;==>_RunWait
+
 ;===============================================================================
 ; Function Name:    _ProcessWaitClose
 ; Description:		ProcessWaitClose that handles stdout from the running process
@@ -881,36 +911,10 @@ Func _ProcessWaitClose($iPid, $Live = Default, $Diag = Default)
 
 	Return $sData
 EndFunc   ;==>_ProcessWaitClose
-;===============================================================================
-; Function Name:    _TreeList()
-; Description:
-; Call With:		_TreeList()
-; Parameter(s):
-; Return Value(s):  On Success -
-; 					On Failure -
-; Author(s):        JohnMC - JohnsCS.com
-; Date/Version:		06/02/2011  --  v1.0
-;===============================================================================
-Func _TreeList($Path, $mode = 1)
-	Local $FileList_Original = _FileListToArray($Path, "*", 0)
-	Local $FileList[1]
 
-	For $i = 1 To UBound($FileList_Original) - 1
-		Local $file_path = $Path & "\" & $FileList_Original[$i]
-		If StringInStr(FileGetAttrib($file_path), "D") Then
-			$new_array = _TreeList($file_path, $mode)
-			_ArrayConcatenate($FileList, $new_array, 1)
-		Else
-			ReDim $FileList[UBound($FileList) + 1]
-			$FileList[UBound($FileList) - 1] = $file_path
-		EndIf
-	Next
-
-	Return $FileList
-EndFunc   ;==>_TreeList
 ;===============================================================================
 ; Function Name:    _StringStripWS()
-; Description:		Strips all white chars, excluing char(32) the regular space
+; Description:		Strips all white space chars, excluding char(32) (the regular space)
 ; Call With:		_StringStripWS($String)
 ; Parameter(s): 	$String - String To Strip
 ; Return Value(s):  On Success - Striped String
@@ -921,6 +925,7 @@ EndFunc   ;==>_TreeList
 Func _StringStripWS($String)
 	Return StringRegExpReplace($String, "[" & Chr(0) & Chr(9) & Chr(10) & Chr(11) & Chr(12) & Chr(13) & "]", "")
 EndFunc   ;==>_StringStripWS
+
 ;===============================================================================
 ; Function Name:    _mousecheck()
 ; Description:		Checks for mouse movement
@@ -945,6 +950,62 @@ Func _MouseCheck($Sleep = 300)
 
 	Return 0
 EndFunc   ;==>_MouseCheck
+
+;===============================================================================
+; Function Name:    _FieldValue()
+; Description:		Get the value of a field from text in "field(value)" format
+; Call With:		_FieldValue($Text, $Field, $NewValue = Default)
+; Parameter(s): 	$Text - Text to search
+;					$Field - Field to search for
+;					$NewValue - New value to set (optional)
+; Return Value(s):  On Success - The value found or set
+;					On Failure - "" and sets @error to 1
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		10/31/2025  --  v1.0
+;===============================================================================
+Func _FieldValue($Text, $Field, $NewValue = -1)
+	Local $Value = -1
+
+	; Get the current value of the field
+	Local $Result = StringRegExp($Text, "(?i)" & $Field & "\((.*?)\)", 3)
+	If Not @error And UBound($Result) > 0 Then
+			$Value = $Result[0]
+	EndIf
+
+	;_Log("Field: " & $Field & "   Text=" & $Text)
+	;_Log("   Current Value: " & $Value)
+	;_Log("   New Value: " & $NewValue)
+
+	If $NewValue <> -1 Then ; If a new value is provided, update or add the field
+		; Update the existing text with the new value
+		Local $Replacement = StringRegExpReplace($Text, "(?i)(" & $Field & ")\((.*?)\)", "\1(" & $NewValue & ")")
+		Local $Error = @error
+		Local $Count = @extended
+		;_Log("   Temp: " & $Replacement & "   Error: " & $Error & "   Extended: " & $Count)
+		If $Error = 0 And $Count > 0 Then
+			$Text = $Replacement
+			If $Count > 1 Then
+				; Remove all but one instance of the field
+				$Text = StringRegExpReplace($Text, "(?i)(_?)(" & $Field & "\(.*?\))", "", 1)
+			EndIf
+		Else
+			$Text = $Field & "(" & $NewValue & ")_" & $Text
+
+		EndIf
+		
+		Return $Text
+
+	Else ; If no new value is provided, return the current value
+		If $Value <> -1 Then
+			Return $Value
+		Else
+			_Log("   Error: Could not find field: " & $Field)
+			Return SetError(1, 0, "")
+		EndIf
+	EndIf
+
+EndFunc   ;==>_FieldValue
+
 ;===============================================================================
 ; Function Name:    _KeyValue()
 ; Description:		Work with 2d arrays treated as key value pairs such as the ones produced by INIReadSection()
@@ -1047,13 +1108,13 @@ Func _Log($sMessage, $iLevel = Default, $bOverWriteLast = Default, $iCallingLine
 	; Global options
 	Global $LogLevel, $LogTitle, $LogWindowStart, $LogWindowSize, $LogFullPath, $LogFileMaxSize, $LogFlushAlways
 
-	; If $LogTitle is empty, skip the GUI
+	;If $LogTitle = ""  Then $LogTitle = "" ; If empty, skip the GUI
 	If $LogLevel = "" Then $LogLevel = 1 ; Only show messages this level or below
-	If $LogWindowStart = "" Then Global $LogWindowStart = -1 ; -1 for center, -# for minimized with position being the absolute value
-	If $LogWindowSize = "" Then Global $LogWindowSize = 750 ; Starting width, height will be .6 of this value
-	If $LogFullPath = "" Then Global $LogFullPath = "" ; The path of the log file, empty value will not log to file
-	If $LogFileMaxSize = "" Then Global $LogFileMaxSize = 1024 ; Size limit for log in KB
-	If $LogFlushAlways = "" Then Global $LogFlushAlways = False ; Flush log to disk after each update
+	If $LogWindowStart = "" Then $LogWindowStart = -1 ; -1 for center, -# for minimized with position being the absolute value
+	If $LogWindowSize = "" Then $LogWindowSize = 750 ; Starting width, height will be .6 of this value
+	If $LogFullPath = "" Then $LogFullPath = "" ; The path of the log file, empty value will not log to file
+	If $LogFileMaxSize = "" Then $LogFileMaxSize = 512 ; Size limit for log in KB
+	If $LogFlushAlways = "" Then $LogFlushAlways = False ; Flush log to disk after each update
 
 	Local $LogFileMaxSize_Bytes = $LogFileMaxSize * 1024
 	Local $sTime = @YEAR & "-" & @MON & "-" & @MDAY & " " & @HOUR & ":" & @MIN & ":" & @SEC
@@ -1070,24 +1131,25 @@ Func _Log($sMessage, $iLevel = Default, $bOverWriteLast = Default, $iCallingLine
 	If $iLevel > $LogLevel Then Return ""
 
 	; Send to console
-	Local $ExternalConsoleFunction = "_Console_Write" ; From Console.au3
+	; _Console_Write is from Console.au3
+	#ignorefunc _Console_Write
 
 	If $bOverWriteLast And Not @Compiled Then
 		; Do Nothing
 	ElseIf $bOverWriteLast Then
 		ConsoleWrite(@CR & $sLogLine)
-		Call($ExternalConsoleFunction, @CR & $sLogLine)
+		Call("_Console_Write", @CR & $sLogLine)
 	Else
 		ConsoleWrite(@CRLF & $sLogLine)
-		Call($ExternalConsoleFunction, @CRLF & $sLogLine)
+		Call("_Console_Write", @CRLF & $sLogLine)
 	EndIf
 
 	; Append message to custom GUI if $LogTitle is set
 	If $LogTitle <> "" Then
 		Local $sLogLineGUI = StringReplace($sLogLine, @LF, @CRLF)
 
-		If Not IsDeclared("_hLogEdit") Then
-			; The GUI doesn't exist, create it
+		; If the GUI doesn't exist, create it
+		If Eval("_hLogWindow") = "" Then
 			If $LogWindowStart < -1 Then
 				$LogWindowStart = Abs($LogWindowStart)
 				$Minimize = True
@@ -1101,81 +1163,81 @@ Func _Log($sMessage, $iLevel = Default, $bOverWriteLast = Default, $iCallingLine
 			_GUICtrlEdit_SetReadOnly($_hLogEdit, True)
 			GUISetState(@SW_SHOW, $_hLogWindow)
 			If $Minimize Then GUISetState(@SW_MINIMIZE, $_hLogWindow)
-			_GUICtrlEdit_AppendText($_hLogEdit, $sLogLineGUI)
-		Else
-			; Update an existing GUI
-			_GUICtrlEdit_BeginUpdate($_hLogEdit)
-
-			If $bOverWriteLast Then
-				Local $sFullText = _GUICtrlEdit_GetText($_hLogEdit)
-				;Msgbox(0,"",$sFullText)
-				$sFullText = StringLeft($sFullText, StringInStr($sFullText, @CRLF, 0, -1) - 1)
-				;Msgbox(0,"",$sFullText)
-				_GUICtrlEdit_SetText($_hLogEdit, $sFullText)
-
-			EndIf
-			_GUICtrlEdit_AppendText($_hLogEdit, @CRLF & $sLogLineGUI)
-			_GUICtrlEdit_LineScroll($_hLogEdit, -StringLen($sLogLineGUI), _GUICtrlEdit_GetLineCount($_hLogEdit))
-			_GUICtrlEdit_EndUpdate($_hLogEdit)
 		EndIf
+
+		; Update GUI
+		_GUICtrlEdit_BeginUpdate($_hLogEdit)
+		If $bOverWriteLast Then
+			Local $sFullText = _GUICtrlEdit_GetText($_hLogEdit)
+			;Msgbox(0,"",$sFullText)
+			$sFullText = StringLeft($sFullText, StringInStr($sFullText, @CRLF, 0, -1) - 1)
+			;Msgbox(0,"",$sFullText)
+			_GUICtrlEdit_SetText($_hLogEdit, $sFullText)
+
+		EndIf
+		_GUICtrlEdit_AppendText($_hLogEdit, @CRLF & $sLogLineGUI)
+		_GUICtrlEdit_LineScroll($_hLogEdit, -StringLen($sLogLineGUI), _GUICtrlEdit_GetLineCount($_hLogEdit))
+		_GUICtrlEdit_EndUpdate($_hLogEdit)
 	EndIf
 
-	; Append message to file
+	; If $LogTitle is empty, delete the GUI
+	If $LogTitle = "" And Eval("_hLogWindow") <> "" Then
+		GUIDelete(Eval("_hLogWindow"))
+		Global $_hLogWindow = ""
+	EndIf
+
+	; Log to file if enabled
 	If $LogFullPath <> "" And Not $bOverWriteLast Then
-		If $_hLogFile = "" Then $_hLogFile = FileOpen($LogFullPath, $FO_APPEND)
-
-		; Limit log size
+		; Limit log size, if over size, rename and open new one
 		If $LogFileMaxSize > 0 Then
-			Local $iCurrentSize = FileGetPos($_hLogFile) ; + StringLen($sLogLine)
-
+			Local $iCurrentSize = FileGetPos($_hLogFile)
 			If $iCurrentSize > $LogFileMaxSize_Bytes Then
-				; Rewrite desired data to begining of file, drop trailing data, flush to disk.
-				FileSetPos($_hLogFile, 0, $FILE_BEGIN)
-				$sLogLine = FileRead($_hLogFile) & $sLogLine
-				$sLogLine = StringRight($sLogLine, $LogFileMaxSize_Bytes - 1024)
-				FileSetPos($_hLogFile, 0, $FILE_BEGIN)
-				FileWrite($_hLogFile, $sLogLine & @CRLF)
-				FileSetEnd($_hLogFile)
-				FileFlush($_hLogFile)
-
-			Else
-				; Write to file
-				FileWrite($_hLogFile, $sLogLine & @CRLF)
-				If $LogFlushAlways Then FileFlush($_hLogFile)
-
+				FileClose($_hLogFile)
+				FileMove($LogFullPath, $LogFullPath & ".old", 1)
 			EndIf
-
 		EndIf
 
+		; If log file not open, open it for appending
+		If Not FileGetPos($_hLogFile) Then $_hLogFile = FileOpen($LogFullPath, $FO_APPEND)
+
+		; Write to file
+		FileWrite($_hLogFile, $sLogLine & @CRLF)
+		If $LogFlushAlways Then FileFlush($_hLogFile)
 	EndIf
 
 	Return $sMessage
 EndFunc   ;==>_Log
+
+;===============================================================================
+; Function Name:    _ConsoleWrite() - Alias For _Log()
+;===============================================================================
+Func _ConsoleWrite($sMessage, $iLevel = 1, $iSameLine = 0)
+	Return _Log($sMessage, $iLevel)
+EndFunc
+
 ;===============================================================================
 ; Function Name:    _TimeStamp()
-; Description:		Returns time since 0 unlike the unknown timestamp behavior of timer_init
-; Call With:		_TimeStamp([$Flag])
-; Parameter(s): 	$Flag - (Optional) Default is 0 (Miliseconds)
-;						1 = Return Total Seconds
-;						2 = Return Total Minutes
+; Description:		Returns time since 0, default is total milliseconds like Unix timestamp
+; Call With:		_TimeStamp([$Option])
+; Parameter(s): 	$Option - (Optional) Default is 2 (Seconds)
+;						1 = Return Total Milliseconds
+;						2 = Return Total Seconds
+;						3 = Return Total Minutes
 ; Return Value(s):  On Success - Time
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		01/29/2010  --  v1.0
+;					11/01/2025  --  v1.1 Refactor
 ;===============================================================================
-Func _TimeStamp($Flag = 0)
-	Local $Time
+Func _TimeStamp($Option = 2)
+	Local $aResult = DllCall("msvcrt.dll", "int:cdecl", "time", "int", 0)
+	If @error Then Return SetError(1, 0, 0)
 
-	$Time = @YEAR * 365 * 24 * 60 * 60 * 1000
-	$Time = $Time + @YDAY * 24 * 60 * 60 * 1000
-	$Time = $Time + @HOUR * 60 * 60 * 1000
-	$Time = $Time + @MIN * 60 * 1000
-	$Time = $Time + @SEC * 1000
-	$Time = $Time + @MSEC
+	If $Option = 1 Then $aResult[0] = $aResult[0] * 1000 + @MSEC
+	If $Option = 3 Then $aResult[0] = Floor($aResult[0] / 60)
 
-	If $Flag = 1 Then Return Int($Time / 1000) ;Return Seconds
-	If $Flag = 2 Then Return Int($Time / 1000 / 60) ;Return Minutes
-	Return Int($Time) ;Return Miliseconds
+	Return $aResult[0]
 EndFunc   ;==>_TimeStamp
+
 ;===============================================================================
 ; Function Name:    _ProcessWaitNew()
 ; Description:		Wait for a new proccess to be created before continuing
@@ -1202,6 +1264,7 @@ Func _ProcessWaitNew($Process, $Timeout = 0)
 
 	Return 0
 EndFunc   ;==>_ProcessWaitNew
+
 ;===============================================================================
 ; Function Name:    _ProcessCount()
 ; Description:		Returns the number of processes with the same name
@@ -1286,20 +1349,20 @@ EndFunc   ;==>_ProcessCloseOthers
 ;						0 = Continue Anyway
 ;						1 = Exit Without Notification
 ;						2 = Exit After Notifying
-;						3 = Prompt What To Do
-;						4 = Close Other Proccesses
+;						3 = Exit or Continue Prompt
+;						4 = Exit or Close Other Proccesses Prompt
 ; Return Value(s):  On Success - 1 (Found Another Instance)
 ; 					On Failure - 0 (Didnt Find Another Instance)
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		10/15/2014  --  v1.1
 ;===============================================================================
 Func _OnlyInstance($iFlag)
-	Local $ERROR_ALREADY_EXISTS = 183, $Handle, $LastError, $Message
+	Local $ERROR_ALREADY_EXISTS = 183
 
 	If @Compiled = 0 Then Return 0
 
-	$Handle = DllCall("kernel32.dll", "int", "CreateMutex", "int", 0, "long", 1, "str", @ScriptName)
-	$LastError = DllCall("kernel32.dll", "int", "GetLastError")
+	Local $Handle = DllCall("kernel32.dll", "int", "CreateMutex", "int", 0, "long", 1, "str", @ScriptName)
+	Local $LastError = DllCall("kernel32.dll", "int", "GetLastError")
 	If $LastError[0] = $ERROR_ALREADY_EXISTS Then
 		SetError($LastError[0], $LastError[0], 0)
 		Switch $iFlag
@@ -1311,9 +1374,11 @@ Func _OnlyInstance($iFlag)
 				MsgBox(262144 + 48, @ScriptName, "The Program Is Already Running")
 				ProcessClose(@AutoItPID)
 			Case 3
-				If MsgBox(262144 + 256 + 48 + 4, @ScriptName, "The Program (" & @ScriptName & ") Is Already Running, Continue Anyway?") = 7 Then ProcessClose(@AutoItPID)
+				Local $Msg = MsgBox(262144 + 256 + 48 + 4, @ScriptName, "The Program (" & @ScriptName & ") Is Already Running, Continue Anyway?")
+				If $Msg <> $IDYES Then ProcessClose(@AutoItPID)
 			Case 4
-				_ProcessCloseOthers()
+				Local $Msg = MsgBox(262144 + 256 + 48 + 4, @ScriptName, "The Program (" & @ScriptName & ") Is Already Running, Close The Other Proccesses?")
+				If $Msg =$IDYES Then _ProcessCloseOthers()
 		EndSwitch
 		Return 1
 	EndIf
