@@ -2,7 +2,8 @@
 ;~ #AutoIt3Wrapper_Au3Check_Parameters=-d -w 1 -w 2 -w 3 -w 4 -w 5 -w 6
 #Tidy_Parameters=/sf
 #include-once
-;#include <WinAPI.au3>
+#include <WinAPI.au3>
+#include <WinAPIFiles.au3>
 
 ; #INDEX# =======================================================================================================================
 ; Title .........: Console.au3
