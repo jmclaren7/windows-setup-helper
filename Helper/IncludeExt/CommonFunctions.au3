@@ -19,6 +19,32 @@
 #include <WindowsConstants.au3>
 
 ;===============================================================================
+; Function Name:    _ControlGetFocus
+; Description:		Gets the control ID of the focused control in a GUI
+; Call With:		_ControlGetFocus($hGUI)
+; Parameter(s): 	$hGUI - title/hWnd/class  of the GUI to check
+; Return Value(s):  On Success - Control ID of the focused control
+; 					On Failure - 0, @error set:
+;						2 - No control has focus
+;						3 - Could not get control handle
+;						4 - Could not get control ID
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		03/7/2026  --  v1.0
+;===============================================================================
+Func _ControlGetFocus($hGUI)
+	Local $sFocus = ControlGetFocus($hGUI)
+	If $sFocus = "" Then Return SetError(2, 0, 0)
+
+	Local $hFocus = ControlGetHandle($hGUI, "", $sFocus)
+	If Not IsHWnd($hFocus) Then Return SetError(3, 0, 0)
+
+	Local $iCtrlID = _WinAPI_GetDlgCtrlID($hFocus)
+	If $iCtrlID = 0 Then Return SetError(4, 0, 0)
+
+	Return $iCtrlID
+EndFunc
+
+;===============================================================================
 ; Function Name:    _GetVersion
 ; Description:		Gets the version number of a file
 ; Call With:		_FileGetVersion($File, $Segment)
