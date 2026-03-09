@@ -29,13 +29,25 @@ Global $Title = "WSHelper Build Tool"
 Global $Version = "1.0"
 Global $TitleFull = $Title & " v" & $Version
 Global $ConfigFile = @ScriptDir & "\Build.ini"
-Global $MountPath = @TempDir & "\WSHelper-WIMMount"
 Global $HelperRepo = @ScriptDir
 Global $DefaultADKPackages = "WinPE-WMI.cab|WinPE-NetFx.cab|WinPE-Scripting.cab|WinPE-PowerShell.cab|WinPE-StorageWMI.cab|WinPE-SecureBootCmdlets.cab|WinPE-SecureStartup.cab|WinPE-DismCmdlets.cab|WinPE-EnhancedStorage.cab|WinPE-Dot3Svc.cab|WinPE-FMAPI.cab|WinPE-FontSupport-WinRE.cab|WinPE-PlatformId.cab|WinPE-WDS-Tools.cab|WinPE-HTA.cab|WinPE-WinReCfg.cab"
 Global $GUIMain
 Global $IsRunning = False
 Global $ProgramActive = True
 Global $BootWIMMounted = False
+Global $ADKVersionLabel
+Global $ADKVersion = "Not detected"
+
+; Config Defaults
+Global $SourceISOPath = "Windows11.iso"
+Global $ISOTempPath = @ScriptDir & "\ISO-Temp"
+Global $BootWIMPath = ""
+Global $BootWIMIndex = "Microsoft Windows Setup (amd64)"
+Global $WIMMountPath = @TempDir & "\WSHelper-WIMMount2"
+Global $ADKPath = RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots", "KitsRoot10") 
+Global $AddBootFilesPath = ""
+Global $AddISOFilesPath = ""
+Global $OutputISOPath = "Windows11-Output.iso"
 
 ;===============================================================================
 ; Start Program
@@ -60,6 +72,10 @@ _LoadSettings()
 _CreateGUI()
 GUISetState(@SW_SHOW, $GUIMain)
 
+; Disable boot.wim input for now and auto-generate it
+GUICtrlSetState($mBootWIMPath["Input"], $GUI_DISABLE)
+GUICtrlSetState($mBootWIMPath["Button"], $GUI_DISABLE)
+
 ; !!!!!!  This build script is experimental !!!!!!!!
 MsgBox(48, "Warning - " & $TitleFull, "This build script is experimental and incomplete" & @CRLF & @CRLF & "Use with caution and verify all specified paths are safe to work with.", 0, $GUIMain)
 
@@ -71,11 +87,13 @@ _GUIChecks()
 
 While 1
 	Local $nMsg = GUIGetMsg()
-    Switch $nMsg 
+	Local $ctrlFocus = _ControlGetFocus($GUIMain)
+
+    Switch $nMsg
         Case 0, -11, -7, -9, -4
             ; Do nothing
         Case Else
-            ;_Log("GUI Message: " & $nMsg)
+            _Log("GUI Message: " & $nMsg)
             _ReadGUI()
             _GUIChecks()
     EndSwitch
@@ -108,10 +126,10 @@ While 1
 				EndIf
 			EndIf
 
-		Case $mTempPath["Button"]
-			Local $folder = FileSelectFolder("Select Temp Folder", "", 0, GUICtrlRead($mTempPath["Input"]), $GUIMain)
-			If Not @error Then 
-                GUICtrlSetData($mTempPath["Input"], $folder)
+		Case $mISOTempPath["Button"]
+			Local $folder = FileSelectFolder("Select Temp Folder", "", 0, GUICtrlRead($mISOTempPath["Input"]), $GUIMain)
+			If Not @error Then
+                GUICtrlSetData($mISOTempPath["Input"], $folder)
                 ; Update boot.wim path based on new temp path
                 GUICtrlSetData($mBootWIMPath["Input"], $folder & "\sources\boot.wim")
             EndIf
@@ -182,10 +200,10 @@ While 1
 
 		; Package ListView buttons
 		Case $btnPkgSelectAll
-			_SetAllPackages(True)
+			_GUICtrlListView_SetItemChecked($lvPackages, -1, True)
 
 		Case $btnPkgSelectNone
-			_SetAllPackages(False)
+			_GUICtrlListView_SetItemChecked($lvPackages, -1, False)
 
         Case $btnPkgSelectDefault
             _UpdateADKPackages()
@@ -216,41 +234,50 @@ Func _CreateGUI()
 
 	Local $yPos = 10
     Local $xPos = 20
+	Local $stepHeight = 25
 	Local $labelWidth = 80
 	Local $inputWidth = 480
     Local $btnText = "Browse..."
 	Local $btnWidth = 75
 
-	; === Path Inputs Group ===
-	GUICtrlCreateGroup("Paths", 10, $yPos, $guiWidth - 20, 260)
+	; ============ Path Inputs Group ============
+	$hGroup = GUICtrlCreateGroup("Paths", 10, $yPos, $guiWidth - 20, 260)
 	$yPos += 20
     Global $mSourceISOPath = _CreateInputRow("Source ISO:", $xPos, $yPos, $inputWidth, $SourceISOPath, "Path to the Windows ISO file to customize", $btnText)
     $yPos += 30
-    Global $mTempPath = _CreateInputRow("Temp Folder:", $xPos, $yPos, $inputWidth, $TempPath, "Temporary folder where the ISO will be extracted and modified", $btnText)
+    Global $mISOTempPath = _CreateInputRow("Temp Folder:", $xPos, $yPos, $inputWidth, $ISOTempPath, "Temporary folder where the ISO will be extracted and modified", $btnText)
     $yPos += 30
     Global $mBootWIMPath = _CreateInputRow("Boot.wim:", $xPos, $yPos, $inputWidth, $BootWIMPath, "Path to boot.wim file to mount and modify (usually in Temp\sources\)", $btnText)
     $yPos += 30
     Global $mBootWIMIndex = _CreateInputRow("Boot.wim Index:", $xPos, $yPos, $inputWidth, $BootWIMIndex, "Image index or name to mount from boot.wim (e.g., 2 or 'Microsoft Windows Setup (amd64)')", "")
     $yPos += 30
+	Global $mWIMMountPath = _CreateInputRow("WIM Mount:", $xPos, $yPos, $inputWidth, $WIMMountPath, "Path where the boot.wim image will be mounted", $btnText)
+    $yPos += 30
     Global $mADKPath = _CreateInputRow("ADK Path:", $xPos, $yPos, $inputWidth, $ADKPath, "Path to Windows Assessment and Deployment Kit (ADK) installation", $btnText)
     $yPos += 30
+	$ADKVersionLabel = GUICtrlCreateLabel("Detected version: ", $xPos + 100, $yPos - 5, 200, 17)
+	;GUICtrlSetFont($ADKVersionLabel, 8)
+	$yPos += 20
     Global $mAddBootFilesPath = _CreateInputRow("Add to PE:", $xPos, $yPos, $inputWidth, $AddBootFilesPath, "Folder containing additional files to copy into the boot.wim image", $btnText)
     $yPos += 30
     Global $mAddISOFilesPath = _CreateInputRow("Add to ISO:", $xPos, $yPos, $inputWidth, $AddISOFilesPath, "Folder containing additional files to copy into the ISO root", $btnText)
     $yPos += 30
     Global $mOutputISOPath = _CreateInputRow("Output ISO:", $xPos, $yPos, $inputWidth, $OutputISOPath, "Path where the customized ISO will be saved", $btnText)
+    $yPos += 20
+
+	; Close group and set height
 	GUICtrlCreateGroup("", -99, -99, 1, 1) ; Close group
-    $yPos += 40
+	GUICtrlSetPos($hGroup, Default, Default, Default, $yPos)
+	$yPos += 20
 
-	; === Build Steps Group ===
-	Local $stepsGroupHeight = 295
-	GUICtrlCreateGroup("Build Steps", 10, $yPos, 520, $stepsGroupHeight)
-	Local $stepsStartY = $yPos + 20
+	; New row Y position for the next groups
+	Local $RowStartY = $yPos
 
-	; Checkboxes - Single column with Go buttons
+	; ============ Build Steps Group ============
 	Local $chkX = 20, $chkWidth = 200, $goX = 220, $goWidth = 35
-	Local $stepY = $stepsStartY
-	Local $stepHeight = 25
+	Local $stepY = $RowStartY
+	$hGroup = GUICtrlCreateGroup("Build Steps", 10, $stepY, 257, 100)
+	$stepY += 20
 
     Global $mExtractISO = _CreateStepRow("1. Extract ISO to Temp folder", $chkX, $stepY, $chkWidth, True, "Extract the contents of the source ISO to the temp folder using 7-Zip", "Go", $goWidth)
     $stepY += $stepHeight
@@ -277,48 +304,54 @@ Func _CreateGUI()
     $stepY += $stepHeight
 
 	Global $mMakeISO = _CreateStepRow("9. Make ISO from Temp folder", $chkX, $stepY, $chkWidth, True, "Create a bootable ISO from the modified temp folder contents", "Go", $goWidth)
-    $stepY += $stepHeight + 10
+    $stepY += $stepHeight + 5
 
-	; Select All / Select None buttons
+	; Buttons
 	Global $btnSelectAll = GUICtrlCreateButton("All", $chkX, $stepY, 40, 25)
 	GUICtrlSetTip(-1, "Check all build steps")
 	Global $btnSelectNone = GUICtrlCreateButton("None", $chkX + 45, $stepY, 50, 25)
 	GUICtrlSetTip(-1, "Uncheck all build steps")
-
-	; Run button
 	Global $btnRun = GUICtrlCreateButton("Run Selected", $goX - 110 + 35, $stepY, 110, 25)
 	GUICtrlSetTip(-1, "Execute all checked build steps in order")
-	GUICtrlCreateGroup("", -99, -99, 1, 1) ; Close group
+	$stepY += $stepHeight + 10
 
-	; === ADK Packages Group (middle, between steps and tools) ===
-	Local $pkgGroupX = 270
-	Local $pkgGroupWidth = 260
-	GUICtrlCreateGroup("WinPE Packages", $pkgGroupX, $yPos, $pkgGroupWidth, $stepsGroupHeight)
+	; Close group and set height
+	GUICtrlCreateGroup("", -99, -99, 1, 1) ; Close group
+	Local $StepRowFinalHeight = $stepY - $RowStartY
+	GUICtrlSetPos($hGroup, Default, Default, Default, $StepRowFinalHeight)
+	$yPos = $stepY + 10
+
+	; ============ ADK Packages Group ============ 
+	Local $pkgGroupX = 273, $pkgGroupWidth = 260
+	Local $pkgGroupHeight = $StepRowFinalHeight
+	Local $pkgY = $RowStartY
+	GUICtrlCreateGroup("WinPE Packages", $pkgGroupX, $pkgY, $pkgGroupWidth, $pkgGroupHeight)
 
 	; Create ListView with checkboxes
-	Global $lvPackages = GUICtrlCreateListView("Package Name", $pkgGroupX + 10, $yPos + 20, $pkgGroupWidth - 20, $stepsGroupHeight - 70, BitOR($LVS_REPORT, $LVS_SINGLESEL, $LVS_SHOWSELALWAYS))
+	Local $ListViewHeight = $pkgGroupHeight - 65
+	Global $lvPackages = GUICtrlCreateListView("Package Name", $pkgGroupX + 10, $pkgY + 20, $pkgGroupWidth - 20, $ListViewHeight, BitOR($LVS_REPORT, $LVS_SINGLESEL, $LVS_SHOWSELALWAYS))
 	_GUICtrlListView_SetExtendedListViewStyle($lvPackages, BitOR($LVS_EX_CHECKBOXES, $LVS_EX_FULLROWSELECT))
 	_GUICtrlListView_SetColumnWidth($lvPackages, 0, $pkgGroupWidth - 50)
 	GUICtrlSetTip($lvPackages, "Select WinPE optional components to add to the boot image (Step 4)")
+	$pkgY = $pkgY + $ListViewHeight + 30
 
 	; Buttons for package selection
-	Local $pkgBtnY = $yPos + $stepsGroupHeight - 40
-	Global $btnPkgSelectAll = GUICtrlCreateButton("All", $pkgGroupX + 10, $pkgBtnY, 40, 25)
+	Global $btnPkgSelectAll = GUICtrlCreateButton("All", $pkgGroupX + 10, $pkgY, 40, 25)
 	GUICtrlSetTip(-1, "Select all available packages")
-	Global $btnPkgSelectNone = GUICtrlCreateButton("None", $pkgGroupX + 55, $pkgBtnY, 50, 25)
+	Global $btnPkgSelectNone = GUICtrlCreateButton("None", $pkgGroupX + 55, $pkgY, 50, 25)
 	GUICtrlSetTip(-1, "Deselect all packages")
-    Global $btnPkgSelectDefault = GUICtrlCreateButton("Default", $pkgGroupX + 110, $pkgBtnY, 60, 25)
+    Global $btnPkgSelectDefault = GUICtrlCreateButton("Default", $pkgGroupX + 110, $pkgY, 60, 25)
 	GUICtrlSetTip(-1, "Reset to default recommended packages")
 
+	; Close group and set height
 	GUICtrlCreateGroup("", -99, -99, 1, 1) ; Close group
 
-	; === Tools Group (right side) ===
-	Local $toolsGroupHeight = 240
-	GUICtrlCreateGroup("Tools", 540, $yPos, 140, $toolsGroupHeight)
-	Local $toolX = 550
-	Local $toolY = $yPos + 25
-	Local $toolBtnWidth = 120
-	Local $toolBtnHeight = 28
+	; ============  Tools Group ============ 
+	Local $toolsGroupHeight = $StepRowFinalHeight
+	Local $toolX = 550, $toolY = $RowStartY
+	Local $toolBtnWidth = 120, $toolBtnHeight = 28
+	GUICtrlCreateGroup("Tools", 540, $toolY, 140, $toolsGroupHeight)
+	$toolY += 25
 
 	Global $ToolBrowseMountButton = GUICtrlCreateButton("Browse Mount", $toolX, $toolY, $toolBtnWidth, $toolBtnHeight)
 	GUICtrlSetState(-1, $GUI_DISABLE) ; Disabled until WIM is detected
@@ -333,19 +366,23 @@ Func _CreateGUI()
 	Global $ToolGetInfoButton = GUICtrlCreateButton("Get Boot.wim Info", $toolX, $toolY, $toolBtnWidth, $toolBtnHeight)
 	GUICtrlSetTip(-1, "Display information about images in the boot.wim file")
 
-	GUICtrlCreateGroup("", -99, -99, 1, 1) ; Close group
-
-	; === Save/Exit Buttons (below Tools) ===
-	Local $btnY = $yPos + $toolsGroupHeight + 15
-	Global $btnSave = GUICtrlCreateButton("Save", $toolX - 10, $btnY, 65, $toolBtnHeight)
-	GUICtrlSetTip(-1, "Save current settings to Build.ini")
-	Global $btnExit = GUICtrlCreateButton("Exit", $toolX + 65, $btnY, 65, $toolBtnHeight)
-	GUICtrlSetTip(-1, "Exit the program")
-
 	; Populate the packages ListView
 	_UpdateADKPackages()
 
-	$yPos += $stepsGroupHeight + 10
+	; Close group
+	GUICtrlCreateGroup("", -99, -99, 1, 1) ; Close group
+
+	; ============  Save/Exit Buttons ============ 
+	Local $btnX = 500, $btnWidth = 80, $btnHeight = 28
+	
+	Global $btnSave = GUICtrlCreateButton("Save", $btnX, $yPos, $btnWidth, $btnHeight)
+	GUICtrlSetTip(-1, "Save current settings to Build.ini")
+	Global $btnExit = GUICtrlCreateButton("Exit", $btnX + $btnWidth + 10, $yPos, $btnWidth, $btnHeight)
+	GUICtrlSetTip(-1, "Exit the program")
+	$yPos += $btnHeight + 40
+
+	; Final adjustment to GUI height based on content
+	WinMove($GUIMain, "", Default, Default, Default, $yPos)
 
 EndFunc   ;==>_CreateGUI
 
@@ -431,7 +468,7 @@ Func _UpdateADKPackages()
     ; Clear existing items
     _GUICtrlListView_DeleteAllItems($lvPackages)
 
-    Local $adkOCsubpath = "\Windows Preinstallation Environment\amd64\WinPE_OCs"
+    Local $adkOCsubpath = "\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs"
     Local $adkPath = GUICtrlRead($mADKPath["Input"]) & $adkOCsubpath
     If Not FileExists($adkPath) Then
         _Log("Error: ADK WinPE OCs path not found: " & $adkPath)
@@ -465,34 +502,6 @@ Func _UpdateADKPackages()
 EndFunc   ;==>_UpdateADKPackages
 
 ;===============================================================================
-; Get selected packages from ListView
-;===============================================================================
-Func _GetSelectedPackages()
-    Local $aSelected[1] = [0]
-
-    For $i = 0 To _GUICtrlListView_GetItemCount($lvPackages) - 1
-        If _GUICtrlListView_GetItemChecked($lvPackages, $i) Then
-            Local $pkgName = _GUICtrlListView_GetItemText($lvPackages, $i)
-            _ArrayAdd($aSelected, $pkgName)
-            $aSelected[0] += 1
-        EndIf
-    Next
-
-    Return $aSelected
-EndFunc   ;==>_GetSelectedPackages
-
-;===============================================================================
-; Select/Deselect all packages in ListView
-;===============================================================================
-Func _SetAllPackages($bChecked)
-    Local $itemCount = _GUICtrlListView_GetItemCount($lvPackages)
-    For $i = 0 To $itemCount - 1
-        _GUICtrlListView_SetItemChecked($lvPackages, $i, $bChecked)
-    Next
-EndFunc   ;==>_SetAllPackages
-
-
-;===============================================================================
 ; Checks for GUI requirements (called by AdlibRegister)
 ;===============================================================================
 Func _GUIChecks()
@@ -501,30 +510,37 @@ Func _GUIChecks()
 
     ; Get relevant environment states
     Local $Alert
-    Global $MountExists = FileExists($MountPath & "\Windows")
+    Global $WIMMountExists = FileExists($WIMMountPath)
     Global $BootWIMExists = FileExists($BootWIMPath)
     Global $SourceISOExists = FileExists($SourceISOPath)
-    Global $ADKExists = FileExists($ADKPath & "\Windows Preinstallation Environment")
-    Global $TempExists = FileExists($TempPath)
+    Global $ADKExists = FileExists($ADKPath & "\Assessment and Deployment Kit\Windows Preinstallation Environment")
+    Global $TempExists = FileExists($ISOTempPath)
     Global $AddBootFilesExists = FileExists($AddBootFilesPath)
     Global $AddISOFilesExists = FileExists($AddISOFilesPath)
+
+	Local $NewADKVersion = FileGetVersion($ADKPath & "\Assessment and Deployment Kit\Deployment Tools\amd64\DISM\Dism.exe")
+	If $NewADKVersion <> $ADKVersion Then
+		$ADKVersion = $NewADKVersion
+		_Log("Detected ADK version: " & $ADKVersion)
+		GUICtrlSetData($ADKVersionLabel, "ADK Version: " & $ADKVersion)
+	EndIf
 
     ; SourceISOPath
     $Alert = BitAND(GUICtrlGetState($mSourceISOPath["Alert"]), $GUI_SHOW)
     If $SourceISOExists And $Alert Then
         GUICtrlSetState($mSourceISOPath["Alert"], $GUI_HIDE)
-        GUICtrlSetState($mExtractISO["Button"], $GUI_ENABLE) 
+        GUICtrlSetState($mExtractISO["Button"], $GUI_ENABLE)
     ElseIf Not $SourceISOExists And Not $Alert Then
         GUICtrlSetState($mSourceISOPath["Alert"], $GUI_SHOW)
         GUICtrlSetState($mExtractISO["Button"], $GUI_DISABLE)
     EndIf
 
     ; TempPath
-    $Alert = BitAND(GUICtrlGetState($mTempPath["Alert"]), $GUI_SHOW)
+    $Alert = BitAND(GUICtrlGetState($mISOTempPath["Alert"]), $GUI_SHOW)
     If $TempExists And $Alert Then
-        GUICtrlSetState($mTempPath["Alert"], $GUI_HIDE)
+        GUICtrlSetState($mISOTempPath["Alert"], $GUI_HIDE)
     ElseIf Not $TempExists And Not $Alert Then
-        GUICtrlSetState($mTempPath["Alert"], $GUI_SHOW)
+        GUICtrlSetState($mISOTempPath["Alert"], $GUI_SHOW)
     EndIf
 
     ; BootWIMPath
@@ -564,18 +580,18 @@ Func _GUIChecks()
     ; AddISOFilesPath
     $Alert = BitAND(GUICtrlGetState($mAddISOFilesPath["Alert"]), $GUI_SHOW)
     If ($AddISOFilesExists Or $AddISOFilesPath = "") And $Alert Then
-        GUICtrlSetState($mAddISOFilesPath["Alert"], $GUI_HIDE)  
+        GUICtrlSetState($mAddISOFilesPath["Alert"], $GUI_HIDE)
     ElseIf Not $AddISOFilesExists And $AddISOFilesPath <> "" And Not $Alert Then
         GUICtrlSetState($mAddISOFilesPath["Alert"], $GUI_SHOW)
     EndIf
 
     ; Does mount path exist? (WIM probably mounted)
     $GUIEnabled = BitAND(GUICtrlGetState($ToolBrowseMountButton), $GUI_ENABLE)
-    If $MountExists And Not $GUIEnabled Then
+    If $WIMMountExists And Not $GUIEnabled Then
         GUICtrlSetState($ToolBrowseMountButton, $GUI_ENABLE)
         GUICtrlSetState($ToolDiscardUnmountButton, $GUI_ENABLE)
         ;GUICtrlSetState($mMountWIM["Button"], $GUI_DISABLE)
-    Elseif Not $MountExists And $GUIEnabled Then
+    Elseif Not $WIMMountExists And $GUIEnabled Then
         GUICtrlSetState($ToolBrowseMountButton, $GUI_DISABLE)
         GUICtrlSetState($ToolDiscardUnmountButton, $GUI_DISABLE)
         ;GUICtrlSetState($mMountWIM["Button"], $GUI_ENABLE)
@@ -592,7 +608,7 @@ Func _ReadGUI()
 
     ; Update global paths from GUI
 	Global $SourceISOPath = GUICtrlRead($mSourceISOPath["Input"])
-	Global $TempPath = GUICtrlRead($mTempPath["Input"])
+	Global $ISOTempPath = GUICtrlRead($mISOTempPath["Input"])
 	Global $BootWIMPath = GUICtrlRead($mBootWIMPath["Input"])
 	Global $AddBootFilesPath = GUICtrlRead($mAddBootFilesPath["Input"])
 	Global $AddISOFilesPath = GUICtrlRead($mAddISOFilesPath["Input"])
@@ -605,24 +621,17 @@ EndFunc   ;==>_ReadGUI
 ; Load Settings
 ;===============================================================================
 Func _LoadSettings()
-	Global $SourceISOPath = IniRead($ConfigFile, "Paths", "SourceISOPath", "Windows11.iso")
-	Global $TempPath = IniRead($ConfigFile, "Paths", "TempPath", @ScriptDir & "\Temp")
-    Global $BootWIMPath = IniRead($ConfigFile, "Paths", "BootWIMPath", $TempPath & "\sources\boot.wim")
-	Global $BootWIMIndex = IniRead($ConfigFile, "Paths", "BootWIMIndex", "Microsoft Windows Setup (amd64)")
+	$SourceISOPath = IniRead($ConfigFile, "Paths", "SourceISOPath", $SourceISOPath)
+	$ISOTempPath = IniRead($ConfigFile, "Paths", "ISOTempPath", $ISOTempPath)
+    $BootWIMPath = IniRead($ConfigFile, "Paths", "BootWIMPath", $ISOTempPath & "\sources\boot.wim")
+	$BootWIMIndex = IniRead($ConfigFile, "Paths", "BootWIMIndex", $BootWIMIndex)
+	$WIMMountPath = IniRead($ConfigFile, "Paths", "WIMMountPath", $WIMMountPath)
 
-	Global $ADKPath = IniRead($ConfigFile, "Paths", "ADKPath", "")
-    If $ADKPath = "" Then
-        $ADKPath = RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots", "KitsRoot10")
-        If Not @error Then
-            $ADKPath = $ADKPath & "Assessment and Deployment Kit"
-        Else
-            $ADKPath = EnvGet("ProgramFiles(x86)") & "\Windows Kits\10\Assessment and Deployment Kit"
-        EndIf
-    EndIf
+	$ADKPath = IniRead($ConfigFile, "Paths", "ADKPath", $ADKPath)
+    $AddBootFilesPath = IniRead($ConfigFile, "Paths", "AddBootFilesPath", "")
 
-    Global $AddBootFilesPath = IniRead($ConfigFile, "Paths", "AddBootFilesPath", "")
-	Global $AddISOFilesPath = IniRead($ConfigFile, "Paths", "AddISOFilesPath", "")
-	Global $OutputISOPath = IniRead($ConfigFile, "Paths", "OutputISOPath", "Windows11-Output.iso")
+	$AddISOFilesPath = IniRead($ConfigFile, "Paths", "AddISOFilesPath", "")
+	$OutputISOPath = IniRead($ConfigFile, "Paths", "OutputISOPath", $OutputISOPath)
 
 EndFunc   ;==>_LoadSettings
 
@@ -631,13 +640,17 @@ EndFunc   ;==>_LoadSettings
 ;===============================================================================
 Func _SaveSettings()
 	IniWrite($ConfigFile, "Paths", "SourceISOPath", GUICtrlRead($mSourceISOPath["Input"]))
-	IniWrite($ConfigFile, "Paths", "TempPath", GUICtrlRead($mTempPath["Input"]))
+	IniWrite($ConfigFile, "Paths", "ISOTempPath", GUICtrlRead($mISOTempPath["Input"]))
+	IniWrite($ConfigFile, "Paths", "BootWIMPath", GUICtrlRead($mBootWIMPath["Input"]))
+	IniWrite($ConfigFile, "Paths", "BootWIMIndex", GUICtrlRead($mBootWIMIndex["Input"]))
+	IniWrite($ConfigFile, "Paths", "WIMMountPath", GUICtrlRead($mWIMMountPath["Input"]))
+
 	IniWrite($ConfigFile, "Paths", "AddBootFilesPath", GUICtrlRead($mAddBootFilesPath["Input"]))
 	IniWrite($ConfigFile, "Paths", "AddISOFilesPath", GUICtrlRead($mAddISOFilesPath["Input"]))
-	IniWrite($ConfigFile, "Paths", "OutputISOPath", GUICtrlRead($mOutputISOPath["Input"]))
+
 	IniWrite($ConfigFile, "Paths", "ADKPath", GUICtrlRead($mADKPath["Input"]))
-	IniWrite($ConfigFile, "Paths", "BootWIMIndex", GUICtrlRead($mBootWIMIndex["Input"]))
-    IniWrite($ConfigFile, "Paths", "BootWIMPath", GUICtrlRead($mBootWIMPath["Input"]))
+	IniWrite($ConfigFile, "Paths", "OutputISOPath", GUICtrlRead($mOutputISOPath["Input"]))
+	
 EndFunc   ;==>_SaveSettings
 
 ;===============================================================================
@@ -668,9 +681,6 @@ Func _RunCmd($sCommand, $sDescription = "")
 		Sleep(50)
 	WEnd
 
-	ProcessWaitClose($iPID)
-	Local $exitCode = @extended
-
     ; Re-enable GUI interaction
     GUISetState(@SW_ENABLE, $GUIMain)
     WinSetTrans($GUIMain, "", 255)
@@ -682,12 +692,7 @@ Func _RunCmd($sCommand, $sDescription = "")
 		_Console_SetTextAttribute(-1, BitOR($FOREGROUND_RED, $FOREGROUND_GREEN, $FOREGROUND_BLUE)) ; Reset to white
 	EndIf
 
-	If $exitCode <> 0 Then
-		_Log("Exit code: " & $exitCode)
-		Return SetError($exitCode, $exitCode, $sOutput)
-	EndIf
-
-	_Log("Step completed successfully.")
+	_Log("Command completed.")
 	Return SetError(0, 0, $sOutput)
 EndFunc   ;==>_RunCmd
 
@@ -769,9 +774,9 @@ Func _RunSelectedSteps()
 
 
 	If $Success Then
-		_Log("=== COMPLETED SUCCESSFULLY ===")
+		_Log("=== Completed Selected Steps ===")
 	Else
-		_Log("=== FAILED ===")
+		_Log("=== One or More Steps Report Errors ===")
 	EndIf
 
 	$IsRunning = False
@@ -827,13 +832,13 @@ Func _ExtractISO()
 	_Log("Extracting ISO to Temp folder")
 
 	; Remove existing temp folder
-	If FileExists($TempPath) Then
+	If FileExists($ISOTempPath) Then
 		_Log("Removing existing temp folder...")
-		DirRemove($TempPath, 1)
+		DirRemove($ISOTempPath, 1)
 	EndIf
 
 	; Create temp folder
-	DirCreate($TempPath)
+	DirCreate($ISOTempPath)
 
 	; Extract using 7-Zip
 	Local $7zPath = $HelperRepo & "\Helper\Tools\7-Zip\7z.exe"
@@ -842,7 +847,7 @@ Func _ExtractISO()
 		Return False
 	EndIf
 
-	Local $cmd = '"' & $7zPath & '" x -y -o"' & $TempPath & '" "' & $SourceISOPath & '"'
+	Local $cmd = '"' & $7zPath & '" x -y -o"' & $ISOTempPath & '" "' & $SourceISOPath & '"'
 	_RunCmd($cmd, "Extracting ISO")
 
 	If @error Then Return False
@@ -856,14 +861,29 @@ Func _MountBootWIM()
 	_Log("Mounting boot.wim")
 
 	; Create mount folder
-	If Not FileExists($MountPath) Then
-		DirCreate($MountPath)
+	If FileExists($WIMMountPath) Then
+		_Log("Warning user about existing mount folder")
+		Local $Message = "Mount folder already exists: " & $WIMMountPath & @CRLF & @CRLF & "This may indicate a WIM is already mounted or that a previous mount was not properly cleaned up." & @CRLF & @CRLF & "The existing mount folder will try to be used if you continue."
+		Local $Msg = MsgBox($MB_ICONWARNING + $MB_OKCANCEL, $Title, $Message, 0, $GUIMain)
+		If $Msg = $IDOK Then
+			_Log("Continue with existing mount folder")
+			DirRemove($WIMMountPath, 1) ; Try to clean up existing mount folder before mounting
+			If @error Then
+				_Log("Error: Could not remove existing mount folder, this indicated it may be in use by an existing mounted WIM. Please investigate and try again.")
+				Return SetError(1, 0, False)
+			EndIf
+		Else
+			_Log("Canceled due to existing mount folder")
+			Return SetError(1, 0, False)
+		EndIf
 	EndIf
 
-	Local $cmd = 'Dism /Mount-image /ImageFile:"' & $BootWIMPath & '" ' & _ConstructIndexParam($BootWIMIndex) & ' /MountDir:"' & $MountPath & '" /Optimize'
+	DirCreate($WIMMountPath)
+
+	Local $cmd = 'Dism /Mount-image /ImageFile:"' & $BootWIMPath & '" ' & _ConstructIndexParam($BootWIMIndex) & ' /MountDir:"' & $WIMMountPath & '" /Optimize'
 	_RunCmd($cmd, "Mounting WIM")
 
-	If @error Then Return False
+	If @error Then Return SetError(1, 0, False)
 	$BootWIMMounted = True
 	Return True
 EndFunc   ;==>_MountBootWIM
@@ -876,7 +896,7 @@ Func _CopyFiles()
 
 	; Copy Helper folder
 	_Log("Copying Helper folder...")
-	Local $helperDest = $MountPath & "\Helper"
+	Local $helperDest = $WIMMountPath & "\Helper"
 	If FileExists($helperDest) Then
 		_Log("Removing existing Helper folder...")
 		DirRemove($helperDest, 1)
@@ -890,34 +910,33 @@ Func _CopyFiles()
 
 	; Copy Windows folder
 	_Log("Copying Windows folder...")
-	$result = DirCopy($HelperRepo & "\Windows", $MountPath & "\Windows", 1)
+	$result = DirCopy($HelperRepo & "\Windows", $WIMMountPath & "\Windows", 1)
 	If Not $result Then
 		_Log("Error: Warning: Could not copy Windows folder (may not exist)")
 	EndIf
 
-	; Copy extra files from subdirectories
-	;~ If FileExists($AddBootFilesPath) Then
-	;~ 	_Log("Copying extra files from: " & $AddBootFilesPath)
-	;~ 	Local $aFolders = _FileListToArray($AddBootFilesPath, "*", $FLTA_FOLDERS)
-	;~ 	If Not @error Then
-	;~ 		For $i = 1 To $aFolders[0]
-	;~ 			Local $srcFolder = $AddBootFilesPath & "\" & $aFolders[$i]
-	;~ 			_Log("  Copying: " & $aFolders[$i])
-	;~ 			DirCopy($srcFolder, $MountPath, 1)
-	;~ 		Next
-	;~ 	EndIf
-	;~ EndIf
+	; Copy extra files from AddBootFilesPath if specified, the trailing folder can use wildcards (_FileListToArray)
+	If $AddBootFilesPath <> "" Then
+		_Log("AddBootFilesPath: " & $AddBootFilesPath)
+		Local $AddBootFilesPath_Parent = StringLeft($AddBootFilesPath, StringInStr($AddBootFilesPath, "\", 0, -1) - 1)
+		Local $AddBootFilesPath_Folder = StringTrimLeft($AddBootFilesPath, StringInStr($AddBootFilesPath, "\", 0, -1))
+
+		$aFolders = _FileListToArray($AddBootFilesPath_Parent, $AddBootFilesPath_Folder, $FLTA_FOLDERS)
+		For $i = 1 To $aFolders[0]
+			_Log("Copying extra boot files from: " & $AddBootFilesPath_Parent & "\" & $aFolders[$i])
+			$Source = $AddBootFilesPath_Parent & "\" & $aFolders[$i]
+			$Destination = $WIMMountPath
+			$result = DirCopy($Source, $Destination, 1)
+			If Not $result Then
+				_Log("Error: Warning: Could not copy files from: " & $Source & " to: " & $Destination)
+			EndIf
+		Next
+	EndIf
 
 	; Clean up logs and temp files
 	_Log("Removing log files and temp files...")
-	Local $aFiles = _FileListToArray($MountPath, "Auto-saved*.xml", $FLTA_FILES)
-	If Not @error Then
-		For $i = 1 To $aFiles[0]
-			FileDelete($MountPath & "\" & $aFiles[$i])
-		Next
-	EndIf
-	FileDelete($MountPath & "\*.log")
-	FileDelete($MountPath & "\Helper\Logon\*.log")
+	FileDelete($WIMMountPath & "\Auto-saved*.xml")
+	FileDelete($WIMMountPath & "\*.log")
 
 	_Log("Step completed successfully.")
 	Return True
@@ -929,7 +948,7 @@ EndFunc   ;==>_CopyFiles
 Func _AddPackages()
 	_Log("Adding packages to image")
 
-	Local $adkPackages = $ADKPath & "\Windows Preinstallation Environment\amd64\WinPE_OCs"
+	Local $adkPackages = $ADKPath & "\Assessment and Deployment Kit\Windows Preinstallation Environment\amd64\WinPE_OCs"
     Local $langFolder = $adkPackages & "\en-us"
 
 	If Not FileExists($adkPackages) Then
@@ -939,11 +958,11 @@ Func _AddPackages()
 
 	_Log("Packages from: " & $adkPackages)
 
-	; Build the DISM command with all packages
-    Local $aSelectedPackages = _GetSelectedPackages()
+	; Run DISM commands for each checked item
+    Local $aSelectedPackages = _GUICtrlListView_GetCheckedText($lvPackages)
     For $i = 1 To $aSelectedPackages[0]
         Local $pkgPath = $adkPackages & "\" & $aSelectedPackages[$i]
-        Local $Command = 'Dism /Image:"' & $MountPath & '" /Add-Package /PackagePath:"' & $pkgPath & '"'
+        Local $Command = 'Dism /Image:"' & $WIMMountPath & '" /Add-Package /PackagePath:"' & $pkgPath & '"'
         ; If $adkPackages\en-us folder exists, add language-specific package, file name are suffixed with language code
         Local $langPkgPath = $langFolder & "\" & StringRegExpReplace($aSelectedPackages[$i], "\.cab$", "_en-us.cab")
         If FileExists($langPkgPath) Then
@@ -951,10 +970,8 @@ Func _AddPackages()
         EndIf
 
         _RunCmd($Command, "Adding package: " & $aSelectedPackages[$i])
-
         If @error Then
             _Log("Error: Error adding package: " & $aSelectedPackages[$i])
-            Return False
         EndIf
     Next
 
@@ -967,11 +984,11 @@ EndFunc   ;==>_AddPackages
 Func _DisableDPIScaling()
 	_Log("Disabling DPI scaling (registry)")
 
-	Local $regHive = $MountPath & "\Windows\System32\config\default"
+	Local $regHive = $WIMMountPath & "\Windows\System32\config\default"
 
 	; Load registry hive
 	_RunCmd('reg load HKLM\_WinPE_Default "' & $regHive & '"', "Loading registry hive")
-	If @error Then 
+	If @error Then
 		_RunCmd('reg unload HKLM\_WinPE_Default', "Unloading registry hive")
 		Return False
 	EndIf
@@ -995,13 +1012,13 @@ Func _UnmountCommit()
 	_Log("Unmounting and committing changes")
 	_Log("NOTE: Make sure no files are open in the mount path!")
 
-	Local $cmd = 'Dism /Unmount-Image /MountDir:"' & $MountPath & '" /commit'
+	Local $cmd = 'Dism /Unmount-Image /MountDir:"' & $WIMMountPath & '" /commit'
 	_RunCmd($cmd, "Unmounting WIM")
 
 	If @error Then Return False
 
 	; Remove mount folder
-	DirRemove($MountPath, 1)
+	DirRemove($WIMMountPath, 1)
 	$BootWIMMounted = False
 
 	Return True
@@ -1017,7 +1034,7 @@ Func _TrimBootWIM()
 	Local $SourceIndexParam = StringReplace(_ConstructIndexParam($BootWIMIndex), "/Index:", "/SourceIndex:")
 	$SourceIndexParam = StringReplace($SourceIndexParam, "/Name:", "/SourceName:")
 
-	Local $cmd = 'Dism /Export-Image /SourceImageFile:"' & $BootWIMPath & '" ' & $SourceIndexParam & ' /DestinationImageFile:"' & $TempPath & '\sources\boot2.wim" /Compress:Max'
+	Local $cmd = 'Dism /Export-Image /SourceImageFile:"' & $BootWIMPath & '" ' & $SourceIndexParam & ' /DestinationImageFile:"' & $ISOTempPath & '\sources\boot2.wim" /Compress:Max'
 	_RunCmd($cmd, "Exporting image")
 
 	If @error Then Return False
@@ -1025,7 +1042,7 @@ Func _TrimBootWIM()
 	; Replace original with trimmed version
 	_Log("Replacing boot.wim with trimmed version...")
 	FileDelete($BootWIMPath)
-	FileMove($TempPath & "\sources\boot2.wim", $BootWIMPath)
+	FileMove($ISOTempPath & "\sources\boot2.wim", $BootWIMPath)
 
 	_Log("Step completed successfully.")
 	Return True
@@ -1039,19 +1056,19 @@ Func _RemoveInstallWIM()
 
 	; Remove support folder
 	_Log("Removing support folder...")
-	DirRemove($TempPath & "\support", 1)
+	DirRemove($ISOTempPath & "\support", 1)
 
 	; Remove setup files
 	_Log("Removing setup.exe and autorun.inf...")
-	FileDelete($TempPath & "\setup.exe")
-	FileDelete($TempPath & "\autorun.inf")
+	FileDelete($ISOTempPath & "\setup.exe")
+	FileDelete($ISOTempPath & "\autorun.inf")
 
 	; Move boot.wim, remove sources, recreate and move back
 	_Log("Cleaning sources folder...")
-	FileMove($TempPath & "\sources\boot.wim", $TempPath & "\boot.wim", 1)
-	DirRemove($TempPath & "\sources", 1)
-	DirCreate($TempPath & "\sources")
-	FileMove($TempPath & "\boot.wim", $TempPath & "\sources\boot.wim", 1)
+	FileMove($ISOTempPath & "\sources\boot.wim", $ISOTempPath & "\boot.wim", 1)
+	DirRemove($ISOTempPath & "\sources", 1)
+	DirCreate($ISOTempPath & "\sources")
+	FileMove($ISOTempPath & "\boot.wim", $ISOTempPath & "\sources\boot.wim", 1)
 
 	_Log("Step completed successfully.")
 	Return True
@@ -1063,24 +1080,24 @@ EndFunc   ;==>_RemoveInstallWIM
 Func _MakeISO()
 	_Log("Creating ISO")
 
-	Local $oscdimgPath = $ADKPath & "\Deployment Tools\amd64\Oscdimg\oscdimg.exe"
+	Local $oscdimgPath = $ADKPath & "\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe"
 
 	If Not FileExists($oscdimgPath) Then
 		_Log("Error: oscdimg.exe not found at: " & $oscdimgPath)
 		Return False
 	EndIf
 
-	_Log("Input: " & $TempPath)
+	_Log("Input: " & $ISOTempPath)
 	_Log("Output: " & $OutputISOPath)
 
 	; Determine boot data based on BIOS boot files
 	Local $bootData
-	If FileExists($TempPath & "\boot\etfsboot.com") Then
+	If FileExists($ISOTempPath & "\boot\etfsboot.com") Then
 		; BIOS + UEFI
-		$bootData = '2#p0,e,b"' & $TempPath & '\boot\etfsboot.com"#pEF,e,b"' & $TempPath & '\efi\microsoft\boot\efisys.bin"'
+		$bootData = '2#p0,e,b"' & $ISOTempPath & '\boot\etfsboot.com"#pEF,e,b"' & $ISOTempPath & '\efi\microsoft\boot\efisys.bin"'
 	Else
 		; UEFI only
-		$bootData = '1#pEF,e,b"' & $TempPath & '\efi\microsoft\boot\efisys.bin"'
+		$bootData = '1#pEF,e,b"' & $ISOTempPath & '\efi\microsoft\boot\efisys.bin"'
 	EndIf
 
 	; Delete existing output ISO
@@ -1089,7 +1106,7 @@ Func _MakeISO()
 		FileDelete($OutputISOPath)
 	EndIf
 
-	Local $cmd = '"' & $oscdimgPath & '" -bootdata:' & $bootData & ' -u1 -udfver102 "' & $TempPath & '" "' & $OutputISOPath & '"'
+	Local $cmd = '"' & $oscdimgPath & '" -bootdata:' & $bootData & ' -u1 -udfver102 "' & $ISOTempPath & '" "' & $OutputISOPath & '"'
 	_RunCmd($cmd, "Creating ISO")
 
 	If @error Then Return False
@@ -1100,10 +1117,10 @@ EndFunc   ;==>_MakeISO
 ; Tool: Browse Mount Folder
 ;===============================================================================
 Func _BrowseMountFolder()
-	If FileExists($MountPath) Then
-		ShellExecute("explorer.exe", $MountPath)
+	If FileExists($WIMMountPath) Then
+		ShellExecute("explorer.exe", $WIMMountPath)
 	Else
-		MsgBox(48, "Browse Mount", "Mount folder does not exist:" & @CRLF & $MountPath)
+		MsgBox(48, "Browse Mount", "Mount folder does not exist:" & @CRLF & $WIMMountPath)
 	EndIf
 EndFunc   ;==>_BrowseMountFolder
 
@@ -1113,11 +1130,11 @@ EndFunc   ;==>_BrowseMountFolder
 Func _UnmountDiscard()
 	_Log("Unmounting and discarding changes")
 
-	_RunCmd('Dism /Unmount-Image /MountDir:"' & $MountPath & '" /Discard', "Discarding changes")
+	_RunCmd('Dism /Unmount-Image /MountDir:"' & $WIMMountPath & '" /Discard', "Discarding changes")
 	_RunCmd('Dism /Cleanup-Mountpoints', "Cleaning up mount points")
 	; DISM /Cleanup-Wim
 
-	DirRemove($MountPath, 1)
+	DirRemove($WIMMountPath, 1)
 	$BootWIMMounted = False
 
 	_Log("Done.")
@@ -1129,7 +1146,7 @@ EndFunc   ;==>_UnmountDiscard
 Func _GetImageInfo()
 	_Log("Getting Image Information")
 
-	$BootWIMPath = GUICtrlRead($mTempPath["Input"]) & "\sources\boot.wim"
+	$BootWIMPath = GUICtrlRead($mISOTempPath["Input"]) & "\sources\boot.wim"
 
 	_RunCmd('Dism /Get-MountedImageInfo', "Mounted Images")
 
