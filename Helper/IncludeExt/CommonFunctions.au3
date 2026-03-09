@@ -11,6 +11,7 @@
 #include <GUIConstantsEx.au3>
 #include <GuiEdit.au3>
 #include <GuiListBox.au3>
+#include <GuiListView.au3>
 #include <String.au3>
 #include <WinAPIFiles.au3>
 #include <WinAPIProc.au3>
