@@ -17,6 +17,28 @@
 #include <WinAPIShPath.au3>
 #include <WinAPISysWin.au3>
 #include <WindowsConstants.au3>
+;===============================================================================
+; Function Name:    _GUICtrlListView_GetCheckedText
+; Description:		Gets the text of all checked items in a ListView control
+; Call With:		_GUICtrlListView_GetCheckedText($hListView)
+; Parameter(s): 	$hListView - Handle of the ListView control
+; Return Value(s):  On Success - Array of checked item texts (first element is the count)
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		03/8/2026  --  v1.0
+;===============================================================================
+Func _GUICtrlListView_GetCheckedText($hListView)
+    Local $aSelected[1] = [0]
+
+    For $i = 0 To _GUICtrlListView_GetItemCount($hListView) - 1
+        If _GUICtrlListView_GetItemChecked($hListView, $i) Then
+            Local $pkgName = _GUICtrlListView_GetItemText($hListView, $i)
+            _ArrayAdd($aSelected, $pkgName)
+            $aSelected[0] += 1
+        EndIf
+    Next
+
+    Return $aSelected
+EndFunc   ;==>_GUICtrlListView_GetCheckedText
 
 ;===============================================================================
 ; Function Name:    _ControlGetFocus
