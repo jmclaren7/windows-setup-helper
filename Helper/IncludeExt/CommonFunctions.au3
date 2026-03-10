@@ -1073,63 +1073,45 @@ EndFunc   ;==>_FieldValue
 ; Example:			_KeyValue($Settings, "trayicon", "1")
 ;===============================================================================
 Func _KeyValue(ByRef $aArray, $Key, $Value = Default, $Delete = Default)
-	Local $i
+    If $Delete = Default Then $Delete = False
+    If Not IsArray($aArray) Then Dim $aArray[1][2]
 
-	If $Delete = Default Then $Delete = False
+    For $i = 1 To UBound($aArray) - 1
+        If $aArray[$i][0] <> $Key Then ContinueLoop
 
-	; Make $Array an array if not already
-	If Not IsArray($aArray) Then Dim $aArray[1][2]
+        ; Delete existing key
+        If $Delete Then
+            Local $aNew[1][2]
+            For $j = 1 To UBound($aArray) - 1
+                If $aArray[$j][0] = $Key Then ContinueLoop
+                ReDim $aNew[UBound($aNew) + 1][2]
+                $aNew[UBound($aNew) - 1][0] = $aArray[$j][0]
+                $aNew[UBound($aNew) - 1][1] = $aArray[$j][1]
+            Next
+            $aNew[0][0] = UBound($aNew) - 1
+            $aArray = $aNew
+            Return True
+        EndIf
 
-	; Loop through array to check for existing key
-	For $i = 1 To UBound($aArray) - 1
-		If $aArray[$i][0] = $Key Then
-			; Read existing value
-			If $Value = Default Then
-				Return $aArray[$i][1]
+        ; Read existing value
+        If $Value = Default Then Return $aArray[$i][1]
 
-				; Update existing value
-			Else
-				$aArray[$i][1] = $Value
-				$aArray[0][0] = UBound($aArray) - 1
-				Return $Value
-			EndIf
+        ; Update existing value
+        $aArray[$i][1] = $Value
+        $aArray[0][0] = UBound($aArray) - 1
+        Return $Value
+    Next
 
-			; Delete existing value
-			If $Delete Then
-				Local $aNewArray[]
-				; Loop through array and copy all keys/values not matching the specified key
-				For $i = 1 To UBound($aArray) - 1
-					; Skip the key to be deleted
-					If $aArray[$i][0] = $Key Then ContinueLoop
+    ; Key not found — add new key/value if specified
+    If $Value <> Default And Not $Delete Then
+        ReDim $aArray[UBound($aArray) + 1][2]
+        $aArray[UBound($aArray) - 1][0] = $Key
+        $aArray[UBound($aArray) - 1][1] = $Value
+        $aArray[0][0] = UBound($aArray) - 1
+        Return $Value
+    EndIf
 
-					; Resize array and add new key/value
-					ReDim $aArray[UBound($aNewArray) + 1][2]
-					$aArray[UBound($aNewArray)][0] = $aArray[$i][0]
-					$aArray[UBound($aNewArray)][1] = $aArray[$i][1]
-				Next
-
-				$aNewArray[0][0] = UBound($aArray) - 1
-
-				; Return array with key/value removed
-				$aArray = $aNewArray
-				Return True
-			EndIf
-		EndIf
-	Next
-
-	; Add new key/value if it's been specified
-	If $Value <> Default Then
-		ReDim $aArray[UBound($aArray) + 1][2]
-		$aArray[UBound($aArray) - 1][0] = $Key
-		$aArray[UBound($aArray) - 1][1] = $Value
-		$aArray[0][0] = UBound($aArray) - 1
-
-		Return $Value
-	EndIf
-
-	; Return error because a key doesn't exist and nothing else to do
-	SetError(1)
-	Return ""
+    Return SetError(1, 0, "")
 EndFunc   ;==>_KeyValue
 
 ;===============================================================================
