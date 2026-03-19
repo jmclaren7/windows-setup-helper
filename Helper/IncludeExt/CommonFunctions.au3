@@ -28,17 +28,17 @@
 ; Date/Version:		03/8/2026  --  v1.0
 ;===============================================================================
 Func _GUICtrlListView_GetCheckedText($hListView)
-    Local $aSelected[1] = [0]
+	Local $aSelected[1] = [0]
 
-    For $i = 0 To _GUICtrlListView_GetItemCount($hListView) - 1
-        If _GUICtrlListView_GetItemChecked($hListView, $i) Then
-            Local $pkgName = _GUICtrlListView_GetItemText($hListView, $i)
-            _ArrayAdd($aSelected, $pkgName)
-            $aSelected[0] += 1
-        EndIf
-    Next
+	For $i = 0 To _GUICtrlListView_GetItemCount($hListView) - 1
+		If _GUICtrlListView_GetItemChecked($hListView, $i) Then
+			Local $pkgName = _GUICtrlListView_GetItemText($hListView, $i)
+			_ArrayAdd($aSelected, $pkgName)
+			$aSelected[0] += 1
+		EndIf
+	Next
 
-    Return $aSelected
+	Return $aSelected
 EndFunc   ;==>_GUICtrlListView_GetCheckedText
 
 ;===============================================================================
@@ -65,14 +65,14 @@ Func _ControlGetFocus($hGUI)
 	If $iCtrlID = 0 Then Return SetError(4, 0, 0)
 
 	Return $iCtrlID
-EndFunc
+EndFunc   ;==>_ControlGetFocus
 
 ;===============================================================================
-; Function Name:    _GetVersion
-; Description:		Gets the version number of a file
-; Call With:		_FileGetVersion($File, $Segment)
+; Function Name:    _FileGetVersion
+; Description:		Gets a version segment from a file's version string
+; Call With:		_FileGetVersion([$File = Default[, $Segment = Default]])
 ; Parameter(s): 	$File - [optional] Path to the file (default is the script's path)
-;					$Segment - [optional] Segment of the version to return (1 = Major, 2 = Minor, 3 = Patch, 4 = Build - default is 4)
+;					$Segment - [optional] Segment of the version to return (1 = Major, 2 = Minor, etc. - default is last segment)
 ; Return Value(s):  On Success - Version segment as a string
 ; 					On Failure - "" (Error code in @error)
 ; Author(s):        JohnMC - JohnsCS.com
@@ -80,17 +80,19 @@ EndFunc
 ;===============================================================================
 Func _FileGetVersion($File = Default, $Segment = Default)
 	If $File = Default Then $File = @ScriptFullPath
-	If $Segment = Default Then $Segment = 4
 
 	Local $Version = FileGetVersion($File)
 	If @error Then Return SetError(1, 0, "")
-		
-	Local $aVersion = StringSplit($Version,".")
+
+	Local $aVersion = StringSplit($Version, ".")
 	If @error Then Return SetError(2, 0, $Version)
+
+	If $Segment = Default Then $Segment = $aVersion[0]
+	If $Segment < 1 Or $Segment > $aVersion[0] Then Return SetError(3, 0, "")
 
 	Return $aVersion[$Segment]
 
-EndFunc
+EndFunc   ;==>_FileGetVersion
 ;===============================================================================
 ; Function Name:    _FileSigned
 ; Description:		Verifies a file's digital signature
@@ -139,7 +141,7 @@ Func _FileSigned($File = Default)
 	Else
 		Return SetError(6, 0, 0)
 	EndIf
-EndFunc
+EndFunc   ;==>_FileSigned
 ;===============================================================================
 ; Function Name:    _HideDrive
 ; Description:		Hide or show a drive from file explorer
@@ -153,28 +155,36 @@ EndFunc
 Func _HideDrive($DriveLetter, $Hide = Default)
 	If $Hide = Default Then $Hide = True
 
-    Local $DriveNumber = Asc(StringUpper($DriveLetter)) - Asc("A")
-	Local $ThisMask = BitShift(1, -$DriveNumber)
+	Local $DriveNumber = Asc(StringUpper($DriveLetter)) - Asc("A")
+	Local $DriveBit = BitShift(1, -$DriveNumber)
 
 	; Get the current value of the NoDrives registry key
 	Local $CurrentMask = RegRead("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDrives")
 	If @error Then $CurrentMask = 0
 
+	; Check if the drive is already in the desired state
+	Local $IsHidden = BitAND($CurrentMask, $DriveBit) <> 0
+	If ($Hide And $IsHidden) Or (Not $Hide And Not $IsHidden) Then
+		_Log("Drive " & $DriveLetter & ": is already " & ($Hide ? "hidden" : "visible") & ".")
+		Return
+	EndIf
+
 	; Calculate the new value based on if we should hide or show the drive
+	Local $NewMask
 	If $Hide Then
-		$ThisMask = $CurrentMask + $ThisMask
+		$NewMask = BitOR($CurrentMask, $DriveBit)
 	Else
-		$ThisMask = $CurrentMask - $ThisMask
+		$NewMask = BitAND($CurrentMask, BitNOT($DriveBit))
 	EndIf
 
 	; Write the new value to the registry
-	Local $RegWrite = RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDrives", "REG_DWORD", $ThisMask)
+	Local $RegWrite = RegWrite("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDrives", "REG_DWORD", $NewMask)
 	If @error Then
-		_Log("Error: Could not hide drive " & $DriveLetter & ": in Explorer. Mask: " & $ThisMask & " Error: " & @error & " Result: " & $RegWrite)
+		_Log("Error: Could not hide drive " & $DriveLetter & ": in Explorer. Mask: " & $NewMask & " Error: " & @error & " Result: " & $RegWrite)
 	Else
-		_Log("Success: Hid drive " & $DriveLetter & ": in Explorer.")
+		_Log("Success: " & ($Hide ? "Hid" : "Unhid") & " drive " & $DriveLetter & ": in Explorer.")
 	EndIf
-EndFunc
+EndFunc   ;==>_HideDrive
 ;===============================================================================
 ; Function Name:    _TextBox
 ; Description:		Creates a text box with a label and OK/Cancel buttons
@@ -200,7 +210,7 @@ Func _TextBox($Title, $Label, $Text = "", $Width = Default, $Height = Default, $
 	If $Top = Default Then $Top = -1
 	If $Timeout = Default Then $Timeout = 0
 
-	Local $hGUI = GUICreate($Title, $Width, $Height, $Left, $Top, BitOR($GUI_SS_DEFAULT_GUI,$WS_SIZEBOX,$WS_THICKFRAME), Default, $HWND)
+	Local $hGUI = GUICreate($Title, $Width, $Height, $Left, $Top, BitOR($GUI_SS_DEFAULT_GUI, $WS_SIZEBOX, $WS_THICKFRAME), Default, $HWND)
 	Local $hLabel = GUICtrlCreateLabel($Label, 10, 10)
 	GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKTOP + $GUI_DOCKSIZE)
 	Local $hEdit = GUICtrlCreateEdit($Text, 10, 30, $Width - 20, $Height - 70, BitOR($ES_MULTILINE, $ES_WANTRETURN, $WS_VSCROLL, $WS_HSCROLL))
@@ -225,36 +235,35 @@ Func _TextBox($Title, $Label, $Text = "", $Width = Default, $Height = Default, $
 		EndSwitch
 		Sleep(10)
 	WEnd
-EndFunc
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _Error
-; Description ...: Call _log and MsgBox in one command
-; Syntax ........: _Error($Message[, $iLevel = Default[, $MessageEx = ""]])
-; Parameters ....: $Title               - Window title
-;                  $Message             - Message for MsgBox and _Log.
-;                  $iLevel              - [optional]
-;                  $MessageEx           - [optional] an extra message that will only show in the log.
-; Return values .: MsgBox return value
-; Author ........: JohnMC - JohnsCS.com
-; Modified ......:
-; ===============================================================================================================================
+EndFunc   ;==>_TextBox
+;===============================================================================
+; Function Name:    _Error
+; Description:		Call _log and MsgBox in one command
+; Call With:			_Error($Title, $Message[, $iLevel = Default[, $MessageEx = ""]])
+; Parameter(s):		$Title - Window title
+;					$Message - Message for MsgBox and _Log.
+;					$iLevel - [optional]
+;					$MessageEx - [optional] an extra message that will only show in the log.
+; Return Value(s):  MsgBox return value
+; Author(s):        JohnMC - JohnsCS.com
+;===============================================================================
 Func _Error($Title, $Message, $iLevel = Default, $MessageEx = "")
 	If $MessageEx <> "" Then $MessageEx = " - " & $MessageEx
 	_Log($Message & $MessageEx, $iLevel)
 	Return MsgBox(16, $Title, $Message)
-EndFunc
+EndFunc   ;==>_Error
 
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _RandomString
-; Description ...: Generates a random string of characters (numbers and letters by default)
-; Syntax ........: _RandomString($Min, $Max[, $Chars = Default])
-; Parameters ....: $Min                 - Minimum string length
-;                  $Max                 - Maximum string length
-;                  $Chars               - [optional] String of characters to choose from. Default is all numbers and letters (upper and lower)
-; Return values .: A random string of characters
-; Author ........: JohnMC - JohnsCS.com
-; Date/Version ..: 5/11/2024  --  v1.0
-; ===============================================================================================================================
+;===============================================================================
+; Function Name:    _RandomString
+; Description:		Generates a random string of characters (numbers and letters by default)
+; Call With:			_RandomString($Min, $Max[, $Chars = Default])
+; Parameter(s):		$Min - Minimum string length
+;					$Max - Maximum string length
+;					$Chars - [optional] String of characters to choose from. Default is all numbers and letters (upper and lower)
+; Return Value(s):  A random string of characters
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		5/11/2024  --  v1.0
+;===============================================================================
 Func _RandomString($iMin, $iMax, $sChars = Default)
 	If $sChars = Default Then $sChars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 	Local $sReturn, $aChars = StringSplit($sChars, '')
@@ -266,15 +275,21 @@ Func _RandomString($iMin, $iMax, $sChars = Default)
 	Return $sReturn
 EndFunc   ;==>_RandomString
 
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _ListSelect
-; Description ...: Creates a list select box
-; Syntax ........: _ListSelect()
-; Parameters ....:
-; Return values .: The text of the selected item, @extended contains the index of the selected item
-; Author ........: JohnMC - JohnsCS.com
-; Modified ......: 04/24/2024
-; ===============================================================================================================================
+;===============================================================================
+; Function Name:    _ListSelect
+; Description:		Creates a list select box
+; Call With:			_ListSelect($aList[, $sTitle[, $sMessage[, $iDefaultIndex[, $sIcon[, $iWidth[, $iHeight]]]]]])
+; Parameter(s):		$aList - Array of items to display
+;					$sTitle - [optional] Window title
+;					$sMessage - [optional] Label text
+;					$iDefaultIndex - [optional] Default selected index (default 1)
+;					$sIcon - [optional] Icon file and ID (e.g. "shell32.dll,1")
+;					$iWidth - [optional] Window width (default 400)
+;					$iHeight - [optional] Window height (default 175)
+; Return Value(s):  The text of the selected item, @extended contains the index of the selected item
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		04/24/2024
+;===============================================================================
 Func _ListSelect($aList, $sTitle = "", $sMessage = "", $iDefaultIndex = 1, $sIcon = "", $iWidth = 400, $iHieght = 175)
 	Local $IconFile = StringLeft($sIcon, StringInStr($sIcon, ",", 0, -1) - 1)
 	Local $IconID = Number(StringTrimLeft($sIcon, StringInStr($sIcon, ",", 0, -1)))
@@ -312,15 +327,15 @@ Func _ListSelect($aList, $sTitle = "", $sMessage = "", $iDefaultIndex = 1, $sIco
 	WEnd
 EndFunc   ;==>_ListSelect
 
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _Timer
-; Description ...: Creates a quick to use timer
-; Syntax ........: _Timer([$Reset = True])
-; Parameters ....: $Reset               - [optional] If True, time will reset
-; Return values .: The time in miliseconds since last reset or init
-; Author ........: JohnMC - JohnsCS.com
-; Modified ......: 03/14/2024  --  v1.0
-; ===============================================================================================================================
+;===============================================================================
+; Function Name:    _Timer
+; Description:		Creates a quick to use timer
+; Call With:			_Timer([$Reset = True])
+; Parameter(s):		$Reset - [optional] If True, time will reset
+; Return Value(s):  The time in miliseconds since last reset or init
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		03/14/2024  --  v1.0
+;===============================================================================
 Func _Timer($Reset = True)
 	If Not IsDeclared("_Timer_Handle") Then
 		Global $_Timer_Handle
@@ -332,16 +347,16 @@ Func _Timer($Reset = True)
 	Return $Return
 EndFunc   ;==>_Timer
 
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _GetVisibleWindows
-; Description ...: Get an array of information for visible windows
-; Syntax ........: _GetVisibleWindows([$Options = 1])
-; Parameters ....: $GetText             - [optional] True/False - Get window text (slow)
-; Return values .: 2D Array of windows and window information
-;				   [0][0] contains the number of windows
-; Author ........: JohnMC - JohnsCS.com, based on AdamUL's _GetVisibleWindows
-; Modified ......: 03/29/2024  --  v2.1
-; ===============================================================================================================================
+;===============================================================================
+; Function Name:    _GetVisibleWindows
+; Description:		Get an array of information for visible windows
+; Call With:			_GetVisibleWindows([$GetText = False])
+; Parameter(s):		$GetText - [optional] True/False - Get window text (slow)
+; Return Value(s):  2D Array of windows and window information
+;					[0][0] contains the number of windows
+; Author(s):        JohnMC - JohnsCS.com, based on AdamUL's _GetVisibleWindows
+; Date/Version:		03/29/2024  --  v2.1
+;===============================================================================
 Func _GetVisibleWindows($GetText = False)
 	Local $NewCol, $TotalTime, $Timer
 
@@ -555,17 +570,17 @@ Func _GetVisibleWindows($GetText = False)
 	Return SetError(0, TimerDiff($TotalTime), $aWinList)
 EndFunc   ;==>_GetVisibleWindows
 
-; #FUNCTION# ====================================================================================================================
-; Name ..........: IsActivated
-; Description ...: Check Windows activation status
-; Syntax ........: IsActivated()
-; Parameters ....: None
-; Return values .: A string with the activation status
+;===============================================================================
+; Function Name:    IsActivated
+; Description:		Check Windows activation status
+; Call With:			IsActivated()
+; Parameter(s):		None
+; Return Value(s):  A string with the activation status
 ;					@error will be true if activation status could not be retrieved
 ;					@extended will be 0 for activated and >0 for not activated
-; Author ........: AutoIT Forum, modified by JohnMC - JohnsCS.com
-; Date/Version ..: 03/02/2024  --  v1.1
-; ===============================================================================================================================
+; Author(s):        AutoIT Forum, modified by JohnMC - JohnsCS.com
+; Date/Version:		03/02/2024  --  v1.1
+;===============================================================================
 Func IsActivated()
 	$oWMIService = ObjGet("winmgmts:\\.\root\cimv2")
 	If Not IsObj($oWMIService) Then Return SetError(1, 0, "WMI Object Error")
@@ -616,46 +631,46 @@ Func IsActivated()
 	Return SetError(3, 0, "Unknown Error")
 EndFunc   ;==>IsActivated
 
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _FileModifiedAge
-; Description ...:
-; Syntax ........: _FileModifiedAge($sFile)
-; Parameters ....: $sFile - Path to a file
-; Return values .: File age in miliseconds
-; Author ........: AutoIT Forum, modified by JohnMC - JohnsCS.com
-; Date/Version ..: 11/15/2023  --  v1.1
-; ===============================================================================================================================
+;===============================================================================
+; Function Name:    _FileModifiedAge
+; Description:		Get the age of a file based on its last modified time
+; Call With:			_FileModifiedAge($sFile)
+; Parameter(s):		$sFile - Path to a file
+; Return Value(s):  File age in miliseconds
+; Author(s):        AutoIT Forum, modified by JohnMC - JohnsCS.com
+; Date/Version:		11/15/2023  --  v1.1
+;===============================================================================
 Func _FileModifiedAge($sFile)
-	$hFile = _WinAPI_CreateFile($sFile, 2, 2)
+	Local $hFile = _WinAPI_CreateFile($sFile, 2, 2)
 	If $hFile = 0 Then
 		Return SetError(1, 0, -1)
 	Else
-		$tFileTime = _Date_Time_GetFileTime($hFile)
-		$aFileTime = _Date_Time_FileTimeToArray($tFileTime[2])
-		$sFileTime = _Date_Time_FileTimeToStr($tFileTime[2], 1)
+		Local $tFileTime = _Date_Time_GetFileTime($hFile)
+		Local $aFileTime = _Date_Time_FileTimeToArray($tFileTime[2])
+		Local $sFileTime = _Date_Time_FileTimeToStr($tFileTime[2], 1)
 
 		_WinAPI_CloseHandle($hFile)
 
-		$tSystemTime = _Date_Time_GetSystemTime()
-		$sSystemTime = _Date_Time_SystemTimeToDateTimeStr($tSystemTime, 1)
-		$aSystemTime = _Date_Time_SystemTimeToArray($tSystemTime)
+		Local $tSystemTime = _Date_Time_GetSystemTime()
+		Local $sSystemTime = _Date_Time_SystemTimeToDateTimeStr($tSystemTime, 1)
+		Local $aSystemTime = _Date_Time_SystemTimeToArray($tSystemTime)
 
-		$iFileAge = _DateDiff('s', $sFileTime, $sSystemTime) * 1000 + $aSystemTime[6] - $aFileTime[6]
+		Local $iFileAge = _DateDiff('s', $sFileTime, $sSystemTime) * 1000 + $aSystemTime[6] - $aFileTime[6]
 
 		Return $iFileAge
 	EndIf
 EndFunc   ;==>_FileModifiedAge
 
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _WMI
-; Description ...: Run a WMI query with th eoption of returning the first object (default) or all objects
-; Syntax ........: _WMI($Query[, $Single = True])
-; Parameters ....: $Query               - an unknown value.
-;                  $Single              - [optional] Return the first object, Default is True.
-; Return values .: Object(s)
-; Author ........: JohnMC - JohnsCS.com
-; Date/Version ..: 11/15/2023  --  v1.1
-; ===============================================================================================================================
+;===============================================================================
+; Function Name:    _WMI
+; Description:		Run a WMI query with the option of returning the first object (default) or all objects
+; Call With:			_WMI($Query[, $Single = True])
+; Parameter(s):		$Query - WMI query string
+;					$Single - [optional] Return the first object, Default is True.
+; Return Value(s):  Object(s)
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		11/15/2023  --  v1.1
+;===============================================================================
 Func _WMI($Query, $Single = True)
 	If Not IsDeclared("_objWMIService") Then
 		Local $Object = ObjGet("winmgmts:\\.\root\CIMV2")
@@ -680,29 +695,27 @@ Func _WMI($Query, $Single = True)
 
 EndFunc   ;==>_WMI
 
-; #FUNCTION# ====================================================================================================================
-; Name ..........: _INetSmtpMailCom
-; Description ...: Send an email using a Windows API with authentication and encryption which isn't available in the AutoIt UDF _INetSmtpMail
-; Syntax ........: _INetSmtpMailCom($sSMTPServer, $sFromName, $sFromAddress, $sToAddress[, $sSubject = ""[, $sBody = ""[,
-;                  $sUsername = ""[, $sPassword = ""[, $sCCAddress = ""[, $sBCCAddress = ""[, $iPort = 587[, $bSSL = False[,
-;                  $bTLS = True]]]]]]]]])
-; Parameters ....: $sSMTPServer         - a string value.
-;                  $sFromName           - a string value.
-;                  $sFromAddress        - a string value.
-;                  $sToAddress          - a string value.
-;                  $sSubject            - [optional] a string value. Default is "".
-;                  $sBody               - [optional] a string value. Default is "".
-;                  $sUsername           - [optional] a string value. Default is "".
-;                  $sPassword           - [optional] a string value. Default is "".
-;                  $sCCAddress          - [optional] a string value. Default is "".
-;                  $sBCCAddress         - [optional] a string value. Default is "".
-;                  $iPort               - [optional] an integer value. Default is 587.
-;                  $bSSL                - [optional] a boolean value. Default is False.
-;                  $bTLS                - [optional] a boolean value. Default is True.
-; Return values .: None
-; Author ........: AutoIT Forum, modified by JohnMC - JohnsCS.com
-; Date/Version ..: 11/15/2023  --  v1.1
-; ===============================================================================================================================
+;===============================================================================
+; Function Name:    _INetSmtpMailCom
+; Description:		Send an email using a Windows API with authentication and encryption
+; Call With:			_INetSmtpMailCom($sSMTPServer, $sFromName, $sFromAddress, $sToAddress[, ...])
+; Parameter(s):		$sSMTPServer - SMTP server address
+;					$sFromName - Sender display name
+;					$sFromAddress - Sender email address
+;					$sToAddress - Recipient email address
+;					$sSubject - [optional] Email subject
+;					$sBody - [optional] Email body
+;					$sUsername - [optional] SMTP username
+;					$sPassword - [optional] SMTP password
+;					$sCCAddress - [optional] CC address
+;					$sBCCAddress - [optional] BCC address
+;					$iPort - [optional] Port, default 587
+;					$bSSL - [optional] Use SSL, default False
+;					$bTLS - [optional] Use TLS, default True
+; Return Value(s):  None
+; Author(s):        AutoIT Forum, modified by JohnMC - JohnsCS.com
+; Date/Version:		11/15/2023  --  v1.1
+;===============================================================================
 Func _INetSmtpMailCom($sSMTPServer, $sFromName, $sFromAddress, $sToAddress, $sSubject = "", $sBody = "", $sUsername = "", $sPassword = "", $sCCAddress = "", $sBCCAddress = "", $iPort = 587, $bSSL = False, $bTLS = True)
 	Local $oMail = ObjCreate("CDO.Message")
 
@@ -746,20 +759,20 @@ Func _INetSmtpMailCom($sSMTPServer, $sFromName, $sFromAddress, $sToAddress, $sSu
 
 EndFunc   ;==>_INetSmtpMailCom
 
-; #FUNCTION# ====================================================================================================================
-; Name ...........: _StringExtract
-; Description ....: Extract a string between two search strings
-; Syntax .........: _StringExtract($sString, $sStartSearch, $sEndSearch[, $iStartTrim = 0[, $iEndTrim = 0]])
-; Parameters .....: $sString             - String to extract from
-;                   $sStartSearch        - Start search string
-;                   $sEndSearch          - End search string
-;                   $iStartTrim          - [optional] Start trim characters
-;                   $iEndTrim            - [optional] End trim characters
-; Return values ..: Extracted string
-; Author .........: JohnMC - JohnsCS.com
-; Date/Version ...: Unknown  --  v1.0
+;===============================================================================
+; Function Name:    _StringExtract
+; Description:		Extract a string between two search strings
+; Call With:			_StringExtract($sString, $sStartSearch, $sEndSearch[, $iStartTrim[, $iEndTrim]])
+; Parameter(s):		$sString - String to extract from
+;					$sStartSearch - Start search string
+;					$sEndSearch - End search string
+;					$iStartTrim - [optional] Start trim characters
+;					$iEndTrim - [optional] End trim characters
+; Return Value(s):  Extracted string
+; Author(s):        JohnMC - JohnsCS.com
+; Date/Version:		Unknown  --  v1.0
 ;					11/01/2025  --  v1.1 Refactor, local variables
-; ===============================================================================================================================
+;===============================================================================
 Func _StringExtract($sString, $sStartSearch, $sEndSearch, $iStartTrim = 0, $iEndTrim = 0)
 	Local $iStartPos = StringInStr($sString, $sStartSearch)
 	If Not $iStartPos Then Return SetError(1, 0, 0)
@@ -776,7 +789,7 @@ EndFunc   ;==>_StringExtract
 ;===============================================================================
 ; Function Name:    __StringProper
 ; Description:		Modified version of _StringProper to lowercase after common contractions
-; Call With:		__StringProper($s_String)
+; Call With:		__StringProper($sString)
 ; Parameter(s): 	$sString - String to properly capitalize
 ; Return Value(s):  On Success - Properly capitalized string
 ; 					On Failure - Empty string
@@ -814,7 +827,7 @@ Func __StringProper($sString)
 		$sReturn &= $sChr
 	Next
 	Return $sReturn
-EndFunc   ;==>_StringProper
+EndFunc   ;==>__StringProper
 
 ;===============================================================================
 ; Function Name:    _FileInUse()
@@ -864,11 +877,13 @@ EndFunc   ;==>_FileInUse
 
 ;===============================================================================
 ; Function Name:    _FileInUseWait
-; Description:		Checkes to see if a file has open handles
-; Call With:		_FileInUse($sFilePath, $iAccess = 0)
-; Parameter(s):
-; Return Value(s):  On Success -
-; 					On Failure -
+; Description:		Waits for a file to be released (no open handles)
+; Call With:		_FileInUseWait($sFilePath[, $Timeout = 0[, $Sleep = 2000]])
+; Parameter(s):		$sFilePath - Path to the file to check
+;					$Timeout - [optional] Seconds before giving up (0 = wait forever)
+;					$Sleep - [optional] Milliseconds between checks (default 2000)
+; Return Value(s):  On Success - 1 (file is available)
+; 					On Failure - 0 (timeout)
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		10/15/2014  --  v1.0
 ;===============================================================================
@@ -891,11 +906,16 @@ EndFunc   ;==>_FileInUseWait
 
 ;===============================================================================
 ; Function Name:    _RunWait
-; Description:		Improved version of RunWait that plays nice with my console logging
-; Call With:		_RunWait($Run, $Working="")
-; Parameter(s):
-; Return Value(s):  On Success - Return value of Run() (Should be PID)
-; 					On Failure - Return value of Run()
+; Description:		Run a program and wait for it to finish, capturing stdout/stderr
+; Call With:		_RunWait($sProgram[, $Working[, $Show[, $Opt[, $Live[, $Diag]]]]])
+; Parameter(s):		$sProgram - Command line to run
+;					$Working - [optional] Working directory
+;					$Show - [optional] Window show flag (default @SW_HIDE)
+;					$Opt - [optional] Stdout/stderr option (default $STDERR_MERGED)
+;					$Live - [optional] Log output in real-time (default False)
+;					$Diag - [optional] Diagnostic mode for line endings (default False)
+; Return Value(s):  On Success - Captured stdout/stderr data, @extended = PID
+; 					On Failure - 0
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		01/16/2016  --  v1.1
 ;===============================================================================
@@ -918,12 +938,12 @@ EndFunc   ;==>_RunWait
 
 ;===============================================================================
 ; Function Name:    _ProcessWaitClose
-; Description:		ProcessWaitClose that handles stdout from the running process
-;					Proccess must have been started with $STDERR_CHILD + $STDOUT_CHILD
-; Call With:		_ProcessWaitClose($iPid)
-; Parameter(s):
-; Return Value(s):  On Success -
-; 					On Failure -
+; Description:		Wait for a process to close while capturing its stdout/stderr output
+; Call With:		_ProcessWaitClose($iPid[, $Live = False[, $Diag = False]])
+; Parameter(s):		$iPid - PID of the process (must have been started with stdout/stderr flags)
+;					$Live - [optional] Log output lines in real-time (default False)
+;					$Diag - [optional] Show line ending diagnostics (default False)
+; Return Value(s):  Captured stdout/stderr data as a string
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		09/8/2023  --  v1.3
 ;===============================================================================
@@ -976,26 +996,37 @@ Func _StringStripWS($String)
 EndFunc   ;==>_StringStripWS
 
 ;===============================================================================
-; Function Name:    _mousecheck()
+; Function Name:    _MouseCheck()
 ; Description:		Checks for mouse movement
-; Call With:		_mousecheck($Sleep)
-; Parameter(s): 	$Sleep - Miliseconds between mouse checks, 0=Compare At Next Call
+; Call With:		_MouseCheck([$Sleep = 300])
+; Parameter(s): 	$Sleep - [optional] Milliseconds between mouse checks, 0=Compare At Next Call (default 300)
 ; Return Value(s):  On Success - 1 (Mouse Moved)
 ; 					On Failure - 0 (Mouse Didnt Move)
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		01/29/2010  --  v1.0
 ;===============================================================================
-Func _MouseCheck($Sleep = 300)
-	Local $MOUSECHECK_POS1, $MOUSECHECK_POS2
+Func _MouseCheck($Sleep = Default)
+	If $Sleep = Default Then $Sleep = 300
 
-	If $Sleep = 0 Then Global $MOUSECHECK_POS1
-	If IsArray($MOUSECHECK_POS1) = 0 And $Sleep = 0 Then $MOUSECHECK_POS1 = MouseGetPos()
-	Sleep($Sleep)
-	$MOUSECHECK_POS2 = MouseGetPos()
-	If Abs($MOUSECHECK_POS1[0] - $MOUSECHECK_POS2[0]) > 2 Or Abs($MOUSECHECK_POS1[1] - $MOUSECHECK_POS2[1]) > 2 Then
-		If $Sleep = 0 Then $MOUSECHECK_POS1 = $MOUSECHECK_POS2
-		Return 1
+	Static Local $sPrevPos = Null
+
+	If $Sleep = 0 Then
+		; Deferred mode: capture position now, compare on next call
+		Local $aCurrentPos = MouseGetPos()
+		If Not IsArray($sPrevPos) Then
+			$sPrevPos = $aCurrentPos
+			Return 0
+		EndIf
+		Local $bMoved = (Abs($sPrevPos[0] - $aCurrentPos[0]) > 2 Or Abs($sPrevPos[1] - $aCurrentPos[1]) > 2)
+		$sPrevPos = $aCurrentPos
+		Return $bMoved ? 1 : 0
 	EndIf
+
+	; Immediate mode: capture, sleep, compare
+	Local $aPos1 = MouseGetPos()
+	Sleep($Sleep)
+	Local $aPos2 = MouseGetPos()
+	If Abs($aPos1[0] - $aPos2[0]) > 2 Or Abs($aPos1[1] - $aPos2[1]) > 2 Then Return 1
 
 	Return 0
 EndFunc   ;==>_MouseCheck
@@ -1018,7 +1049,7 @@ Func _FieldValue($Text, $Field, $NewValue = -1)
 	; Get the current value of the field
 	Local $Result = StringRegExp($Text, "(?i)" & $Field & "\((.*?)\)", 3)
 	If Not @error And UBound($Result) > 0 Then
-			$Value = $Result[0]
+		$Value = $Result[0]
 	EndIf
 
 	;_Log("Field: " & $Field & "   Text=" & $Text)
@@ -1041,7 +1072,7 @@ Func _FieldValue($Text, $Field, $NewValue = -1)
 			$Text = $Field & "(" & $NewValue & ")_" & $Text
 
 		EndIf
-		
+
 		Return $Text
 
 	Else ; If no new value is provided, return the current value
@@ -1058,9 +1089,9 @@ EndFunc   ;==>_FieldValue
 ;===============================================================================
 ; Function Name:    _KeyValue()
 ; Description:		Work with 2d arrays treated as key value pairs such as the ones produced by INIReadSection()
-; Call With:		_KeyValue(ByRef $Array, $Key[, $Value[, $Extended]])
+; Call With:		_KeyValue(ByRef $Array, $Key[, $Value[, $Delete]])
 ; Parameter(s): 	$Array - A previously declared array, if not array, it will be made as one
-;					$Key - The value to look for in the first column/dimention or the "Key" in an INI section
+;					$Key - The value to look for in the first column/dimension or the "Key" in an INI section
 ;		(Optional)	$Value - The value to write to the array
 ;		(Optional)	$Delete - If True, delete the specified key
 ;
@@ -1073,55 +1104,55 @@ EndFunc   ;==>_FieldValue
 ; Example:			_KeyValue($Settings, "trayicon", "1")
 ;===============================================================================
 Func _KeyValue(ByRef $aArray, $Key, $Value = Default, $Delete = Default)
-    If $Delete = Default Then $Delete = False
-    If Not IsArray($aArray) Then Dim $aArray[1][2]
+	If $Delete = Default Then $Delete = False
+	If Not IsArray($aArray) Then Dim $aArray[1][2]
 
-    For $i = 1 To UBound($aArray) - 1
-        If $aArray[$i][0] <> $Key Then ContinueLoop
+	For $i = 1 To UBound($aArray) - 1
+		If $aArray[$i][0] <> $Key Then ContinueLoop
 
-        ; Delete existing key
-        If $Delete Then
-            Local $aNew[1][2]
-            For $j = 1 To UBound($aArray) - 1
-                If $aArray[$j][0] = $Key Then ContinueLoop
-                ReDim $aNew[UBound($aNew) + 1][2]
-                $aNew[UBound($aNew) - 1][0] = $aArray[$j][0]
-                $aNew[UBound($aNew) - 1][1] = $aArray[$j][1]
-            Next
-            $aNew[0][0] = UBound($aNew) - 1
-            $aArray = $aNew
-            Return True
-        EndIf
+		; Delete existing key
+		If $Delete Then
+			Local $aNew[1][2]
+			For $j = 1 To UBound($aArray) - 1
+				If $aArray[$j][0] = $Key Then ContinueLoop
+				ReDim $aNew[UBound($aNew) + 1][2]
+				$aNew[UBound($aNew) - 1][0] = $aArray[$j][0]
+				$aNew[UBound($aNew) - 1][1] = $aArray[$j][1]
+			Next
+			$aNew[0][0] = UBound($aNew) - 1
+			$aArray = $aNew
+			Return True
+		EndIf
 
-        ; Read existing value
-        If $Value = Default Then Return $aArray[$i][1]
+		; Read existing value
+		If $Value = Default Then Return $aArray[$i][1]
 
-        ; Update existing value
-        $aArray[$i][1] = $Value
-        $aArray[0][0] = UBound($aArray) - 1
-        Return $Value
-    Next
+		; Update existing value
+		$aArray[$i][1] = $Value
+		$aArray[0][0] = UBound($aArray) - 1
+		Return $Value
+	Next
 
-    ; Key not found — add new key/value if specified
-    If $Value <> Default And Not $Delete Then
-        ReDim $aArray[UBound($aArray) + 1][2]
-        $aArray[UBound($aArray) - 1][0] = $Key
-        $aArray[UBound($aArray) - 1][1] = $Value
-        $aArray[0][0] = UBound($aArray) - 1
-        Return $Value
-    EndIf
+	; Key not found — add new key/value if specified
+	If $Value <> Default And Not $Delete Then
+		ReDim $aArray[UBound($aArray) + 1][2]
+		$aArray[UBound($aArray) - 1][0] = $Key
+		$aArray[UBound($aArray) - 1][1] = $Value
+		$aArray[0][0] = UBound($aArray) - 1
+		Return $Value
+	EndIf
 
-    Return SetError(1, 0, "")
+	Return SetError(1, 0, "")
 EndFunc   ;==>_KeyValue
 
 ;===============================================================================
 ; Function Name:   	_Log()
 ; Description:		Console log, file log, custom GUI log
-; Call With:		_Log($Text, $iLevel)
+; Call With:		_Log($sMessage[, $iLevel[, $bOverWriteLast[, $iCallingLine]]])
 ; Parameter(s): 	$sMessage - Text to print
-;					$iLevel - The level *this* message
-;								Use 1 for critical or always shown (default), 2+ for debuging
-;
+;					$iLevel - [optional] The level *this* message, 1 for critical/always shown (default), 2+ for debugging
+;					$bOverWriteLast - [optional] Overwrite the last line in the log (default False)
+;					$iCallingLine - [optional] Script line number (default @ScriptLineNumber)
 ; Return Value(s):  The original message, if $iLevel is greater than $LogLevel returns an empty string
 ; Notes:			Some options are configured with global variables
 ; Author(s):        JohnMC - JohnsCS.com
@@ -1200,9 +1231,7 @@ Func _Log($sMessage, $iLevel = Default, $bOverWriteLast = Default, $iCallingLine
 		_GUICtrlEdit_BeginUpdate($_hLogEdit)
 		If $bOverWriteLast Then
 			Local $sFullText = _GUICtrlEdit_GetText($_hLogEdit)
-			;Msgbox(0,"",$sFullText)
 			$sFullText = StringLeft($sFullText, StringInStr($sFullText, @CRLF, 0, -1) - 1)
-			;Msgbox(0,"",$sFullText)
 			_GUICtrlEdit_SetText($_hLogEdit, $sFullText)
 
 		EndIf
@@ -1244,13 +1273,13 @@ EndFunc   ;==>_Log
 ;===============================================================================
 Func _ConsoleWrite($sMessage, $iLevel = 1, $iSameLine = 0)
 	Return _Log($sMessage, $iLevel)
-EndFunc
+EndFunc   ;==>_ConsoleWrite
 
 ;===============================================================================
 ; Function Name:    _TimeStamp()
-; Description:		Returns time since 0, default is total milliseconds like Unix timestamp
-; Call With:		_TimeStamp([$Option])
-; Parameter(s): 	$Option - (Optional) Default is 2 (Seconds)
+; Description:		Returns time since epoch 0, default is total seconds (Unix timestamp)
+; Call With:		_TimeStamp([$Option = 2])
+; Parameter(s): 	$Option - [optional] Default is 2 (Seconds)
 ;						1 = Return Total Milliseconds
 ;						2 = Return Total Seconds
 ;						3 = Return Total Minutes
@@ -1272,9 +1301,9 @@ EndFunc   ;==>_TimeStamp
 ;===============================================================================
 ; Function Name:    _ProcessWaitNew()
 ; Description:		Wait for a new proccess to be created before continuing
-; Call With:		_ProcessWaitNew($proc,$timeout=0)
-; Parameter(s): 	$Process - PID or proccess name
-;					$Timeout - (Optional) Miliseconds Before Giving Up
+; Call With:		_ProcessWaitNew($Process[, $Timeout = 0])
+; Parameter(s): 	$Process - PID or process name
+;					$Timeout - [optional] Seconds before giving up (0 = wait forever)
 ; Return Value(s):  On Success - 1
 ; 					On Failure - 0 (Timeout)
 ; Author(s):        JohnMC - JohnsCS.com
@@ -1343,6 +1372,8 @@ Func _ProcessOwner($PID, $Hostname = ".")
 			Return $User
 		EndIf
 	Next
+
+	Return SetError(1, 0, 0)
 EndFunc   ;==>_ProcessOwner
 
 ;===============================================================================
@@ -1409,7 +1440,7 @@ Func _OnlyInstance($iFlag)
 				If $Msg <> $IDYES Then ProcessClose(@AutoItPID)
 			Case 4
 				Local $Msg = MsgBox(262144 + 256 + 48 + 4, @ScriptName, "The Program (" & @ScriptName & ") Is Already Running, Close The Other Proccesses?")
-				If $Msg =$IDYES Then _ProcessCloseOthers()
+				If $Msg = $IDYES Then _ProcessCloseOthers()
 		EndSwitch
 		Return 1
 	EndIf
@@ -1418,17 +1449,26 @@ EndFunc   ;==>_OnlyInstance
 
 ;===============================================================================
 ; Function Name:    _MsgBox()
-; Description:		Displays a msgbox without haulting script by using /AutoIt3ExecuteLine
-; Call With:		_MsgBox($Flag,$Title,$Text,$Timeout=0)
-; Parameter(s): 	All the same options as standard message box
-; Return Value(s):  On Success - PID of new proccess
+; Description:		Displays a msgbox without halting script by using /AutoIt3ExecuteLine
+; Call With:		_MsgBox([$Flag = Default[, $Title = Default[, $Text = Default[, $Timeout = Default]]]])
+; Parameter(s): 	$Flag - [optional] MsgBox flag (default 0)
+;					$Title - [optional] Window title (default @ScriptName)
+;					$Text - [optional] Message text (default "")
+;					$Timeout - [optional] Timeout in seconds (default 0)
+; Return Value(s):  On Success - PID of new process
 ; 					On Failure - 0
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		01/29/2010  --  v1.1
 ;===============================================================================
-Func _MsgBox($Flag, $Title, $Text, $Timeout = 0)
-	If $Title = "" Then $Title = @ScriptName
-	If $Flag = "" Or IsInt($Flag) = 0 Then $Flag = 0
+Func _MsgBox($Flag = Default, $Title = Default, $Text = Default, $Timeout = Default)
+	If $Flag = Default Or IsInt($Flag) = 0 Then $Flag = 0
+	If $Title = Default Then $Title = @ScriptName
+	If $Text = Default Then $Text = ""
+	If $Timeout = Default Then $Timeout = 0
+
+	$Title = StringReplace($Title, "'", "")
+	$Text = StringReplace($Text, "'", "")
+
 	Return Run('"' & @AutoItExe & '"' & ' /AutoIt3ExecuteLine "msgbox(' & $Flag & ',''' & $Title & ''',''' & $Text & ''',''' & $Timeout & ''')"')
 EndFunc   ;==>_MsgBox
 
@@ -1492,9 +1532,9 @@ EndFunc   ;==>_IsInternet
 ;===============================================================================
 ; Function Name:    _WinGetClientPos
 ; Description:		Retrieves the position and size of the client area of given window
-; Call With:		_WinGetClientPos($hWin)
-; Parameter(s): 	$hWnd - Handle to window
-;					$Absolute - 1 = Get coordinates relative to the screen (deafult)
+; Call With:		_WinGetClientPos($HWND[, $Absolute = 1])
+; Parameter(s): 	$HWND - Handle to window
+;					$Absolute - [optional] 1 = Get coordinates relative to the screen (default)
 ;								0 = Get coordinates relative to the window
 ; Return Value(s):	On Success - Returns an array containing location values for client area of the specified window
 ;									$Array[0] = X position
@@ -1504,15 +1544,15 @@ EndFunc   ;==>_IsInternet
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		11/21/2012  --  v1.2
 ;===============================================================================
-Func _WinGetClientPos($hWnd, $Absolute = 1)
+Func _WinGetClientPos($HWND, $Absolute = 1)
 	Local $aPos[4], $aSize[4], $aWinPos[4]
 
 	Local $tpoint = DllStructCreate("int X;int Y")
 	DllStructSetData($tpoint, "X", 0)
 	DllStructSetData($tpoint, "Y", 0)
-	DllCall("user32.dll", "bool", "ClientToScreen", "hwnd", $hWnd, "struct*", $tpoint)
+	DllCall("user32.dll", "bool", "ClientToScreen", "hwnd", $HWND, "struct*", $tpoint)
 
-	$aSize = WinGetClientSize($hWnd)
+	$aSize = WinGetClientSize($HWND)
 
 	$aPos[0] = DllStructGetData($tpoint, "X")
 	$aPos[1] = DllStructGetData($tpoint, "Y")
@@ -1520,7 +1560,7 @@ Func _WinGetClientPos($hWnd, $Absolute = 1)
 	$aPos[3] = $aSize[1]
 
 	If $Absolute = 0 Then
-		$aWinPos = WinGetPos($hWnd)
+		$aWinPos = WinGetPos($HWND)
 		$aPos[0] = $aPos[0] - $aWinPos[0]
 		$aPos[1] = $aPos[1] - $aWinPos[1]
 	EndIf
@@ -1530,10 +1570,16 @@ EndFunc   ;==>_WinGetClientPos
 
 ;===============================================================================
 ; Function Name:    _WinMoveClient
-; Description:		Position and size the client area of given window
-; Call With:		_WinMoveClient()
-; Parameter(s):
-; Return Value(s):	Success - Handle to the window
+; Description:		Position and size the client area of a given window
+; Call With:		_WinMoveClient($sTitle, $sText, $X, $Y[, $Width[, $Height[, $Speed]]])
+; Parameter(s):		$sTitle - Window title
+;					$sText - Window text
+;					$X - X position
+;					$Y - Y position
+;					$Width - [optional] Client area width
+;					$Height - [optional] Client area height
+;					$Speed - [optional] Move speed
+; Return Value(s):	Success - 1
 ;					Failure - 0
 ; Author(s):        JohnMC - JohnsCS.com
 ; Date/Version:		10/15/2014  --  v1.0
