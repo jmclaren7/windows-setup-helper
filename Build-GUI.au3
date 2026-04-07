@@ -37,6 +37,7 @@ Global $ProgramActive = True
 Global $BootWIMMounted = False
 Global $ADKVersionLabel
 Global $ADKVersion = "Not detected"
+Global $ADKPackagesPopulated = False
 
 ; Config Defaults
 Global $SourceISOPath = "Windows11.iso"
@@ -91,14 +92,8 @@ While 1
 
     Switch $nMsg
         Case 0, -11, -7, -9, -4
-            ; Do nothing
-        Case Else
-            _Log("GUI Message: " & $nMsg)
-            _ReadGUI()
-            _GUIChecks()
-    EndSwitch
+            ; Do nothing (idle/resize/focus messages)
 
-	Switch $nMsg
 		Case $GUI_EVENT_CLOSE
 			If $BootWIMMounted Then
 				Local $confirm = MsgBox(49, "WIM Still Mounted", "A WIM image is still mounted." & @CRLF & @CRLF & "Are you sure you want to exit?" & @CRLF & "(The mounted WIM will remain mounted)", 0, $GUIMain)
@@ -150,6 +145,14 @@ While 1
 			Local $file = FileSaveDialog("Select Output ISO", "", "ISO Files (*.iso)", $FD_PROMPTOVERWRITE, "", $GUIMain)
 			If Not @error Then GUICtrlSetData($mOutputISOPath["Input"], $file)
 
+		Case $mWIMMountPath["Button"]
+			If $BootWIMMounted Then
+				MsgBox(48, "Mount Path Locked", "The WIM mount path cannot be changed while a WIM image is mounted." & @CRLF & @CRLF & "Please unmount the current WIM before changing the mount path.", 0, $GUIMain)
+			Else
+				Local $folder = FileSelectFolder("Select WIM Mount Folder", "", 0, GUICtrlRead($mWIMMountPath["Input"]), $GUIMain)
+				If Not @error Then GUICtrlSetData($mWIMMountPath["Input"], $folder)
+			EndIf
+
 		Case $mADKPath["Button"]
 			Local $folder = FileSelectFolder("Select ADK Path", "", 0, GUICtrlRead($mADKPath["Input"]), $GUIMain)
 			If Not @error Then GUICtrlSetData($mADKPath["Input"], $folder)
@@ -168,6 +171,10 @@ While 1
 			_SaveSettings()
 
 		Case $btnExit
+			If $BootWIMMounted Then
+				Local $confirm = MsgBox(49, "WIM Still Mounted", "A WIM image is still mounted." & @CRLF & @CRLF & "Are you sure you want to exit?" & @CRLF & "(The mounted WIM will remain mounted)", 0, $GUIMain)
+				If $confirm <> 1 Then ContinueLoop
+			EndIf
 			Exit
 
 		; Go buttons for individual steps
@@ -208,7 +215,16 @@ While 1
         Case $btnPkgSelectDefault
             _UpdateADKPackages()
 
+		Case Else
+			_Log("GUI Message: " & $nMsg)
+
 	EndSwitch
+
+	; Update GUI state on any non-idle message
+	If $nMsg <> 0 And $nMsg <> -11 And $nMsg <> -7 And $nMsg <> -9 And $nMsg <> -4 Then
+		_ReadGUI()
+		_GUIChecks()
+	EndIf
 
     ; Check for program window activation/deactivation and make sure both windows are visible when activating either
     $ActiveWindow = WinGetHandle("[ACTIVE]")
@@ -498,6 +514,7 @@ Func _UpdateADKPackages()
         Next
     Next
 
+    $ADKPackagesPopulated = True
     _Log("Found " & $cabFiles[0] & " ADK packages")
 EndFunc   ;==>_UpdateADKPackages
 
@@ -562,8 +579,9 @@ Func _GUIChecks()
         GUICtrlSetState($mADKPath["Alert"], $GUI_HIDE)
         GUICtrlSetState($mAddPackages["Button"], $GUI_ENABLE)
         GUICtrlSetState($lvPackages, $GUI_ENABLE)
-        _UpdateADKPackages()
+        If Not $ADKPackagesPopulated Then _UpdateADKPackages()
     ElseIf Not $ADKExists And Not $Alert Then
+        $ADKPackagesPopulated = False
         GUICtrlSetState($mADKPath["Alert"], $GUI_SHOW)
         GUICtrlSetState($mAddPackages["Button"], $GUI_DISABLE)
         GUICtrlSetState($lvPackages, $GUI_DISABLE)
@@ -608,11 +626,17 @@ Func _ReadGUI()
 
     ; Update global paths from GUI
 	Global $SourceISOPath = GUICtrlRead($mSourceISOPath["Input"])
-	Global $ISOTempPath = GUICtrlRead($mISOTempPath["Input"])
+	Local $NewTempPath = GUICtrlRead($mISOTempPath["Input"])
+	; Auto-sync boot.wim path when temp path changes (since boot.wim input is disabled)
+	If $NewTempPath <> $ISOTempPath Then
+		GUICtrlSetData($mBootWIMPath["Input"], $NewTempPath & "\sources\boot.wim")
+	EndIf
+	Global $ISOTempPath = $NewTempPath
 	Global $BootWIMPath = GUICtrlRead($mBootWIMPath["Input"])
 	Global $AddBootFilesPath = GUICtrlRead($mAddBootFilesPath["Input"])
 	Global $AddISOFilesPath = GUICtrlRead($mAddISOFilesPath["Input"])
 	Global $OutputISOPath = GUICtrlRead($mOutputISOPath["Input"])
+	Global $WIMMountPath = GUICtrlRead($mWIMMountPath["Input"])
 	Global $ADKPath = GUICtrlRead($mADKPath["Input"])
 	Global $BootWIMIndex = GUICtrlRead($mBootWIMIndex["Input"])
 EndFunc   ;==>_ReadGUI
@@ -681,6 +705,10 @@ Func _RunCmd($sCommand, $sDescription = "")
 		Sleep(50)
 	WEnd
 
+	; Wait for process to finish and get exit code
+	ProcessWaitClose($iPID)
+	Local $iExitCode = @extended
+
     ; Re-enable GUI interaction
     GUISetState(@SW_ENABLE, $GUIMain)
     WinSetTrans($GUIMain, "", 255)
@@ -692,7 +720,12 @@ Func _RunCmd($sCommand, $sDescription = "")
 		_Console_SetTextAttribute(-1, BitOR($FOREGROUND_RED, $FOREGROUND_GREEN, $FOREGROUND_BLUE)) ; Reset to white
 	EndIf
 
-	_Log("Command completed.")
+	If $iExitCode <> 0 Then
+		_Log("Command failed with exit code: " & $iExitCode)
+		Return SetError(1, $iExitCode, $sOutput)
+	EndIf
+
+	_Log("Command completed successfully.")
 	Return SetError(0, 0, $sOutput)
 EndFunc   ;==>_RunCmd
 
@@ -786,7 +819,7 @@ EndFunc   ;==>_RunSelectedSteps
 ; Construct WIM Index Parameter
 ;===============================================================================
 Func _ConstructIndexParam($Index)
-    If IsNumber($Index) Then
+    If StringIsInt($Index) Then
         Return '/Index:' & $Index
     Else
         Return '/Name:"' & $Index & '"'
@@ -921,11 +954,11 @@ Func _CopyFiles()
 		Local $AddBootFilesPath_Parent = StringLeft($AddBootFilesPath, StringInStr($AddBootFilesPath, "\", 0, -1) - 1)
 		Local $AddBootFilesPath_Folder = StringTrimLeft($AddBootFilesPath, StringInStr($AddBootFilesPath, "\", 0, -1))
 
-		$aFolders = _FileListToArray($AddBootFilesPath_Parent, $AddBootFilesPath_Folder, $FLTA_FOLDERS)
+		Local $aFolders = _FileListToArray($AddBootFilesPath_Parent, $AddBootFilesPath_Folder, $FLTA_FOLDERS)
 		For $i = 1 To $aFolders[0]
 			_Log("Copying extra boot files from: " & $AddBootFilesPath_Parent & "\" & $aFolders[$i])
-			$Source = $AddBootFilesPath_Parent & "\" & $aFolders[$i]
-			$Destination = $WIMMountPath
+			Local $Source = $AddBootFilesPath_Parent & "\" & $aFolders[$i]
+			Local $Destination = $WIMMountPath
 			$result = DirCopy($Source, $Destination, 1)
 			If Not $result Then
 				_Log("Error: Warning: Could not copy files from: " & $Source & " to: " & $Destination)
@@ -985,21 +1018,25 @@ Func _DisableDPIScaling()
 	_Log("Disabling DPI scaling (registry)")
 
 	Local $regHive = $WIMMountPath & "\Windows\System32\config\default"
+	Local $mountPath = "HKLM\_WinPE_Default"
 
 	; Load registry hive
-	_RunCmd('reg load HKLM\_WinPE_Default "' & $regHive & '"', "Loading registry hive")
+	_RunCmd('reg load ' & $mountPath & ' "' & $regHive & '"', "Loading registry hive")
+
+	; Test if registry hive loaded successfully by querying a known key
+	RegRead($mountPath & "\Environment", "Path")
 	If @error Then
-		_RunCmd('reg unload HKLM\_WinPE_Default', "Unloading registry hive")
+		_Log("Error: Failed to load registry hive")
 		Return False
 	EndIf
 
 	; Add registry keys
-	_RunCmd('reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v LogPixels /t REG_DWORD /d 96 /f', "Setting LogPixels")
-	_RunCmd('reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v Win8DpiScaling /t REG_DWORD /d 1 /f', "Setting Win8DpiScaling")
-	_RunCmd('reg add "HKLM\_WinPE_Default\Control Panel\Desktop" /v DpiScalingVer /t REG_DWORD /d 4120 /f', "Setting DpiScalingVer")
+	RegWrite ( $mountPath & "\Control Panel\Desktop", "LogPixels", "REG_DWORD", 96)
+	RegWrite ( $mountPath & "\Control Panel\Desktop", "Win8DpiScaling", "REG_DWORD", 1)
+	RegWrite ( $mountPath & "\Control Panel\Desktop", "DpiScalingVer", "REG_DWORD", 4120)
 
 	; Unload registry hive
-	_RunCmd('reg unload HKLM\_WinPE_Default', "Unloading registry hive")
+	_RunCmd('reg unload ' & $mountPath, "Unloading registry hive")
 
 	_Log("Step completed successfully.")
 	Return True
@@ -1144,9 +1181,7 @@ EndFunc   ;==>_UnmountDiscard
 ; Tool: Get Image Info
 ;===============================================================================
 Func _GetImageInfo()
-	_Log("Getting Image Information")
-
-	$BootWIMPath = GUICtrlRead($mISOTempPath["Input"]) & "\sources\boot.wim"
+	_ReadGUI() ; Ensure $BootWIMPath and other globals are synchronized with the GUI
 
 	_RunCmd('Dism /Get-MountedImageInfo', "Mounted Images")
 
@@ -1167,5 +1202,4 @@ Func _Exit()
     EndIf
 
     _Log("Script exited.")
-    Exit
 EndFunc   ;==>_Exit
