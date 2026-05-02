@@ -16,7 +16,10 @@
 #include <StaticConstants.au3>
 #include <WindowsConstants.au3>
 #include <WinAPI.au3>
+#include <WinAPIHObj.au3>
+#include <WinAPIProc.au3>
 #include <WinAPISys.au3>
+#include <ProcessConstants.au3>
 #include <Array.au3>
 
 #include "Helper\IncludeExt\Console.au3"
@@ -38,6 +41,7 @@ Global $BootWIMMounted = False
 Global $ADKVersionLabel
 Global $ADKVersion = "Not detected"
 Global $ADKPackagesPopulated = False
+Global $GUIRefreshActive = False
 
 ; Config Defaults
 Global $SourceISOPath = "Windows11.iso"
@@ -220,8 +224,8 @@ While 1
 
 	EndSwitch
 
-	; Update GUI state on any non-idle message
-	If $nMsg <> 0 And $nMsg <> -11 And $nMsg <> -7 And $nMsg <> -9 And $nMsg <> -4 Then
+	; Update GUI state on messages that can affect paths or environment checks
+	If _ShouldRefreshGUI($nMsg) Then
 		_ReadGUI()
 		_GUIChecks()
 	EndIf
@@ -450,6 +454,9 @@ EndFunc  ;==>_CreateStepRow
 ;===============================================================================
 Func _SetAllCheckboxes($State)
     _Log("Setting all checkboxes to state: " & $State)
+	AdlibUnRegister("_ReadGUI")
+	AdlibUnRegister("_GUIChecks")
+	$GUIRefreshActive = True
 
 	GUICtrlSetState($mExtractISO["Checkbox"], $State)
 	GUICtrlSetState($mMountWIM["Checkbox"], $State)
@@ -460,7 +467,27 @@ Func _SetAllCheckboxes($State)
 	GUICtrlSetState($mTrimImages["Checkbox"], $State)
 	If $State = $GUI_UNCHECKED Then GUICtrlSetState($mRemoveInstaller["Checkbox"], $State) ; Note: Remove Installer is excluded from select All
 	GUICtrlSetState($mMakeISO["Checkbox"], $State)
+
+	$GUIRefreshActive = False
+	AdlibRegister("_ReadGUI", $AdlibTimer)
+	AdlibRegister("_GUIChecks", $AdlibTimer)
 EndFunc   ;==>_SetAllCheckboxes
+
+;===============================================================================
+; Check if a GUI message should refresh path and environment state
+;===============================================================================
+Func _ShouldRefreshGUI($nMsg)
+	Switch $nMsg
+		Case 0, -11, -7, -9, -4
+			Return False
+		Case $btnSelectAll, $btnSelectNone
+			Return False
+		Case $mExtractISO["Checkbox"], $mMountWIM["Checkbox"], $mCopyFiles["Checkbox"], $mAddPackages["Checkbox"], $mDisableDPI["Checkbox"], $mUnmountCommit["Checkbox"], $mTrimImages["Checkbox"], $mRemoveInstaller["Checkbox"], $mMakeISO["Checkbox"]
+			Return False
+	EndSwitch
+
+	Return True
+EndFunc   ;==>_ShouldRefreshGUI
 
 ;===============================================================================
 ; Auto-generate Output ISO name
@@ -522,8 +549,9 @@ EndFunc   ;==>_UpdateADKPackages
 ; Checks for GUI requirements (called by AdlibRegister)
 ;===============================================================================
 Func _GUIChecks()
-    ; Set or reset adlib timer to avoid overlapping calls
-    AdlibRegister("_GUIChecks", $AdlibTimer)
+	If $GUIRefreshActive Then Return
+	$GUIRefreshActive = True
+	AdlibUnRegister("_GUIChecks")
 
     ; Get relevant environment states
     Local $Alert
@@ -615,14 +643,17 @@ Func _GUIChecks()
         ;GUICtrlSetState($mMountWIM["Button"], $GUI_ENABLE)
     EndIf
 
+	$GUIRefreshActive = False
+	AdlibRegister("_GUIChecks", $AdlibTimer)
 EndFunc   ;==>_GUIChecks
 
 ;===============================================================================
 ; Read GUI Inputs into Global Variables
 ;===============================================================================
 Func _ReadGUI()
-    ; Set or reset Adlib timer to avoid overlapping calls
-    AdlibRegister("_ReadGUI", $AdlibTimer)
+	If $GUIRefreshActive Then Return
+	$GUIRefreshActive = True
+	AdlibUnRegister("_ReadGUI")
 
     ; Update global paths from GUI
 	Global $SourceISOPath = GUICtrlRead($mSourceISOPath["Input"])
@@ -639,6 +670,9 @@ Func _ReadGUI()
 	Global $WIMMountPath = GUICtrlRead($mWIMMountPath["Input"])
 	Global $ADKPath = GUICtrlRead($mADKPath["Input"])
 	Global $BootWIMIndex = GUICtrlRead($mBootWIMIndex["Input"])
+
+	$GUIRefreshActive = False
+	AdlibRegister("_ReadGUI", $AdlibTimer)
 EndFunc   ;==>_ReadGUI
 
 ;===============================================================================
@@ -695,7 +729,15 @@ Func _RunCmd($sCommand, $sDescription = "")
 	Local $iPID = Run(@ComSpec & ' /c "' & $sCommand & '"', @ScriptDir, @SW_HIDE, $STDERR_MERGED)
 	If @error Then
 		_Log("Error: Failed to run command")
+		GUISetState(@SW_ENABLE, $GUIMain)
+		WinSetTrans($GUIMain, "", 255)
 		Return SetError(1, 0, "")
+	EndIf
+
+	Local $hProcess = _WinAPI_OpenProcess($PROCESS_QUERY_LIMITED_INFORMATION, False, $iPID)
+	If @error Or Not $hProcess Then
+		_Log("Warning: Failed to open process handle for exit code query. Falling back to ProcessWaitClose @extended.")
+		$hProcess = 0
 	EndIf
 
 	Local $sOutput = ""
@@ -707,7 +749,17 @@ Func _RunCmd($sCommand, $sDescription = "")
 
 	; Wait for process to finish and get exit code
 	ProcessWaitClose($iPID)
-	Local $iExitCode = @extended
+	Local $iWaitExitCode = @extended
+	Local $iExitCode = $iWaitExitCode
+	If $hProcess Then
+		$iExitCode = _WinAPI_GetExitCodeProcess($hProcess)
+		Local $iGetExitCodeError = @error
+		_WinAPI_CloseHandle($hProcess)
+		If $iGetExitCodeError Then
+			_Log("Warning: Failed to read process exit code from WinAPI handle. Falling back to ProcessWaitClose @extended.")
+			$iExitCode = $iWaitExitCode
+		EndIf
+	EndIf
 
     ; Re-enable GUI interaction
     GUISetState(@SW_ENABLE, $GUIMain)
@@ -1024,7 +1076,7 @@ Func _DisableDPIScaling()
 	_RunCmd('reg load ' & $mountPath & ' "' & $regHive & '"', "Loading registry hive")
 
 	; Test if registry hive loaded successfully by querying a known key
-	RegRead($mountPath & "\Environment", "Path")
+	RegRead($mountPath & "\Console", "ForceV2")
 	If @error Then
 		_Log("Error: Failed to load registry hive")
 		Return False
