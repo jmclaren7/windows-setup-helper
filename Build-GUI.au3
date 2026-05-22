@@ -29,11 +29,10 @@
 ; Global Variables
 ;===============================================================================
 Global $Title = "WSHelper Build Tool"
-Global $Version = "1.0"
+Global $Version = "1.1"
 Global $TitleFull = $Title & " v" & $Version
 Global $ConfigFile = @ScriptDir & "\Build.ini"
 Global $HelperRepo = @ScriptDir
-Global $DefaultADKPackages = "WinPE-WMI.cab|WinPE-NetFx.cab|WinPE-Scripting.cab|WinPE-PowerShell.cab|WinPE-StorageWMI.cab|WinPE-SecureBootCmdlets.cab|WinPE-SecureStartup.cab|WinPE-DismCmdlets.cab|WinPE-EnhancedStorage.cab|WinPE-Dot3Svc.cab|WinPE-FMAPI.cab|WinPE-FontSupport-WinRE.cab|WinPE-PlatformId.cab|WinPE-WDS-Tools.cab|WinPE-HTA.cab|WinPE-WinReCfg.cab"
 Global $GUIMain
 Global $IsRunning = False
 Global $ProgramActive = True
@@ -41,6 +40,7 @@ Global $BootWIMMounted = False
 Global $ADKVersionLabel
 Global $ADKVersion = "Not detected"
 Global $ADKPackagesPopulated = False
+Global $DefaultADKPackages = "WinPE-WMI.cab|WinPE-NetFx.cab|WinPE-Scripting.cab|WinPE-PowerShell.cab|WinPE-StorageWMI.cab|WinPE-SecureBootCmdlets.cab|WinPE-SecureStartup.cab|WinPE-DismCmdlets.cab|WinPE-EnhancedStorage.cab|WinPE-Dot3Svc.cab|WinPE-FMAPI.cab|WinPE-FontSupport-WinRE.cab|WinPE-PlatformId.cab|WinPE-WDS-Tools.cab|WinPE-HTA.cab|WinPE-WinReCfg.cab"
 Global $GUIRefreshActive = False
 
 ; Config Defaults
@@ -50,8 +50,9 @@ Global $BootWIMPath = ""
 Global $BootWIMIndex = "Microsoft Windows Setup (amd64)"
 Global $WIMMountPath = @TempDir & "\WSHelper-WIMMount2"
 Global $ADKPath = RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots", "KitsRoot10") 
-Global $AddBootFilesPath = ""
-Global $AddISOFilesPath = ""
+Global $ADKPackages = $DefaultADKPackages
+Global $AddBootFilesPath = "C:\Example\Additions*"
+Global $AddISOFilesPath = "C:\Example\ISOExtra*"
 Global $OutputISOPath = "Windows11-Output.iso"
 
 ;===============================================================================
@@ -65,7 +66,6 @@ FileChangeDir(@ScriptDir)
 _Console_Alloc()
 Local $hConsoleWnd = _Console_GetWindow()
 _Console_SetTitle("Log - " & $Title)
-WinMove($hConsoleWnd, "", 10, 10, 800, 400)
 
 _Log("Starting " & $TitleFull)
 
@@ -81,9 +81,6 @@ GUISetState(@SW_SHOW, $GUIMain)
 GUICtrlSetState($mBootWIMPath["Input"], $GUI_DISABLE)
 GUICtrlSetState($mBootWIMPath["Button"], $GUI_DISABLE)
 
-; !!!!!!  This build script is experimental !!!!!!!!
-MsgBox(48, "Warning - " & $TitleFull, "This build script is experimental and incomplete" & @CRLF & @CRLF & "Use with caution and verify all specified paths are safe to work with.", 0, $GUIMain)
-
 ; Periodic GUI updates
 Global $AdlibTimer = 1000
 _ReadGUI()
@@ -95,7 +92,7 @@ While 1
 	Local $ctrlFocus = _ControlGetFocus($GUIMain)
 
     Switch $nMsg
-        Case 0, -11, -7, -9, -4
+        Case 0, -11, -7, -9, -4, -8
             ; Do nothing (idle/resize/focus messages)
 
 		Case $GUI_EVENT_CLOSE
@@ -217,10 +214,10 @@ While 1
 			_GUICtrlListView_SetItemChecked($lvPackages, -1, False)
 
         Case $btnPkgSelectDefault
-            _UpdateADKPackages()
+            _UpdateADKPackages($DefaultADKPackages)
 
 		Case Else
-			_Log("GUI Message: " & $nMsg)
+			;_Log("GUI Message: " & $nMsg)
 
 	EndSwitch
 
@@ -278,9 +275,9 @@ Func _CreateGUI()
 	$ADKVersionLabel = GUICtrlCreateLabel("Detected version: ", $xPos + 100, $yPos - 5, 200, 17)
 	;GUICtrlSetFont($ADKVersionLabel, 8)
 	$yPos += 20
-    Global $mAddBootFilesPath = _CreateInputRow("Add to PE:", $xPos, $yPos, $inputWidth, $AddBootFilesPath, "Folder containing additional files to copy into the boot.wim image", $btnText)
+    Global $mAddBootFilesPath = _CreateInputRow("Add to PE:", $xPos, $yPos, $inputWidth, $AddBootFilesPath, "Folder containing additional files to copy into the boot.wim image, accepts * for wildcard", $btnText)
     $yPos += 30
-    Global $mAddISOFilesPath = _CreateInputRow("Add to ISO:", $xPos, $yPos, $inputWidth, $AddISOFilesPath, "Folder containing additional files to copy into the ISO root", $btnText)
+    Global $mAddISOFilesPath = _CreateInputRow("Add to ISO:", $xPos, $yPos, $inputWidth, $AddISOFilesPath, "Folder containing additional files to copy into the ISO root, accepts * for wildcard", $btnText)
     $yPos += 30
     Global $mOutputISOPath = _CreateInputRow("Output ISO:", $xPos, $yPos, $inputWidth, $OutputISOPath, "Path where the customized ISO will be saved", $btnText)
     $yPos += 20
@@ -404,6 +401,10 @@ Func _CreateGUI()
 	; Final adjustment to GUI height based on content
 	WinMove($GUIMain, "", Default, Default, Default, $yPos)
 
+	; Update console window position and size
+	$MainPos = WinGetPos($GUIMain)
+	WinMove($hConsoleWnd, "", $MainPos[0] - 800 - 6, $MainPos[1], 800, $MainPos[3])
+
 EndFunc   ;==>_CreateGUI
 
 ;===============================================================================
@@ -412,7 +413,7 @@ EndFunc   ;==>_CreateGUI
 Func _CreateInputRow($Label, $Left, $Top, $Width, $Value = "", $Tip= "", $ButtonText = "")
     Local $mControls[]
 
-    $mControls["Label"] = GUICtrlCreateLabel($Label, $Left, $Top + 3, 100, 17)
+    $mControls["Label"] = GUICtrlCreateLabel($Label, $Left, $Top + 3, 80, 17)
 	GUICtrlSetTip(-1, $Tip)
 
     $mControls["Alert"]  = GUICtrlCreateLabel("", $Left + 74, $Top + 2, 4, 17)
@@ -505,7 +506,7 @@ EndFunc   ;==>_AutoGenerateOutputISO
 ;===============================================================================
 ; Update adkPackages list from adk path
 ;===============================================================================
-Func _UpdateADKPackages()
+Func _UpdateADKPackages($SelectedPackages = $ADKPackages)
     _Log("Updating ADK Packages list from ADK path")
 
     ; Clear existing items
@@ -526,7 +527,7 @@ Func _UpdateADKPackages()
     EndIf
 
     ; Parse default packages into array for quick lookup
-    Local $aDefaults = StringSplit($DefaultADKPackages, "|")
+    Local $aDefaults = StringSplit($SelectedPackages, "|")
 
     ; Add items to ListView
     For $i = 1 To $cabFiles[0]
@@ -691,6 +692,8 @@ Func _LoadSettings()
 	$AddISOFilesPath = IniRead($ConfigFile, "Paths", "AddISOFilesPath", "")
 	$OutputISOPath = IniRead($ConfigFile, "Paths", "OutputISOPath", $OutputISOPath)
 
+	$ADKPackages = IniRead($ConfigFile, "Settings", "CheckedPackages", $ADKPackages)
+
 EndFunc   ;==>_LoadSettings
 
 ;===============================================================================
@@ -708,13 +711,16 @@ Func _SaveSettings()
 
 	IniWrite($ConfigFile, "Paths", "ADKPath", GUICtrlRead($mADKPath["Input"]))
 	IniWrite($ConfigFile, "Paths", "OutputISOPath", GUICtrlRead($mOutputISOPath["Input"]))
+
+	$CheckedPackages = _GUICtrlListView_GetCheckedText($lvPackages)
+	IniWrite($ConfigFile, "Settings", "CheckedPackages", _ArrayToString($CheckedPackages, "|"))
 	
 EndFunc   ;==>_SaveSettings
 
 ;===============================================================================
 ; Run Command and Log Output
 ;===============================================================================
-Func _RunCmd($sCommand, $sDescription = "")
+Func _RunCmd($sCommand, $sDescription = "", $bLiveOutput = False)
     If $sDescription <> "" Then
 		_Log("=== " & $sDescription & " ===")
 	EndIf
@@ -740,14 +746,39 @@ Func _RunCmd($sCommand, $sDescription = "")
 		$hProcess = 0
 	EndIf
 
+	If $bLiveOutput Then _Log("Live output..." & @CRLF)
+
 	Local $sOutput = ""
+	_Console_SetTextAttribute(-1, BitOR($FOREGROUND_BLUE, $FOREGROUND_GREEN, $FOREGROUND_INTENSITY)) ; Cyan
 	While 1
-		$sOutput &= StdoutRead($iPID)
-		If @error Then ExitLoop
-		Sleep(50)
+		$rawStdOut = StdoutRead($iPID)
+		$StdoutReadError = @error
+		$isLiveString = False
+		
+		If $bLiveOutput Then
+			$sLiveOutput = $rawStdOut
+			
+			$sLiveOutput = StringReplace($sLiveOutput, " ] " & @CRLF, " ] " & @CR)
+			If @extended Then 
+				$isLiveString = True
+			EndIf
+
+			If $sLiveOutput <> "" Then
+				_Log($sLiveOutput, Default, 2)
+			EndIf
+		EndIf
+		
+		If Not $isLiveString Then
+			$sOutput &= $rawStdOut
+		EndIf
+
+		If $StdoutReadError Then ExitLoop
+		Sleep(1)
 	WEnd
+	_Console_SetTextAttribute(-1, BitOR($FOREGROUND_RED, $FOREGROUND_GREEN, $FOREGROUND_BLUE)) ; Reset to white
 
 	; Wait for process to finish and get exit code
+	_Log("Waiting for process to exit...")
 	ProcessWaitClose($iPID)
 	Local $iWaitExitCode = @extended
 	Local $iExitCode = $iWaitExitCode
@@ -767,8 +798,9 @@ Func _RunCmd($sCommand, $sDescription = "")
 
 	; Log output
 	If StringStripWS($sOutput, 3) <> "" Then
+		_Log("Final Output:")
 		_Console_SetTextAttribute(-1, BitOR($FOREGROUND_BLUE, $FOREGROUND_GREEN, $FOREGROUND_INTENSITY)) ; Cyan
-		_Log("Command Output:" & @CRLF & StringStripWS($sOutput, 3))
+		_Log(StringStripWS($sOutput, 3))
 		_Console_SetTextAttribute(-1, BitOR($FOREGROUND_RED, $FOREGROUND_GREEN, $FOREGROUND_BLUE)) ; Reset to white
 	EndIf
 
@@ -966,7 +998,7 @@ Func _MountBootWIM()
 	DirCreate($WIMMountPath)
 
 	Local $cmd = 'Dism /Mount-image /ImageFile:"' & $BootWIMPath & '" ' & _ConstructIndexParam($BootWIMIndex) & ' /MountDir:"' & $WIMMountPath & '" /Optimize'
-	_RunCmd($cmd, "Mounting WIM")
+	_RunCmd($cmd, "Mounting WIM", True)
 
 	If @error Then Return SetError(1, 0, False)
 	$BootWIMMounted = True
@@ -1006,11 +1038,33 @@ Func _CopyFiles()
 		Local $AddBootFilesPath_Parent = StringLeft($AddBootFilesPath, StringInStr($AddBootFilesPath, "\", 0, -1) - 1)
 		Local $AddBootFilesPath_Folder = StringTrimLeft($AddBootFilesPath, StringInStr($AddBootFilesPath, "\", 0, -1))
 
+		; The parent folder is used as the path to search, the folder name is used as the filter since it can contain wildcards
 		Local $aFolders = _FileListToArray($AddBootFilesPath_Parent, $AddBootFilesPath_Folder, $FLTA_FOLDERS)
+
+		Local $Destination = $WIMMountPath
 		For $i = 1 To $aFolders[0]
-			_Log("Copying extra boot files from: " & $AddBootFilesPath_Parent & "\" & $aFolders[$i])
+			_Log("Copying extra boot.wim files from: " & $AddBootFilesPath_Parent & "\" & $aFolders[$i])
 			Local $Source = $AddBootFilesPath_Parent & "\" & $aFolders[$i]
-			Local $Destination = $WIMMountPath
+			$result = DirCopy($Source, $Destination, 1)
+			If Not $result Then
+				_Log("Error: Warning: Could not copy files from: " & $Source & " to: " & $Destination)
+			EndIf
+		Next
+	EndIf
+
+	; Copy extra files from AddISOFilesPath if specified, the trailing folder can use wildcards (_FileListToArray)
+	If $AddISOFilesPath <> "" Then
+		_Log("AddISOFilesPath: " & $AddISOFilesPath)
+		Local $AddISOFilesPath_Parent = StringLeft($AddISOFilesPath, StringInStr($AddISOFilesPath, "\", 0, -1) - 1)
+		Local $AddISOFilesPath_Folder = StringTrimLeft($AddISOFilesPath, StringInStr($AddISOFilesPath, "\", 0, -1))
+
+		; The parent folder is used as the path to search, the folder name is used as the filter since it can contain wildcards
+		Local $aFolders = _FileListToArray($AddISOFilesPath_Parent, $AddISOFilesPath_Folder, $FLTA_FOLDERS)
+
+		Local $Destination = $ISOTempPath
+		For $i = 1 To $aFolders[0]
+			_Log("Copying extra ISO files from: " & $AddISOFilesPath_Parent & "\" & $aFolders[$i])
+			Local $Source = $AddISOFilesPath_Parent & "\" & $aFolders[$i]
 			$result = DirCopy($Source, $Destination, 1)
 			If Not $result Then
 				_Log("Error: Warning: Could not copy files from: " & $Source & " to: " & $Destination)
@@ -1054,7 +1108,7 @@ Func _AddPackages()
             $Command &= ' /PackagePath:"' & $langPkgPath & '"'
         EndIf
 
-        _RunCmd($Command, "Adding package: " & $aSelectedPackages[$i])
+        _RunCmd($Command, "Adding package: " & $aSelectedPackages[$i], True)
         If @error Then
             _Log("Error: Error adding package: " & $aSelectedPackages[$i])
         EndIf
@@ -1102,7 +1156,7 @@ Func _UnmountCommit()
 	_Log("NOTE: Make sure no files are open in the mount path!")
 
 	Local $cmd = 'Dism /Unmount-Image /MountDir:"' & $WIMMountPath & '" /commit'
-	_RunCmd($cmd, "Unmounting WIM")
+	_RunCmd($cmd, "Unmounting WIM", True)
 
 	If @error Then Return False
 
@@ -1124,7 +1178,7 @@ Func _TrimBootWIM()
 	$SourceIndexParam = StringReplace($SourceIndexParam, "/Name:", "/SourceName:")
 
 	Local $cmd = 'Dism /Export-Image /SourceImageFile:"' & $BootWIMPath & '" ' & $SourceIndexParam & ' /DestinationImageFile:"' & $ISOTempPath & '\sources\boot2.wim" /Compress:Max'
-	_RunCmd($cmd, "Exporting image")
+	_RunCmd($cmd, "Exporting image", True)
 
 	If @error Then Return False
 
@@ -1219,8 +1273,8 @@ EndFunc   ;==>_BrowseMountFolder
 Func _UnmountDiscard()
 	_Log("Unmounting and discarding changes")
 
-	_RunCmd('Dism /Unmount-Image /MountDir:"' & $WIMMountPath & '" /Discard', "Discarding changes")
-	_RunCmd('Dism /Cleanup-Mountpoints', "Cleaning up mount points")
+	_RunCmd('Dism /Unmount-Image /MountDir:"' & $WIMMountPath & '" /Discard', "Discarding changes", True)
+	_RunCmd('Dism /Cleanup-Mountpoints', "Cleaning up mount points", True)
 	; DISM /Cleanup-Wim
 
 	DirRemove($WIMMountPath, 1)
